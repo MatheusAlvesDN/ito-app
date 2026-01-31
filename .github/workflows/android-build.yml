@@ -1,0 +1,61 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Baixa o seu código
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      # 2. Instala o Java (necessário para Android)
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 3. Instala o Node.js e Dependências
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # 4. Compila o site React (Gera a pasta dist)
+      - name: Build Web App
+        run: npm run build
+
+      # 5. Configura o Capacitor e gera a pasta Android
+      - name: Add Android Platform
+        run: |
+          npm install @capacitor/android
+          npx cap add android || true
+          npx cap sync android
+
+      # 6. Gera o APK usando o Gradle (Sistema do Android)
+      - name: Build Debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      # 7. Faz o Upload do APK para você baixar
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ito-app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
