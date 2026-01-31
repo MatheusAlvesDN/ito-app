@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, ChevronLeft, Settings, Info, Cloud, Plus, Trash2, Users, Star, Music, Heart, Flame, RefreshCw, ArrowRight, Dices, Eye, Check, Lock, ArrowUp, ArrowDown, Trophy, XCircle, AlertCircle, Layers } from 'lucide-react';
+import { Play, ChevronLeft, Settings, Info, Cloud, Plus, Trash2, Users, Star, RefreshCw, ArrowRight, Dices, Eye, Check, Lock, ArrowUp, ArrowDown, Trophy, XCircle, AlertCircle, Layers, Unlock, Zap } from 'lucide-react';
 
 // Tipos para as telas do app
 type Screen = 'home' | 'register' | 'theme-selection' | 'game';
@@ -18,53 +18,53 @@ type Theme = {
 // Banco de Perguntas Simulado (DB)
 const QUESTIONS_DB: Record<string, string[]> = {
   classic: [
-    "Qual foi o melhor dia da sua vida?",
-    "Uma comida que você gosta (1=Odeia, 100=Ama)",
     "O quão útil seria este objeto em um apocalipse zumbi?",
     "O quão perigoso é este animal?",
     "Nível de popularidade desta celebridade.",
     "O quão difícil é esta profissão?",
     "O quão assustador é este filme?",
-    "Nível de inteligência deste personagem fictício."
+    "Nível de inteligência deste personagem fictício.",
+    "Filmes do George Melies"
   ],
-  party: [
-    "Nível de embriaguez adequado para esta situação.",
-    "O quão vergonhoso seria fazer isso em público?",
-    "Nível de atração por esta característica física.",
-    "O quão engraçada é esta piada?",
-    "Probabilidade de você fazer isso bêbado.",
-    "O quão polêmica é esta opinião?",
-    "Nível de 'cringe' desta atitude.",
-    "O quão boa é esta música para dançar?"
-  ],
-  deep: [
-    "O quão importante é isso para um relacionamento duradouro?",
-    "O quanto isso define quem você é?",
-    "Nível de arrependimento se você fizesse isso.",
-    "O quão feliz você estava nesta época da sua vida?",
-    "O quanto você perdoaria esta traição?",
-    "Nível de prioridade disso na sua vida hoje.",
-    "O quanto o dinheiro influencia nisso?",
-    "Nível de dor emocional desta situação."
-  ],
-  spicy: [
-    "Nível de atração por este tipo de 'date'.",
-    "O quão ousada é esta fantasia?",
-    "Probabilidade de você topar isso na primeira noite.",
-    "Nível de ciúmes nesta situação.",
-    "O quão importante é o tamanho/aparência nisso?",
-    "Nível de experiência que você tem com isso.",
-    "O quão barulhento você seria nesta situação?",
-    "Nível de prazer vs dor nesta atividade."
+  anime: [
+    "Melhores Cavaleiros de Ouro",
+    "Cavaleiros de Bronze mais fortes ",
+    "Armaduras mais bonitas de Saint Seiya",
+    "Personagens mais injustiçados da obra",
+    "Vilões mais memoráveis de Saint Seiya",
+    "Melhores lutas dos animes",
+    "Sagas de Saint Seiya",
+    "Cavaleiros mais leais à Athena",
+    "Personagens com o melhor desenvolvimento",
+    "Momentos mais emocionantes dos animes",
+    "Transformações mais impactantes de Dragon Ball",
+    "Vilões mais ameaçadores",
+    "Personagens mais fortes ",
+    "Sagas de Dragon Ball",
+    "Personagens mais desperdiçados pela história",
+    "Lutas mais épicas de Dragon Ball Z e Super",
+    "Personagens mais carismáticos",
+    "Melhores treinamentos",
+    "Treinamentos mais dificeis",
+    "Mortes mais marcantes (e mais traumáticas)",
+    "Melhores protagonistas dos animes",
+    "Piores vilões já criados",
+    "Personagens mais overpower dos animes",
+    "Animes com as melhores trilhas sonoras",
+    "Personagens mais inteligentes dos animes",
+    "Animes que envelheceram bem",
+    "Animes que envelheceram mal",
+    "Personagens secundários que roubam a cena",
+    "Animes com as melhores lutas",
+    "Animes superestimados"
   ]
 };
 
 // Lista de Temas Disponíveis
 const THEMES: Theme[] = [
+  { id: 'free', name: 'Livre', description: 'Sem perguntas definidas. Criem as suas!', color: 'bg-slate-200', textColor: 'text-slate-900', buttonColor: 'bg-slate-400 hover:bg-slate-300', icon: Unlock },
   { id: 'classic', name: 'Clássico', description: 'Perguntas variadas para todos os gostos.', color: 'bg-yellow-100', textColor: 'text-yellow-900', buttonColor: 'bg-yellow-400 hover:bg-yellow-300', icon: Star },
-  { id: 'party', name: 'Festa', description: 'Ideal para animar o rolê com desafios.', color: 'bg-purple-100', textColor: 'text-purple-900', buttonColor: 'bg-purple-400 hover:bg-purple-300', icon: Music },
-  { id: 'deep', name: 'Profundo', description: 'Conheça seus amigos de verdade.', color: 'bg-blue-100', textColor: 'text-blue-900', buttonColor: 'bg-blue-400 hover:bg-blue-300', icon: Heart },
-  { id: 'spicy', name: 'Picante', description: 'Esquente o clima com perguntas ousadas.', color: 'bg-red-100', textColor: 'text-red-900', buttonColor: 'bg-red-400 hover:bg-red-300', icon: Flame },
+  { id: 'anime', name: 'Anime', description: 'Debates sobre Saint Seiya, Dragon Ball e mais!', color: 'bg-orange-100', textColor: 'text-orange-900', buttonColor: 'bg-orange-400 hover:bg-orange-300', icon: Zap },
 ];
 
 export default function App() {
@@ -100,8 +100,6 @@ export default function App() {
   };
 
   return (
-    // REMOVIDO: A simulação de moldura de celular. 
-    // AGORA: Ocupa 100% da tela real do dispositivo.
     <div className="w-full h-screen bg-white text-slate-900 font-sans overflow-hidden flex flex-col selection:bg-yellow-200">
       {renderScreen()}
     </div>
@@ -183,7 +181,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
   return (
     <div className="flex-1 flex flex-col bg-gradient-to-b from-sky-100 to-white relative">
       {/* Barra superior */}
-      <div className="p-4 flex items-center bg-white/50 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4"> {/* Ajuste para barra de status */}
+      <div className="p-4 flex items-center bg-white/50 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4">
         <button 
           onClick={onBack}
           className="p-2 bg-white hover:bg-sky-50 rounded-full transition-colors text-sky-900 shadow-sm"
@@ -259,16 +257,35 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
   );
 };
 
-// 3. Tela de Seleção de Temas (Atualizada para Múltipla Seleção)
+// 3. Tela de Seleção de Temas (Atualizada com Opção LIVRE Exclusiva)
 const ThemeSelectionScreen = ({ onBack, onStart }: { onBack: () => void, onStart: (themes: Theme[]) => void }) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const toggleTheme = (id: string) => {
-    if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter(themeId => themeId !== id));
-    } else {
-      setSelectedIds([...selectedIds, id]);
+    // Regra do modo LIVRE (Exclusivo)
+    if (id === 'free') {
+      if (selectedIds.includes('free')) {
+        setSelectedIds([]); // Desmarca se já estava marcado
+      } else {
+        setSelectedIds(['free']); // Marca apenas o Livre e limpa o resto
+      }
+      return;
     }
+
+    // Regra para outros temas (Multiseleção)
+    let newSelection = [...selectedIds];
+    
+    // Se o modo LIVRE estava marcado, ele é removido ao selecionar outro
+    if (newSelection.includes('free')) {
+      newSelection = [];
+    }
+
+    if (newSelection.includes(id)) {
+      newSelection = newSelection.filter(themeId => themeId !== id);
+    } else {
+      newSelection.push(id);
+    }
+    setSelectedIds(newSelection);
   };
 
   const handleStartGame = () => {
@@ -296,13 +313,19 @@ const ThemeSelectionScreen = ({ onBack, onStart }: { onBack: () => void, onStart
         {THEMES.map((theme) => {
           const Icon = theme.icon;
           const isSelected = selectedIds.includes(theme.id);
+          const isFree = theme.id === 'free';
           
           return (
             <button
               key={theme.id}
               onClick={() => toggleTheme(theme.id)}
               className={`w-full group text-left relative overflow-hidden rounded-3xl p-6 shadow-md transition-all duration-200 transform hover:-translate-y-1 active:scale-98 border-2
-                ${isSelected ? 'bg-white border-yellow-400 ring-2 ring-yellow-200' : 'bg-white border-transparent hover:border-slate-200'}
+                ${isSelected 
+                  ? 'bg-white border-yellow-400 ring-2 ring-yellow-200' 
+                  : isFree 
+                    ? 'bg-slate-50 border-slate-200 hover:border-slate-300' // Estilo diferenciado pro Livre
+                    : 'bg-white border-transparent hover:border-slate-200'
+                }
               `}
             >
               {/* Checkbox visual */}
@@ -336,7 +359,7 @@ const ThemeSelectionScreen = ({ onBack, onStart }: { onBack: () => void, onStart
             disabled={selectedIds.length === 0}
             className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-xl py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3"
          >
-            <span>INICIAR COM {selectedIds.length > 0 ? selectedIds.length : ''} TEMA{selectedIds.length !== 1 ? 'S' : ''}</span>
+            <span>INICIAR {selectedIds.length > 0 ? (selectedIds.includes('free') ? 'LIVRE' : `(${selectedIds.length})`) : ''}</span>
             <Play size={24} fill="currentColor" />
          </button>
       </div>
@@ -344,7 +367,7 @@ const ThemeSelectionScreen = ({ onBack, onStart }: { onBack: () => void, onStart
   );
 };
 
-// 4. Tela de Jogo Completa (Com lógica de Múltiplos Temas)
+// 4. Tela de Jogo Completa (Com lógica de Múltiplos Temas e Modo Livre)
 const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: string[], themes: Theme[] }) => {
   const [phase, setPhase] = useState<'init' | 'rolling' | 'numbers' | 'ordering' | 'result'>('init');
   const [playerNumbers, setPlayerNumbers] = useState<Record<string, number>>({});
@@ -404,8 +427,18 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
     }
   };
 
-  // Transição para Ordenação (Sorteia pergunta de TODOS os temas selecionados)
+  // Transição para Ordenação (Modificada para Suportar MODO LIVRE)
   const startOrdering = () => {
+    // Verifica se está no modo livre (ID 'free')
+    const isFreeMode = themes.some(t => t.id === 'free');
+
+    if (isFreeMode) {
+      setCurrentQuestion("MODO LIVRE: Inventem um desafio!");
+      setCurrentThemeColor('bg-slate-200'); // Cor neutra para o modo livre
+      setPhase('ordering');
+      return;
+    }
+
     if (themes.length > 0) {
       // Agrupa todas as perguntas dos temas selecionados
       const allQuestions = themes.flatMap(t => QUESTIONS_DB[t.id] || []);
@@ -415,8 +448,6 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
           const question = allQuestions[randomIndex];
           setCurrentQuestion(question);
           
-          // Tenta descobrir de qual tema veio a pergunta para usar a cor, senão usa o primeiro tema
-          // (Lógica simples, em um app real cada pergunta teria um ID de tema associado)
           const sourceTheme = themes.find(t => (QUESTIONS_DB[t.id] || []).includes(question)) || themes[0];
           setCurrentThemeColor(sourceTheme.color);
 
@@ -459,9 +490,9 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
 
   if (themes.length === 0) return null;
 
-  // Cor principal para a UI (usa a do primeiro tema ou uma neutra se misto)
+  // Cor principal para a UI
   const mainThemeColor = themes.length === 1 ? themes[0].buttonColor : 'bg-yellow-400 hover:bg-yellow-300';
-  //const textColorClass = themes.length === 1 ? themes[0].textColor : 'text-slate-200';
+  const textColorClass = themes.length === 1 ? themes[0].textColor : 'text-slate-200';
 
   // --- RENDERIZAÇÃO DO MODO SECRETO ---
   if (viewingPlayer) {
@@ -572,13 +603,14 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
           </>
         )}
 
-        {/* FASE 4: ORDENAÇÃO */}
+        {/* FASE 4: ORDENAÇÃO (MODIFICADO PARA SUPORTAR MODO LIVRE) */}
         {phase === 'ordering' && (
             <div className="flex flex-col h-full animate-fade-in pb-20">
-                {/* Pergunta no Topo (Usa a cor do tema da pergunta sorteada) */}
+                {/* Card da Pergunta */}
                 <div className={`${currentThemeColor || 'bg-slate-800'} rounded-2xl p-6 mb-6 shadow-lg border-2 border-white/10 relative overflow-hidden`}>
                     <div className="flex items-center gap-2 mb-2 opacity-70 relative z-10">
-                        <Star className="text-slate-900" size={20} />
+                        {/* Se for modo livre, usa ícone de desbloqueio, senão estrela */}
+                        {themes.some(t => t.id === 'free') ? <Unlock className="text-slate-900" size={20} /> : <Star className="text-slate-900" size={20} />}
                         <span className="text-xs font-bold uppercase tracking-widest text-slate-900">Tema da Vez</span>
                     </div>
                     <h3 className="text-xl font-black text-slate-900 leading-tight relative z-10">{currentQuestion}</h3>
