@@ -492,7 +492,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
 
   // Cor principal para a UI
   const mainThemeColor = themes.length === 1 ? themes[0].buttonColor : 'bg-yellow-400 hover:bg-yellow-300';
-  const textColorClass = themes.length === 1 ? themes[0].textColor : 'text-slate-200';
+  //const textColorClass = themes.length === 1 ? themes[0].textColor : 'text-slate-200';
 
   // --- RENDERIZAÇÃO DO MODO SECRETO ---
   if (viewingPlayer) {
