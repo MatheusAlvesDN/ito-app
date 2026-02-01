@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Play, ChevronLeft, Settings, Info, Cloud, Plus, Trash2, Users, Star, RefreshCw, ArrowRight, Dices, Eye, Check, Lock, ArrowUp, ArrowDown, Trophy, XCircle, AlertCircle, Layers, Unlock, Zap } from 'lucide-react';
+import { getSecureRandomInt } from './utils/secureRandom';
 
 // Tipos para as telas do app
 type Screen = 'home' | 'register' | 'theme-selection' | 'game';
@@ -393,7 +394,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
         players.forEach(p => {
             let num;
             do {
-                num = Math.floor(Math.random() * 100) + 1;
+                num = getSecureRandomInt(1, 100);
             } while (usedNumbers.has(num));
             usedNumbers.add(num);
             finalNumbers[p] = num;
@@ -444,7 +445,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
       const allQuestions = themes.flatMap(t => QUESTIONS_DB[t.id] || []);
       
       if (allQuestions.length > 0) {
-          const randomIndex = Math.floor(Math.random() * allQuestions.length);
+          const randomIndex = getSecureRandomInt(0, allQuestions.length - 1);
           const question = allQuestions[randomIndex];
           setCurrentQuestion(question);
           
