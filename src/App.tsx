@@ -145,10 +145,16 @@ const HomeScreen = ({ onPlay }: { onPlay: () => void }) => {
 
       {/* Menu de rodapé simples */}
       <div className="absolute bottom-8 flex gap-6 text-sky-700/60">
-        <button className="p-3 hover:bg-white/20 rounded-full transition-colors hover:text-sky-900">
+        <button
+          className="p-3 hover:bg-white/20 rounded-full transition-colors hover:text-sky-900"
+          aria-label="Configurações"
+        >
           <Settings size={24} />
         </button>
-        <button className="p-3 hover:bg-white/20 rounded-full transition-colors hover:text-sky-900">
+        <button
+          className="p-3 hover:bg-white/20 rounded-full transition-colors hover:text-sky-900"
+          aria-label="Informações"
+        >
           <Info size={24} />
         </button>
       </div>
@@ -185,6 +191,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
         <button 
           onClick={onBack}
           className="p-2 bg-white hover:bg-sky-50 rounded-full transition-colors text-sky-900 shadow-sm"
+          aria-label="Voltar para a tela inicial"
         >
           <ChevronLeft size={24} />
         </button>
@@ -194,9 +201,10 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
       <div className="flex-1 p-6 flex flex-col max-w-full">
         {/* Input Card */}
         <div className="bg-white p-4 rounded-3xl shadow-lg shadow-sky-100/50 mb-6">
-          <label className="block text-sky-900 font-bold mb-2 ml-1 text-sm">Novo Jogador</label>
+          <label htmlFor="new-player-input" className="block text-sky-900 font-bold mb-2 ml-1 text-sm">Novo Jogador</label>
           <div className="flex gap-2">
             <input
+              id="new-player-input"
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -208,6 +216,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
               onClick={addPlayer}
               disabled={!inputValue.trim()}
               className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 transition-colors shadow-md"
+              aria-label="Adicionar jogador"
             >
               <Plus size={24} />
             </button>
@@ -233,6 +242,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
                 <button 
                   onClick={() => removePlayer(index)}
                   className="p-2 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-full transition-colors"
+                  aria-label={`Remover ${player}`}
                 >
                   <Trash2 size={20} />
                 </button>
@@ -300,6 +310,7 @@ const ThemeSelectionScreen = ({ onBack, onStart }: { onBack: () => void, onStart
         <button 
           onClick={onBack}
           className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors text-slate-700"
+          aria-label="Voltar para cadastro de jogadores"
         >
           <ChevronLeft size={24} />
         </button>
@@ -533,7 +544,11 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
     <div className="flex-1 flex flex-col bg-slate-900 text-white relative">
       {/* Barra superior */}
       <div className={`p-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-20 bg-slate-900/90 border-b border-white/5 pt-8 md:pt-4`}>
-        <button onClick={onBack} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white">
+        <button
+          onClick={onBack}
+          className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white"
+          aria-label="Voltar para tela inicial"
+        >
           <ChevronLeft size={24} />
         </button>
         <div className="flex flex-col items-center">
@@ -591,6 +606,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
                         disabled={hasSeen}
                         className={`p-4 rounded-2xl border transition-all flex flex-col items-center justify-center relative overflow-hidden h-32
                           ${hasSeen ? 'bg-slate-800/50 border-slate-700/50 cursor-default opacity-60' : 'bg-slate-800 border-slate-600 hover:border-yellow-400 hover:bg-slate-700 cursor-pointer shadow-lg active:scale-95'}`}
+                        aria-label={hasSeen ? `Número de ${player} já visualizado` : `Ver número de ${player}`}
                       >
                           <span className="text-slate-300 font-bold mb-2 truncate w-full text-center">{player}</span>
                           {hasSeen ? <div className="w-10 h-10 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center"><Check size={24} /></div> 
@@ -631,8 +647,22 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
                     {orderedPlayers.map((player, index) => (
                         <div key={player} className="flex items-center bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-sm animate-fade-in">
                             <div className="flex flex-col gap-1 mr-3">
-                                <button onClick={() => movePlayer(index, 'up')} disabled={index === 0} className="p-1 text-slate-400 hover:text-white disabled:opacity-20"><ArrowUp size={20} /></button>
-                                <button onClick={() => movePlayer(index, 'down')} disabled={index === orderedPlayers.length - 1} className="p-1 text-slate-400 hover:text-white disabled:opacity-20"><ArrowDown size={20} /></button>
+                                <button
+                                  onClick={() => movePlayer(index, 'up')}
+                                  disabled={index === 0}
+                                  className="p-1 text-slate-400 hover:text-white disabled:opacity-20"
+                                  aria-label={`Mover ${player} para cima`}
+                                >
+                                  <ArrowUp size={20} />
+                                </button>
+                                <button
+                                  onClick={() => movePlayer(index, 'down')}
+                                  disabled={index === orderedPlayers.length - 1}
+                                  className="p-1 text-slate-400 hover:text-white disabled:opacity-20"
+                                  aria-label={`Mover ${player} para baixo`}
+                                >
+                                  <ArrowDown size={20} />
+                                </button>
                             </div>
                             <div className="flex-1">
                                 <span className="font-bold text-lg text-white">{player}</span>
