@@ -184,6 +184,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
       <div className="p-4 flex items-center bg-white/50 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4">
         <button 
           onClick={onBack}
+          aria-label="Voltar"
           className="p-2 bg-white hover:bg-sky-50 rounded-full transition-colors text-sky-900 shadow-sm"
         >
           <ChevronLeft size={24} />
@@ -194,9 +195,10 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
       <div className="flex-1 p-6 flex flex-col max-w-full">
         {/* Input Card */}
         <div className="bg-white p-4 rounded-3xl shadow-lg shadow-sky-100/50 mb-6">
-          <label className="block text-sky-900 font-bold mb-2 ml-1 text-sm">Novo Jogador</label>
+          <label htmlFor="player-input" className="block text-sky-900 font-bold mb-2 ml-1 text-sm">Novo Jogador</label>
           <div className="flex gap-2">
             <input
+              id="player-input"
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
@@ -206,6 +208,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
             />
             <button 
               onClick={addPlayer}
+              aria-label="Adicionar jogador"
               disabled={!inputValue.trim()}
               className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 transition-colors shadow-md"
             >
@@ -232,6 +235,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
                 </div>
                 <button 
                   onClick={() => removePlayer(index)}
+                  aria-label={"Remover " + player}
                   className="p-2 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-full transition-colors"
                 >
                   <Trash2 size={20} />
