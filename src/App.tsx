@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Play, ChevronLeft, Settings, Info, Cloud, Plus, Trash2, Users, Star, RefreshCw, ArrowRight, Dices, Eye, Check, Lock, ArrowUp, ArrowDown, Trophy, XCircle, AlertCircle, Layers, Unlock, Zap } from 'lucide-react';
 
 // Tipos para as telas do app
@@ -156,6 +156,37 @@ const HomeScreen = ({ onPlay }: { onPlay: () => void }) => {
   );
 };
 
+// Componente de Lista de Jogadores Otimizada
+const PlayerList = memo(({ players, onRemove }: { players: string[], onRemove: (index: number) => void }) => {
+  return (
+    <div className="flex-1 overflow-y-auto space-y-3 pb-20">
+      {players.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-40 text-sky-300 opacity-60">
+          <Users size={48} className="mb-2" />
+          <p>Nenhum jogador cadastrado</p>
+        </div>
+      ) : (
+        players.map((player, index) => (
+          <div key={index} className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-sky-50 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">
+                {player.charAt(0).toUpperCase()}
+              </div>
+              <span className="font-bold text-slate-700">{player}</span>
+            </div>
+            <button
+              onClick={() => onRemove(index)}
+              className="p-2 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-full transition-colors"
+            >
+              <Trash2 size={20} />
+            </button>
+          </div>
+        ))
+      )}
+    </div>
+  );
+});
+
 // 2. Tela de Cadastro de Jogadores
 const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (players: string[]) => void }) => {
   const [inputValue, setInputValue] = useState('');
@@ -168,11 +199,13 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
     }
   };
 
-  const removePlayer = (index: number) => {
-    const newPlayers = [...localPlayers];
-    newPlayers.splice(index, 1);
-    setLocalPlayers(newPlayers);
-  };
+  const removePlayer = useCallback((index: number) => {
+    setLocalPlayers((prev) => {
+      const newPlayers = [...prev];
+      newPlayers.splice(index, 1);
+      return newPlayers;
+    });
+  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') addPlayer();
@@ -215,31 +248,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
         </div>
 
         {/* Lista de Jogadores */}
-        <div className="flex-1 overflow-y-auto space-y-3 pb-20">
-          {localPlayers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-40 text-sky-300 opacity-60">
-              <Users size={48} className="mb-2" />
-              <p>Nenhum jogador cadastrado</p>
-            </div>
-          ) : (
-            localPlayers.map((player, index) => (
-              <div key={index} className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-sky-50 animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold">
-                    {player.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="font-bold text-slate-700">{player}</span>
-                </div>
-                <button 
-                  onClick={() => removePlayer(index)}
-                  className="p-2 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-full transition-colors"
-                >
-                  <Trash2 size={20} />
-                </button>
-              </div>
-            ))
-          )}
-        </div>
+        <PlayerList players={localPlayers} onRemove={removePlayer} />
       </div>
 
       {/* Botão de Ação */}
