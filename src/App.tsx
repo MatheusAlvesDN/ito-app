@@ -6,19 +6,11 @@ import {
   Plus, 
   Trash2, 
   Users, 
-  Check, 
+  Check
 } from 'lucide-react';
-import GameScreen from './GameScreen';
 import { THEMES, type Theme } from './data';
+import GameScreen from './GameScreen';
 
-/* =============================================================================
-  ARQUIVO: App.tsx
-  (Este é o componente principal. Localmente, importe os outros arquivos:
-   import GameScreen from './GameScreen';
-   import { THEMES, Theme } from './data';
-  )
-  =============================================================================
-*/
 
 // Tipos para as telas do app
 type Screen = 'home' | 'register' | 'theme-selection' | 'game';
@@ -28,21 +20,27 @@ export default function App() {
   const [players, setPlayers] = useState<string[]>([]);
   const [selectedThemes, setSelectedThemes] = useState<Theme[]>([]);
 
-  // Tenta forçar a orientação via API nativa ao carregar
+  // Tenta bloquear a rotação via JS ao carregar o app (funciona no Capacitor/PWA)
   useEffect(() => {
     const lockOrientation = async () => {
       try {
-        // @ts-ignore - TS pode não reconhecer screen.orientation em todos os envs
-        if (screen.orientation && screen.orientation.lock) {
+        // Verifica se a API de orientação está disponível
+        // @ts-ignore
+        if (window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
           // @ts-ignore
-          await screen.orientation.lock('portrait');
+          await window.screen.orientation.lock('portrait');
+          console.log('Orientation locked to portrait');
         }
       } catch (e) {
-        // Falha silenciosa se o navegador não suportar ou negar
-        console.log('Orientation lock not supported or denied');
+        console.log('Orientation lock failed (probably running in standard browser):', e);
       }
     };
+
     lockOrientation();
+    
+    // Adiciona listener para tentar bloquear novamente caso a tela mude
+    window.addEventListener('orientationchange', lockOrientation);
+    return () => window.removeEventListener('orientationchange', lockOrientation);
   }, []);
 
   // Fluxo de Navegação
@@ -65,7 +63,6 @@ export default function App() {
       case 'theme-selection':
         return <ThemeSelectionScreen onBack={() => setCurrentScreen('register')} onStart={handleThemesConfirmed} />;
       case 'game':
-        // No local, você usaria <React.Suspense> aqui se estivesse usando lazy load
         return <GameScreen onBack={() => setCurrentScreen('home')} players={players} themes={selectedThemes} />;
       default:
         return <HomeScreen onPlay={() => setCurrentScreen('register')} />;
@@ -73,27 +70,9 @@ export default function App() {
   };
 
   return (
-    <div className="app-root w-full h-screen bg-white text-slate-900 font-sans overflow-hidden flex flex-col selection:bg-yellow-200">
-      
-      {/* Hack CSS para FORÇAR visualmente o modo retrato se o celular estiver deitado.
-        Isso rotaciona o app em 90 graus em vez de pedir para o usuário girar.
-      */}
-      <style>{`
-        @media screen and (orientation: landscape) and (max-width: 900px) {
-          .app-root {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            width: 100vh;
-            height: 100vw;
-            transform: translate(-50%, -50%) rotate(-90deg);
-            transform-origin: center;
-            overflow: hidden;
-            z-index: 9999;
-          }
-        }
-      `}</style>
-
+    // Removemos os hacks de CSS. O layout agora é fluido e ocupa a tela inteira.
+    // A trava de rotação deve ser feita via JS (acima) ou via configuração nativa do App.
+    <div className="w-full h-screen bg-white text-slate-900 font-sans overflow-hidden flex flex-col selection:bg-yellow-200">
       {renderScreen()}
     </div>
   );
@@ -123,10 +102,7 @@ const HomeScreen = ({ onPlay }: { onPlay: () => void }) => {
           <span>JOGAR</span>
         </button>
       </div>
-      
-      <div className="absolute bottom-8 text-sky-800/50 text-xs font-bold text-center px-4">
-        Baseado no jogo de tabuleiro original
-      </div>
+
     </div>
   );
 };
