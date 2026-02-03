@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { 
   Play, 
   ChevronLeft, 
@@ -6,10 +6,13 @@ import {
   Plus, 
   Trash2, 
   Users, 
-  Check
+  Check,
+  Loader
 } from 'lucide-react';
 import { THEMES, type Theme } from './data';
-import GameScreen from './GameScreen';
+
+// Lazy load GameScreen to reduce initial bundle size
+const GameScreen = lazy(() => import('./GameScreen'));
 
 
 // Tipos para as telas do app
@@ -25,9 +28,9 @@ export default function App() {
     const lockOrientation = async () => {
       try {
         // Verifica se a API de orientação está disponível
-        // @ts-ignore
+        // @ts-expect-error - Screen orientation API is not fully typed in all environments
         if (window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
-          // @ts-ignore
+          // @ts-expect-error - Screen orientation API is not fully typed in all environments
           await window.screen.orientation.lock('portrait');
           console.log('Orientation locked to portrait');
         }
@@ -63,7 +66,11 @@ export default function App() {
       case 'theme-selection':
         return <ThemeSelectionScreen onBack={() => setCurrentScreen('register')} onStart={handleThemesConfirmed} />;
       case 'game':
-        return <GameScreen onBack={() => setCurrentScreen('home')} players={players} themes={selectedThemes} />;
+        return (
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-slate-900"><Loader className="w-10 h-10 text-yellow-400 animate-spin" /></div>}>
+            <GameScreen onBack={() => setCurrentScreen('home')} players={players} themes={selectedThemes} />
+          </Suspense>
+        );
       default:
         return <HomeScreen onPlay={() => setCurrentScreen('register')} />;
     }
