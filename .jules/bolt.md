@@ -1,0 +1,3 @@
+## 2024-05-23 - Lazy Loading & Purity
+**Learning:** React 19 and strict linting rules flag `Math.random()` in render as impure. Moving random generation to `useEffect` satisfies purity but requires careful handling of state updates (using `setTimeout` or similar to avoid synchronous setState warnings). Lazy loading large route components (`GameScreen`) significantly reduces initial bundle size.
+**Action:** When implementing visual effects with random values (like particles), always generate them in `useEffect` and consider `React.lazy` for any component that is not immediately visible on the initial screen.

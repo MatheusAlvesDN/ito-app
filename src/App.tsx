@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { 
   Play, 
   ChevronLeft, 
@@ -6,10 +6,12 @@ import {
   Plus, 
   Trash2, 
   Users, 
-  Check
+  Check,
+  Loader2
 } from 'lucide-react';
 import { THEMES, type Theme } from './data';
-import GameScreen from './GameScreen';
+
+const GameScreen = lazy(() => import('./GameScreen'));
 
 
 // Tipos para as telas do app
@@ -25,9 +27,9 @@ export default function App() {
     const lockOrientation = async () => {
       try {
         // Verifica se a API de orientação está disponível
-        // @ts-ignore
+        // @ts-expect-error - Capacitor/Browser API compatibility
         if (window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
-          // @ts-ignore
+          // @ts-expect-error - Capacitor/Browser API compatibility
           await window.screen.orientation.lock('portrait');
           console.log('Orientation locked to portrait');
         }
@@ -73,12 +75,20 @@ export default function App() {
     // Removemos os hacks de CSS. O layout agora é fluido e ocupa a tela inteira.
     // A trava de rotação deve ser feita via JS (acima) ou via configuração nativa do App.
     <div className="w-full h-screen bg-white text-slate-900 font-sans overflow-hidden flex flex-col selection:bg-yellow-200">
-      {renderScreen()}
+      <Suspense fallback={<LoadingScreen />}>
+        {renderScreen()}
+      </Suspense>
     </div>
   );
 }
 
 // --- Componentes Auxiliares (Ficam no App.tsx ou em Components separados) ---
+
+const LoadingScreen = () => (
+  <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+    <Loader2 size={48} className="text-yellow-400 animate-spin" />
+  </div>
+);
 
 // Tela Inicial
 const HomeScreen = ({ onPlay }: { onPlay: () => void }) => {
