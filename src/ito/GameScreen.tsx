@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Dices, Check, Eye, Unlock, Star, Cloud, ArrowUp, ArrowDown, RefreshCw, ArrowRight, Lock } from 'lucide-react';
-import type { Theme } from './data';
+import type { Theme } from '../data';
 //import { getSecureRandomInt } from './utils/secureRandom';
 
 
