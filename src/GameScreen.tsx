@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { ChevronLeft, Dices, Check, Eye, Unlock, Star, Cloud, ArrowUp, ArrowDown, RefreshCw, ArrowRight, Lock } from 'lucide-react';
 import type { Theme } from './data';
 //import { getSecureRandomInt } from './utils/secureRandom';
@@ -49,14 +49,19 @@ const QUESTIONS_DB: Record<string, string[]> = {
     ]
 };
 
-const Confetti = () => {
-  // Cria 50 partículas com posições e cores aleatórias
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    delay: Math.random() * 2,
-    color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+const Confetti = memo(() => {
+  const [particles, setParticles] = useState<{id: number, x: number, delay: number, duration: number, color: string}[]>([]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setParticles(Array.from({ length: 50 }).map((_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      delay: Math.random() * 2,
+      duration: 2 + Math.random() * 3,
+      color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
+    })));
+  }, []);
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -68,14 +73,14 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDuration: `${p.duration}s`,
             animationDelay: `${p.delay}s`
           }}
         />
       ))}
     </div>
   );
-};
+});
 
 const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: string[], themes: Theme[] }) => {
   const [phase, setPhase] = useState<'init' | 'rolling' | 'numbers' | 'ordering' | 'result'>('init');
@@ -230,7 +235,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
                 {players.map((player) => {
                     const hasSeen = playersSeen.includes(player);
                     return (
-                      <button key={player} onClick={() => !hasSeen && setViewingPlayer(player)} disabled={hasSeen} className={`p-4 rounded-2xl border transition-all flex flex-col items-center justify-center h-32 relative overflow-hidden ${hasSeen ? 'bg-slate-800/40 border-slate-800 opacity-50' : 'bg-slate-800 border-slate-600 hover:border-yellow-400 shadow-lg active:scale-95'}`}>
+                      <button key={player} onClick={() => { if (!hasSeen) { setViewingPlayer(player); setIsRevealed(false); } }} disabled={hasSeen} className={`p-4 rounded-2xl border transition-all flex flex-col items-center justify-center h-32 relative overflow-hidden ${hasSeen ? 'bg-slate-800/40 border-slate-800 opacity-50' : 'bg-slate-800 border-slate-600 hover:border-yellow-400 shadow-lg active:scale-95'}`}>
                           <span className="text-slate-200 font-bold mb-2 truncate w-full text-center text-lg">{player}</span>
                           {hasSeen ? <Check size={28} className="text-green-500" /> : <Eye size={28} className="text-yellow-400" />}
                       </button>
