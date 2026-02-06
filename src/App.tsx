@@ -6,8 +6,8 @@ import { THEMES, type Theme } from './data';
 import RegisterScreenClassic from './ito/RegisterScreen';
 import ThemeSelectionClassic from './ito/ThemeSelection';
 import GameScreenIto from './ito/GameScreen';
-import RegisterScreenImpostor from './ito/RegisterScreen';
-import ThemeSelectionImpostor from './ito/ThemeSelection';
+import RegisterScreenImpostor from './impostor/RegisterScreen';
+import ThemeSelectionImpostor from './impostor/ThemeSelection';
 import GameScreenImpostor from './impostor/GameScreen';
 
 // --- TIPOS ---

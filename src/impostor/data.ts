@@ -1,20 +1,107 @@
-import React from 'react';
-import { Unlock, Star, Zap } from 'lucide-react';
+import {
+  Lightbulb,
+  Star,
+} from 'lucide-react';
 
-// Definição do tipo Tema
+// --- TIPOS ---
+
 export type Theme = {
   id: string;
   name: string;
   description: string;
+  icon: any;
   color: string;
   textColor: string;
-  buttonColor: string; // Cor para botões dentro do tema
-  icon: React.ElementType;
 };
 
-// Lista de Temas Disponíveis
+// Novo Tipo para o Impostor
+export type ImpostorScenario = {
+  honest: string; // Pergunta que a maioria recebe
+  impostorVariations: string[]; // Opções para o impostor
+};
+
+// --- DADOS DO MODO CLÁSSICO (ITO) ---
+
 export const THEMES: Theme[] = [
-  { id: 'free', name: 'Livre', description: 'Sem perguntas definidas. Criem as suas!', color: 'bg-slate-200', textColor: 'text-slate-900', buttonColor: 'bg-slate-400 hover:bg-slate-300', icon: Unlock },
-  { id: 'classic', name: 'Clássico', description: 'Perguntas variadas para todos os gostos.', color: 'bg-yellow-100', textColor: 'text-yellow-900', buttonColor: 'bg-yellow-400 hover:bg-yellow-300', icon: Star },
-  { id: 'anime', name: 'Anime', description: 'Debates sobre Saint Seiya, Dragon Ball e mais!', color: 'bg-orange-100', textColor: 'text-orange-900', buttonColor: 'bg-orange-400 hover:bg-orange-300', icon: Zap },
+  {
+    id: 'free',
+    name: 'Livre / Aleatório',
+    description: 'Perguntas variadas para qualquer situação.',
+    icon: Lightbulb,
+    color: 'bg-yellow-100',
+    textColor: 'text-yellow-700',
+  },
+  {
+    id: 'pesado',
+    name: 'Mente fria na hora do perigo',
+    description: 'Aquele que olha por nós tarda e não falha',
+    icon: Lightbulb,
+    color: 'bg-red-100',
+    textColor: 'text-red-700',
+  },
+  {
+    id: 'geek',
+    name: 'Geek & Cultura Pop',
+    description: 'Filmes, jogos, heróis e tecnologia.',
+    icon: Star,
+    color: 'bg-purple-100',
+    textColor: 'text-purple-700',
+  },
 ];
+
+// --- DADOS DO MODO IMPOSTOR ---
+
+export const IMPOSTOR_SCENARIOS: Record<string, ImpostorScenario[]> = {
+  // Cenários padrão (carregados se o tema 'free' for escolhido ou como fallback)
+  default: [
+    {
+      honest: 'Animais de Estimação',
+      impostorVariations: ['Animais da Selva', 'Animais Marinhos', 'Insetos', 'Dinossauros'],
+    },
+    {
+      honest: 'Esportes Olímpicos',
+      impostorVariations: ['Jogos de Tabuleiro', 'Brincadeiras de Criança', 'Esports (Videogames)'],
+    },
+    {
+      honest: 'Instrumentos Musicais',
+      impostorVariations: ['Ferramentas de Construção', 'Utensílios de Cozinha', 'Material Escolar'],
+    },
+    {
+      honest: 'Super-Heróis',
+      impostorVariations: ['Vilões de Filmes', 'Deuses Gregos', 'Personagens de Desenho Animado'],
+    },
+  ],
+  
+    pesado: [
+    {
+      honest: 'Se você pudesse escolher uma pessoa para ser amarrada em uma cadeira e ser torturada por 24 horas, quem seria?',
+      impostorVariations: ['quem é o cantor pop mais subestimado da atualidade?', 'Qual ator você acha que é o mais superestimado?', 'Qual personagem de desenho animado você acha mais irritante?'],
+    },
+    /*{
+      honest: 'Se você tivesse que escolher uma pessoa que está nesse jogo para ser violentada por 23 jumentos, quem seria?',
+      impostorVariations: ['quem é o jogador mais irritante ?'],
+    },*/
+    {
+      honest: 'Se você fosse um ditador malvado e tivesse que escolher uma pessoa para ser jogada em um vulcão, quem seria?',
+      impostorVariations: ['Escolha um dos jogadores presentes'],
+    },
+  ],
+  
+
+
+  geek: [
+    {
+      honest: 'Filmes da Marvel',
+      impostorVariations: ['Filmes da DC', 'Filmes de Terror', 'Comédias Românticas'],
+    },
+    {
+      honest: 'Personagens de Harry Potter',
+      impostorVariations: ['Personagens de Senhor dos Anéis', 'Personagens de Star Wars', 'Personagens da Disney'],
+    },
+    {
+      honest: 'Videogames Famosos',
+      impostorVariations: ['Jogos de Celular ruins', 'Jogos de Tabuleiro Antigos', 'Esportes Reais'],
+    },
+  ],
+
+};
