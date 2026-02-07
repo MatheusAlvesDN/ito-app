@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, Dices, Check, Eye, Unlock, Star, Cloud, ArrowUp, ArrowDown, RefreshCw, ArrowRight, Lock } from 'lucide-react';
 import type { Theme } from './data';
 //import { getSecureRandomInt } from './utils/secureRandom';
@@ -51,12 +51,18 @@ const QUESTIONS_DB: Record<string, string[]> = {
 
 const Confetti = () => {
   // Cria 50 partículas com posições e cores aleatórias
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
+  // Otimização: Memoiza as partículas para evitar recálculos a cada render.
+  const particles = useMemo(() => Array.from({ length: 50 }).map((_, i) => ({
     id: i,
+    // eslint-disable-next-line react-hooks/purity
     x: Math.random() * 100,
+    // eslint-disable-next-line react-hooks/purity
     delay: Math.random() * 2,
+    // eslint-disable-next-line react-hooks/purity
+    duration: 2 + Math.random() * 3,
+    // eslint-disable-next-line react-hooks/purity
     color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+  })), []);
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -68,7 +74,7 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDuration: `${p.duration}s`,
             animationDelay: `${p.delay}s`
           }}
         />
@@ -177,7 +183,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
                     <span className="text-9xl font-black text-yellow-400 drop-shadow-[0_0_25px_rgba(250,204,21,0.6)]">{playerNumbers[viewingPlayer]}</span>
                  </div>
                  <div className="w-full pt-6 border-t border-slate-700">
-                    <button onClick={() => { setPlayersSeen([...playersSeen, viewingPlayer]); setViewingPlayer(null); }} className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-lg py-4 rounded-xl transition-colors">OK, MEMORIZEI</button>
+                    <button onClick={() => { setPlayersSeen([...playersSeen, viewingPlayer]); setViewingPlayer(null); setIsRevealed(false); }} className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-lg py-4 rounded-xl transition-colors">OK, MEMORIZEI</button>
                  </div>
               </>
             )}
