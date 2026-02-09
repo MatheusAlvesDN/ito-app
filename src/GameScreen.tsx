@@ -193,7 +193,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
       {phase === 'result' && isVictory && <Confetti />}
 
       <div className={`p-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-20 bg-slate-900/80 border-b border-white/5 pt-8 md:pt-4`}>
-        <button onClick={onBack} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white"><ChevronLeft size={24} /></button>
+        <button onClick={onBack} aria-label="Voltar" className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white"><ChevronLeft size={24} /></button>
         <div className="flex flex-col items-center">
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">RODADA {round}</span>
             <div className={`flex items-center gap-2 text-sm font-bold ${themes.length === 1 ? themes[0].textColor.replace('text-', 'text-') : 'text-yellow-400'}`}>
