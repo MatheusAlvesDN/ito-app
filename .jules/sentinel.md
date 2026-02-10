@@ -1,0 +1,4 @@
+## 2024-05-22 - Insecure Randomness in Game Mechanics
+**Vulnerability:** `Math.random()` was used for generating player numbers (1-100) and selecting questions. This function is not cryptographically secure and the sequence of numbers could potentially be predicted, compromising the game's fairness (especially for "secret number" mechanics).
+**Learning:** React game implementations often default to `Math.random()` for convenience. However, for mechanics relying on hidden information, predictability is a security flaw. The project already had a `getSecureRandomInt` utility which was unused.
+**Prevention:** Always use `window.crypto.getRandomValues()` via `getSecureRandomInt` for any game mechanic that requires fairness, unpredictability, or hidden state. Reserve `Math.random()` only for purely visual effects (like confetti).
