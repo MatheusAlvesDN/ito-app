@@ -1,6 +1,7 @@
 /**
  * Generates a cryptographically secure random integer between min and max (inclusive).
- * Uses window.crypto.getRandomValues to ensure better randomness than Math.random().
+ * Uses window.crypto.getRandomValues (Browser) or globalThis.crypto (Node.js)
+ * to ensure better randomness than Math.random().
  * 
  * @param min The minimum value (inclusive).
  * @param max The maximum value (inclusive).
@@ -19,9 +20,16 @@ export function getSecureRandomInt(min: number, max: number): number {
   // that fits within the Uint32 space.
   const maxValid = Math.floor(0xFFFFFFFF / range) * range;
   
+  // Cross-environment crypto access
+  const cryptoObj = globalThis.crypto || (typeof window !== 'undefined' ? window.crypto : undefined);
+
+  if (!cryptoObj || typeof cryptoObj.getRandomValues !== 'function') {
+    throw new Error('Secure random number generation is not supported in this environment.');
+  }
+
   let randomValue: number;
   do {
-    window.crypto.getRandomValues(array);
+    cryptoObj.getRandomValues(array);
     randomValue = array[0];
   } while (randomValue >= maxValid);
   
