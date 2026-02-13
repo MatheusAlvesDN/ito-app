@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { 
   Play, 
   ChevronLeft, 
@@ -107,6 +107,21 @@ const HomeScreen = ({ onPlay }: { onPlay: () => void }) => {
   );
 };
 
+// Componente de Item de Jogador Memoizado
+const PlayerItem = memo(({ name, index, onRemove }: { name: string, index: number, onRemove: (index: number) => void }) => (
+  <div className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-100 animate-fade-in">
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 bg-gradient-to-br from-yellow-200 to-yellow-400 rounded-full flex items-center justify-center text-yellow-900 font-bold shadow-sm">
+        {name.charAt(0).toUpperCase()}
+      </div>
+      <span className="font-bold text-slate-700 truncate max-w-[150px]">{name}</span>
+    </div>
+    <button onClick={() => onRemove(index)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
+      <Trash2 size={20} />
+    </button>
+  </div>
+));
+
 // Tela de Cadastro
 const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (players: string[]) => void }) => {
   const [inputValue, setInputValue] = useState('');
@@ -118,6 +133,10 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
       setInputValue('');
     }
   };
+
+  const removePlayer = useCallback((indexToRemove: number) => {
+    setLocalPlayers(prev => prev.filter((_, i) => i !== indexToRemove));
+  }, []);
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50 relative h-full">
@@ -151,17 +170,12 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
             </div>
           ) : (
             localPlayers.map((player, index) => (
-              <div key={index} className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-100 animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-200 to-yellow-400 rounded-full flex items-center justify-center text-yellow-900 font-bold shadow-sm">
-                    {player.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="font-bold text-slate-700 truncate max-w-[150px]">{player}</span>
-                </div>
-                <button onClick={() => { const n = [...localPlayers]; n.splice(index, 1); setLocalPlayers(n); }} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
-                  <Trash2 size={20} />
-                </button>
-              </div>
+              <PlayerItem
+                key={index}
+                index={index}
+                name={player}
+                onRemove={removePlayer}
+              />
             ))
           )}
         </div>
