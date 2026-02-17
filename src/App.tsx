@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { 
   Play, 
   ChevronLeft, 
@@ -108,16 +108,61 @@ const HomeScreen = ({ onPlay }: { onPlay: () => void }) => {
 };
 
 // Tela de Cadastro
-const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (players: string[]) => void }) => {
+const AddPlayerInput = memo(({ onAdd }: { onAdd: (name: string) => void }) => {
   const [inputValue, setInputValue] = useState('');
-  const [localPlayers, setLocalPlayers] = useState<string[]>([]);
 
-  const addPlayer = () => {
+  const handleAdd = () => {
     if (inputValue.trim()) {
-      setLocalPlayers([...localPlayers, inputValue.trim()]);
+      onAdd(inputValue.trim());
       setInputValue('');
     }
   };
+
+  return (
+    <div className="bg-white p-4 rounded-3xl shadow-lg mb-6 border border-slate-100 shrink-0">
+      <label className="block text-slate-500 font-bold mb-2 ml-1 text-xs uppercase tracking-wider">Adicionar Jogador</label>
+      <div className="flex gap-2">
+        <input
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+          placeholder="Nome do participante"
+          className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
+        />
+        <button onClick={handleAdd} disabled={!inputValue.trim()} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
+          <Plus size={24} />
+        </button>
+      </div>
+    </div>
+  );
+});
+
+const PlayerItem = memo(({ player, index, onRemove }: { player: string, index: number, onRemove: (index: number) => void }) => {
+  return (
+    <div className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-100 animate-fade-in">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-gradient-to-br from-yellow-200 to-yellow-400 rounded-full flex items-center justify-center text-yellow-900 font-bold shadow-sm">
+          {player.charAt(0).toUpperCase()}
+        </div>
+        <span className="font-bold text-slate-700 truncate max-w-[150px]">{player}</span>
+      </div>
+      <button onClick={() => onRemove(index)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
+        <Trash2 size={20} />
+      </button>
+    </div>
+  );
+});
+
+const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (players: string[]) => void }) => {
+  const [localPlayers, setLocalPlayers] = useState<string[]>([]);
+
+  const handleAddPlayer = useCallback((name: string) => {
+    setLocalPlayers(prev => [...prev, name]);
+  }, []);
+
+  const handleRemovePlayer = useCallback((index: number) => {
+    setLocalPlayers(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
   return (
     <div className="flex-1 flex flex-col bg-slate-50 relative h-full">
@@ -127,21 +172,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
       </div>
 
       <div className="flex-1 p-6 flex flex-col max-w-full overflow-hidden">
-        <div className="bg-white p-4 rounded-3xl shadow-lg mb-6 border border-slate-100 shrink-0">
-          <label className="block text-slate-500 font-bold mb-2 ml-1 text-xs uppercase tracking-wider">Adicionar Jogador</label>
-          <div className="flex gap-2">
-            <input
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
-              placeholder="Nome do participante"
-              className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
-            />
-            <button onClick={addPlayer} disabled={!inputValue.trim()} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
-              <Plus size={24} />
-            </button>
-          </div>
-        </div>
+        <AddPlayerInput onAdd={handleAddPlayer} />
 
         <div className="flex-1 overflow-y-auto space-y-3 pb-4">
           {localPlayers.length === 0 ? (
@@ -151,17 +182,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
             </div>
           ) : (
             localPlayers.map((player, index) => (
-              <div key={index} className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-100 animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-200 to-yellow-400 rounded-full flex items-center justify-center text-yellow-900 font-bold shadow-sm">
-                    {player.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="font-bold text-slate-700 truncate max-w-[150px]">{player}</span>
-                </div>
-                <button onClick={() => { const n = [...localPlayers]; n.splice(index, 1); setLocalPlayers(n); }} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
-                  <Trash2 size={20} />
-                </button>
-              </div>
+              <PlayerItem key={index} player={player} index={index} onRemove={handleRemovePlayer} />
             ))
           )}
         </div>
