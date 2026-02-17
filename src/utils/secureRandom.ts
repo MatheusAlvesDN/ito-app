@@ -20,8 +20,15 @@ export function getSecureRandomInt(min: number, max: number): number {
   const maxValid = Math.floor(0xFFFFFFFF / range) * range;
   
   let randomValue: number;
+  // Use global crypto (Node/modern browsers) or fallback to window.crypto
+  const crypto = typeof globalThis !== 'undefined' && globalThis.crypto ? globalThis.crypto : (typeof window !== 'undefined' ? window.crypto : undefined);
+
+  if (!crypto || !crypto.getRandomValues) {
+     throw new Error('Secure random number generation is not supported in this environment.');
+  }
+
   do {
-    window.crypto.getRandomValues(array);
+    crypto.getRandomValues(array);
     randomValue = array[0];
   } while (randomValue >= maxValid);
   
