@@ -107,16 +107,42 @@ const HomeScreen = ({ onPlay }: { onPlay: () => void }) => {
   );
 };
 
-// Tela de Cadastro
-const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (players: string[]) => void }) => {
+// Componente isolado para input de jogador para evitar re-render da lista inteira ao digitar
+const AddPlayerInput = ({ onAdd }: { onAdd: (name: string) => void }) => {
   const [inputValue, setInputValue] = useState('');
-  const [localPlayers, setLocalPlayers] = useState<string[]>([]);
 
   const addPlayer = () => {
     if (inputValue.trim()) {
-      setLocalPlayers([...localPlayers, inputValue.trim()]);
+      onAdd(inputValue.trim());
       setInputValue('');
     }
+  };
+
+  return (
+    <div className="bg-white p-4 rounded-3xl shadow-lg mb-6 border border-slate-100 shrink-0">
+      <label className="block text-slate-500 font-bold mb-2 ml-1 text-xs uppercase tracking-wider">Adicionar Jogador</label>
+      <div className="flex gap-2">
+        <input
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
+          placeholder="Nome do participante"
+          className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
+        />
+        <button onClick={addPlayer} disabled={!inputValue.trim()} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
+          <Plus size={24} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Tela de Cadastro
+const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (players: string[]) => void }) => {
+  const [localPlayers, setLocalPlayers] = useState<string[]>([]);
+
+  const handleAddPlayer = (name: string) => {
+    setLocalPlayers((prev) => [...prev, name]);
   };
 
   return (
@@ -127,21 +153,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
       </div>
 
       <div className="flex-1 p-6 flex flex-col max-w-full overflow-hidden">
-        <div className="bg-white p-4 rounded-3xl shadow-lg mb-6 border border-slate-100 shrink-0">
-          <label className="block text-slate-500 font-bold mb-2 ml-1 text-xs uppercase tracking-wider">Adicionar Jogador</label>
-          <div className="flex gap-2">
-            <input
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
-              placeholder="Nome do participante"
-              className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
-            />
-            <button onClick={addPlayer} disabled={!inputValue.trim()} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
-              <Plus size={24} />
-            </button>
-          </div>
-        </div>
+        <AddPlayerInput onAdd={handleAddPlayer} />
 
         <div className="flex-1 overflow-y-auto space-y-3 pb-4">
           {localPlayers.length === 0 ? (
