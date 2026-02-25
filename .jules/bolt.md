@@ -1,0 +1,3 @@
+## 2025-05-27 - Memoizing Lists with Index Keys
+**Learning:** When list items lack unique IDs (e.g., allowing duplicate names) and rely on array index as `key`, memoizing individual list items is ineffective for mutations (as adding/removing shifts indices, changing keys/props). However, memoizing the *entire list container* (via `React.memo`) is highly effective at shielding the list from frequent parent state updates (like typing in an input field).
+**Action:** Isolate lists dependent on index keys into their own `React.memo` components to prevent re-renders caused by unrelated parent state updates.
