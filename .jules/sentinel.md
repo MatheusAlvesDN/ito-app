@@ -1,0 +1,4 @@
+## 2024-05-24 - Use CSPRNG for Game Logic
+**Vulnerability:** Weak random number generation (`Math.random()`) was being used for critical game mechanics (assigning secret numbers to players and selecting random questions).
+**Learning:** `Math.random()` is not cryptographically secure and its outputs can be predicted. In a game relying on hidden numbers and fairness, an attacker could potentially predict the sequence of generated numbers, undermining the game's integrity.
+**Prevention:** Always use `window.crypto.getRandomValues()` (or a wrapper like `getSecureRandomInt()`) when generating random numbers for any mechanism where unpredictability is a security or fairness requirement. Non-critical visual effects (like Confetti particles) can continue to use `Math.random()` for performance reasons, but must be initialized in a pure way (e.g. inside `useEffect` with `setTimeout`).
