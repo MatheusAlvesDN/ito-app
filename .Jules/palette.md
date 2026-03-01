@@ -1,0 +1,7 @@
+## 2024-03-01 - React Purity and Micro-UX Animations
+**Learning:** React 19 Strict Mode correctly flags pure random generations inside `useMemo` or standard rendering body. A naive `Array.from` with `Math.random` generated inside an inline component causes cascaded purity warnings (`react-hooks/purity`). While `setTimeout` in `useEffect` is a known workaround, initializing lazy state `useState(() => ...)` completely avoids purity issues, while simultaneously keeping visual animations stable across any unexpected parent re-renders.
+**Action:** For micro-UX visual effects (like Confetti or random particle systems), prefer initializing pure generation logics inside a lazy `useState` instead of during the main render loop to satisfy both Strict Mode purity rules and preserve component visual stability.
+
+## 2024-03-01 - Dynamic Context for Move Buttons
+**Learning:** Icon-only move buttons for reordering items need proper dynamic names to ensure screen readers can infer which specific item is being moved. Instead of "Move up", use `Move ${itemName} up`.
+**Action:** When adding `aria-label` to list item manipulation buttons (Up, Down, Remove), inject the context explicitly into the label strings.
