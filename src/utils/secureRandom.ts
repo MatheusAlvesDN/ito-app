@@ -21,7 +21,7 @@ export function getSecureRandomInt(min: number, max: number): number {
   
   let randomValue: number;
   do {
-    window.crypto.getRandomValues(array);
+    crypto.getRandomValues(array);
     randomValue = array[0];
   } while (randomValue >= maxValid);
   

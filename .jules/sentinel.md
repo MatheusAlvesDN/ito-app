@@ -1,0 +1,4 @@
+## 2024-05-24 - [Insecure Randomness in Core Game Logic]
+**Vulnerability:** Core game logic (assigning secret player numbers and selecting random questions) relied on `Math.random()`, which is predictable and unsuitable for security or fairness-critical operations.
+**Learning:** In a React application, it's crucial to separate visual randomness (like Confetti, which can safely use `Math.random()` inside a `useState` lazy initializer to preserve component purity) from state/logic randomness. Additionally, `crypto.getRandomValues(array)` should be used without the `window.` prefix to natively support both modern browsers and newer Node.js environments (v19+).
+**Prevention:** Always use a secure RNG utility (e.g., `getSecureRandomInt`) for any application logic determining outcomes, secrets, or shuffling. Reserve `Math.random()` strictly for non-critical UI effects.
