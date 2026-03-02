@@ -1,0 +1,4 @@
+## 2024-05-18 - [Weak Random Number Generation in Game Logic]
+**Vulnerability:** Weak, predictable random number generation (`Math.random()`) was being used for game logic, specifically for generating secret player numbers and selecting questions. This could allow an attacker or player to predict the sequence of secrets.
+**Learning:** React state initialization shouldn't rely on impure methods like `Math.random` without precautions, and important game logic requiring unpredictability should always use a cryptographically secure random number generator (CSPRNG) like `window.crypto.getRandomValues()` instead of `Math.random()`.
+**Prevention:** In the future, prefer using `getSecureRandomInt` for operations requiring security or fair randomness in game outcomes, leaving `Math.random()` to purely aesthetic features like `Confetti` particles.
