@@ -1,0 +1,3 @@
+## 2024-05-23 - [Isolate High-Frequency State Updates]
+**Learning:** In React applications with lists or large components, placing high-frequency text input state (e.g., `inputValue` updating on every keystroke) in the parent component forces the entire tree—including expensive lists and sibling components—to re-render on every key press.
+**Action:** Always extract text input fields into isolated smaller components (`PlayerInput`) that manage their own internal string state. Only notify the parent when the input is actually submitted (e.g., via `onAdd` callback), preventing unnecessary cascading re-renders across the rest of the application.
