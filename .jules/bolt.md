@@ -1,0 +1,3 @@
+## 2024-03-24 - React Re-render & Purity Optimizations
+**Learning:** Extracting stateful inputs into separate components prevents re-rendering sibling lists on every keystroke. Additionally, executing impure functions like `Math.random()` directly during the render phase violates React purity rules and causes unnecessary array/object recreation on every re-render.
+**Action:** Use `useState` lazy initializers (e.g., `const [state] = useState(() => ...)`) to compute static random values only once per mount. Extract frequent state updates (like text inputs) into isolated components to prevent parent re-renders.
