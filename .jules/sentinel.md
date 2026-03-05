@@ -1,0 +1,4 @@
+## 2024-05-19 - Unbounded State DoS Vulnerability
+**Vulnerability:** The application allowed an unbounded number of players with unbounded string lengths to be added to an array stored in the React state.
+**Learning:** Client-side arrays populated by user input without constraints can lead to memory exhaustion, sluggish performance, and potentially application crashes if a malicious user automates the input process, even without backend persistence. This is a common pattern for local-first client DoS.
+**Prevention:** Always enforce constraints on both the size of the inputs (e.g., `maxLength` on `<input>`) and the size of arrays holding user-generated collections in local state (e.g., limit to a specific number).
