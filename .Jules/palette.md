@@ -1,0 +1,3 @@
+## 2024-05-18 - Missing ARIA Labels on lucide-react Buttons
+**Learning:** In this application, interactive UI elements often rely heavily on icon-only buttons (like `lucide-react` icons inside `<button>`). While visually clean, this pattern leaves screen readers without a descriptive accessible name for actions like "Go Back", "Add Player", "Remove [Name]", and "Move Up/Down".
+**Action:** Next time, always ensure every icon-only button receives an explicit `aria-label`. For dynamic lists (e.g. players), the label should incorporate the specific item's context (e.g. `aria-label="Remove John"`).
