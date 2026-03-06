@@ -51,12 +51,13 @@ const QUESTIONS_DB: Record<string, string[]> = {
 
 const Confetti = () => {
   // Cria 50 partículas com posições e cores aleatórias
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
+  const [particles] = useState(() => Array.from({ length: 50 }).map((_, i) => ({
     id: i,
     x: Math.random() * 100,
     delay: Math.random() * 2,
+    duration: 2 + Math.random() * 3,
     color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+  })));
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -68,7 +69,7 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDuration: `${p.duration}s`,
             animationDelay: `${p.delay}s`
           }}
         />
@@ -156,40 +157,39 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
     setPhase('init');
   };
 
-  if (viewingPlayer) {
-    return (
-      <div className="w-full h-full absolute inset-0 z-50 bg-slate-900 flex flex-col items-center justify-center p-6 animate-fade-in">
-         <div className="absolute inset-0 bg-black opacity-95"></div>
-         <div className="relative z-10 w-full max-w-sm bg-slate-800 rounded-3xl p-8 border border-slate-700 shadow-2xl flex flex-col items-center text-center space-y-6">
-            {!isRevealed ? (
-              <>
-                <div className="w-24 h-24 bg-slate-700 rounded-full flex items-center justify-center animate-pulse mb-4">
-                  <Lock className="text-yellow-500" size={48} />
-                </div>
-                <h2 className="text-2xl font-bold text-white">Passe para <span className="text-yellow-400 block text-4xl mt-2">{viewingPlayer}</span></h2>
-                <p className="text-slate-400 text-sm">Garanta que ninguém mais está olhando.</p>
-                <button onClick={() => setIsRevealed(true)} className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold text-xl py-4 rounded-xl mt-4 shadow-lg active:scale-95">REVELAR</button>
-              </>
-            ) : (
-              <>
-                 <div className="flex flex-col items-center animate-bounce-subtle py-6">
-                    <span className="text-slate-400 font-medium mb-4 uppercase tracking-widest text-xs">Seu número é</span>
-                    <span className="text-9xl font-black text-yellow-400 drop-shadow-[0_0_25px_rgba(250,204,21,0.6)]">{playerNumbers[viewingPlayer]}</span>
-                 </div>
-                 <div className="w-full pt-6 border-t border-slate-700">
-                    <button onClick={() => { setPlayersSeen([...playersSeen, viewingPlayer]); setViewingPlayer(null); }} className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-lg py-4 rounded-xl transition-colors">OK, MEMORIZEI</button>
-                 </div>
-              </>
-            )}
-         </div>
-      </div>
-    );
-  }
-
   const mainThemeColor = themes.length === 1 ? themes[0].buttonColor : 'bg-yellow-400 hover:bg-yellow-300';
 
   return (
     <div className="flex-1 flex flex-col bg-slate-900 text-white relative h-full">
+      {/* Overlay otimizado: Renders over the main screen instead of unmounting it to prevent DOM thrashing */}
+      {viewingPlayer && (
+        <div className="w-full h-full absolute inset-0 z-50 bg-slate-900 flex flex-col items-center justify-center p-6 animate-fade-in">
+           <div className="absolute inset-0 bg-black opacity-95"></div>
+           <div className="relative z-10 w-full max-w-sm bg-slate-800 rounded-3xl p-8 border border-slate-700 shadow-2xl flex flex-col items-center text-center space-y-6">
+              {!isRevealed ? (
+                <>
+                  <div className="w-24 h-24 bg-slate-700 rounded-full flex items-center justify-center animate-pulse mb-4">
+                    <Lock className="text-yellow-500" size={48} />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white">Passe para <span className="text-yellow-400 block text-4xl mt-2">{viewingPlayer}</span></h2>
+                  <p className="text-slate-400 text-sm">Garanta que ninguém mais está olhando.</p>
+                  <button onClick={() => setIsRevealed(true)} className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold text-xl py-4 rounded-xl mt-4 shadow-lg active:scale-95">REVELAR</button>
+                </>
+              ) : (
+                <>
+                   <div className="flex flex-col items-center animate-bounce-subtle py-6">
+                      <span className="text-slate-400 font-medium mb-4 uppercase tracking-widest text-xs">Seu número é</span>
+                      <span className="text-9xl font-black text-yellow-400 drop-shadow-[0_0_25px_rgba(250,204,21,0.6)]">{playerNumbers[viewingPlayer]}</span>
+                   </div>
+                   <div className="w-full pt-6 border-t border-slate-700">
+                      <button onClick={() => { setPlayersSeen([...playersSeen, viewingPlayer]); setViewingPlayer(null); }} className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-lg py-4 rounded-xl transition-colors">OK, MEMORIZEI</button>
+                   </div>
+                </>
+              )}
+           </div>
+        </div>
+      )}
+
       {phase === 'result' && isVictory && <Confetti />}
 
       <div className={`p-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-20 bg-slate-900/80 border-b border-white/5 pt-8 md:pt-4`}>
