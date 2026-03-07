@@ -1,0 +1,3 @@
+## 2024-05-24 - Dynamic List Accessibility
+**Learning:** The `RegisterScreen` relies on frequent additions and removals of players. Without an `aria-live` region, screen readers miss these dynamic updates, leading to a confusing user experience where the list state is opaque.
+**Action:** Always wrap containers of frequently updated, user-generated lists with `aria-live="polite"` to ensure state changes are announced contextually.
