@@ -1,0 +1,4 @@
+## 2025-02-23 - Client-Side Denial of Service via Unbounded State Initialization
+**Vulnerability:** Client-Side Denial of Service (DoS) where an unbounded player input list causes an infinite while loop attempting to generate unique random numbers between 1 and 100 in `GameScreen.tsx`.
+**Learning:** State arrays derived from user input without length and item count limitations can trigger cascading failure or infinite loops when that state interacts with bounded algorithms (e.g., trying to assign unique values from a limited pool, like numbers 1-100 to an array of size > 100).
+**Prevention:** Always limit text input lengths using `maxLength` attributes and strictly bound the size of arrays generated from client inputs (e.g., maximum 20 players allowed) before passing them to core application logic.
