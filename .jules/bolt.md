@@ -1,0 +1,3 @@
+## 2024-05-24 - React State Colocation & Lazy Initialization
+**Learning:** React component lists (like `RegisterScreen`'s players) will needlessly re-render on every keystroke if the text input state is kept in the parent component. Additionally, generating random data (like confetti particles) directly in the render body causes expensive recalculations and potential visual glitches on every re-render, triggering `react-hooks/purity` errors.
+**Action:** Always extract high-frequency state updates (like text inputs) into isolated components. For random initialization, use `useState(() => ...)` lazy initializers to ensure expensive logic runs only once on mount.
