@@ -1,0 +1,3 @@
+## 2024-03-08 - Accessible Icon Buttons and Form Labels
+**Learning:** React applications utilizing lucide-react often neglect adding `aria-label`s to interactive but purely icon-based components (like 'back', 'move up', 'remove'). Forms and input fields are also commonly unassociated with their descriptive text. Modifying components to contain these attributes is an immediate win for screen readers.
+**Action:** Always verify icon-only interactive elements contain a descriptive `aria-label`, especially if those components are dynamic in a list (e.g., "Remover [Player Name]"). Enforce `htmlFor` and `id` mapping between labels and their input tags. Use `aria-live="polite"` on dynamically changing lists to provide context to screen readers on update.
