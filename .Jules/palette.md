@@ -1,0 +1,3 @@
+## 2026-03-09 - Adding accessibility attributes (ARIA, htmlFor) and fixing React Hook purity
+**Learning:** Simple visual features like Confetti that rely on `Math.random` for positioning must be wrapped in a `useState` lazy initializer function to avoid breaking React's purity rules during the render phase. In accessibility, icon-only buttons need `aria-label`, inputs must be linked via `htmlFor`, dynamic lists need `aria-live="polite"`, and toggleable buttons need `aria-pressed`.
+**Action:** When adding micro-UX features like accessibility improvements, also ensure any local state logic (especially those calculating random variables inline) are refactored into `useState` or `useEffect` hooks.
