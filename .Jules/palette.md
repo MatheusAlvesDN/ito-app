@@ -1,0 +1,3 @@
+## 2024-05-24 - Dynamic icon-only lists require context in ARIA labels
+**Learning:** In dynamically generated lists with icon-only buttons (like a list of players with a "trash" delete button), a generic `aria-label="Remover"` is insufficient because screen readers won't know *which* item is being removed. The same applies to reordering lists (`ArrowUp`/`ArrowDown`).
+**Action:** Always interpolate the dynamic item's name into the `aria-label` (e.g., `aria-label={"Remover ${player}"}` or `aria-label={"Mover ${player} para cima"}`) to provide clear context for assistive technologies. Also, ensure list containers for dynamic content use `aria-live="polite"` to announce additions/removals.
