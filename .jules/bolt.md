@@ -1,0 +1,3 @@
+## 2024-03-14 - Isolate Input State to Prevent React Re-renders
+**Learning:** React state tied to text inputs forces a re-render on every keystroke. When this state lives in a parent component (like `RegisterScreen`), it triggers re-renders of all child elements (like the entire list of `localPlayers`).
+**Action:** Extract text inputs into their own isolated components so that only the input itself re-renders as the user types, and the parent is only updated when the final action (like "Add Player") is triggered.
