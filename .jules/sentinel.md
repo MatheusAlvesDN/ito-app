@@ -1,0 +1,4 @@
+## 2024-05-18 - Client-Side DoS via Unbounded Input and Loop Condition
+**Vulnerability:** The application allowed an arbitrary number of players with arbitrarily long names to be added. In `GameScreen.tsx`, assigning unique numbers to each player using a random 1-100 `do...while` loop meant that if more than 100 players were added, the application would encounter an infinite loop and crash (DoS).
+**Learning:** Client-side React state arrays are vulnerable to DoS (memory exhaustion or application crashes) if populated by unbounded text inputs. Specifically, loop termination conditions that depend on unbounded user input sizes must be carefully analyzed.
+**Prevention:** Always enforce `maxLength` on text inputs and validate length and array sizes before state updates to cap input data and prevent excessive looping or memory usage.
