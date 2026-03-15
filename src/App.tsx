@@ -25,9 +25,9 @@ export default function App() {
     const lockOrientation = async () => {
       try {
         // Verifica se a API de orientação está disponível
-        // @ts-ignore
+        // @ts-expect-error - TS doesn't fully type the Screen Orientation API
         if (window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
-          // @ts-ignore
+          // @ts-expect-error - TS doesn't fully type the Screen Orientation API
           await window.screen.orientation.lock('portrait');
           console.log('Orientation locked to portrait');
         }
@@ -114,6 +114,10 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
 
   const addPlayer = () => {
     if (inputValue.trim()) {
+      if (localPlayers.length >= 20) {
+        alert("Máximo de 20 jogadores atingido.");
+        return;
+      }
       setLocalPlayers([...localPlayers, inputValue.trim()]);
       setInputValue('');
     }
@@ -132,6 +136,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
           <div className="flex gap-2">
             <input
               value={inputValue}
+              maxLength={20}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
               placeholder="Nome do participante"
