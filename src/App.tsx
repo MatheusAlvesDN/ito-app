@@ -24,10 +24,10 @@ export default function App() {
   useEffect(() => {
     const lockOrientation = async () => {
       try {
-        // Verifica se a API de orientação está disponível
-        // @ts-ignore
+        // Verifica se a API de orientation está disponível
+        // @ts-expect-error - Screen Orientation API is not fully typed
         if (window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
-          // @ts-ignore
+          // @ts-expect-error - Screen Orientation API is not fully typed
           await window.screen.orientation.lock('portrait');
           console.log('Orientation locked to portrait');
         }

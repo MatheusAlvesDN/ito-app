@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Dices, Check, Eye, Unlock, Star, Cloud, ArrowUp, ArrowDown, RefreshCw, ArrowRight, Lock } from 'lucide-react';
 import type { Theme } from './data';
-//import { getSecureRandomInt } from './utils/secureRandom';
+import { getSecureRandomInt } from './utils/secureRandom';
 
 
 // Banco de Perguntas Simulado (DB)
@@ -51,12 +51,13 @@ const QUESTIONS_DB: Record<string, string[]> = {
 
 const Confetti = () => {
   // Cria 50 partículas com posições e cores aleatórias
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
+  const [particles] = useState(() => Array.from({ length: 50 }).map((_, i) => ({
     id: i,
     x: Math.random() * 100,
     delay: Math.random() * 2,
-    color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+    color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)],
+    duration: 2 + Math.random() * 3
+  })));
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -68,7 +69,7 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDuration: `${p.duration}s`,
             animationDelay: `${p.delay}s`
           }}
         />
@@ -96,7 +97,8 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
         const usedNumbers = new Set<number>();
         players.forEach(p => {
             let num;
-            do { num = Math.floor(Math.random() * 100) + 1; } while (usedNumbers.has(num));
+            // SECURITY: Use getSecureRandomInt to prevent predictable number generation (cheat prevention)
+            do { num = getSecureRandomInt(1, 100); } while (usedNumbers.has(num));
             usedNumbers.add(num);
             finalNumbers[p] = num;
         });
@@ -123,7 +125,8 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
     } else if (themes.length > 0) {
       const allQuestions = themes.flatMap(t => QUESTIONS_DB[t.id] || []);
       if (allQuestions.length > 0) {
-          const q = allQuestions[Math.floor(Math.random() * allQuestions.length)];
+          // SECURITY: Use getSecureRandomInt to prevent predictable question selection
+          const q = allQuestions[getSecureRandomInt(0, allQuestions.length - 1)];
           setCurrentQuestion(q);
           const t = themes.find(t => (QUESTIONS_DB[t.id] || []).includes(q)) || themes[0];
           setCurrentThemeColor(t.color);

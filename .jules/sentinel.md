@@ -1,0 +1,4 @@
+## 2024-05-18 - Prevent Predictable Randomness
+**Vulnerability:** Weak random number generation using `Math.random()` for logic-critical application state (e.g., shuffling player assignments and selecting random questions).
+**Learning:** `Math.random()` is not cryptographically secure and its state can theoretically be predicted, allowing malicious users to predict game state and "cheat" logic. While purely visual elements (like Confetti particles) can use `Math.random()` safely if properly memoized in a `useState` lazy initializer to avoid React purity linting errors, logical assignments must use a secure RNG.
+**Prevention:** For sensitive numeric generation, use a secure wrapper over `crypto.getRandomValues()`, such as the existing `getSecureRandomInt()` utility, to ensure sufficient entropy and unpredictability.
