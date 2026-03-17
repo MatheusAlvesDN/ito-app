@@ -1,0 +1,3 @@
+## 2024-03-17 - Impure Functions and Array Mutations During Render
+**Learning:** Found a codebase-specific anti-pattern where components (like `Confetti`) generated arrays of objects using impure functions (`Math.random()`) directly in the render body and inline styles. This violates React's rendering purity rules, causes hydration mismatches (if SSR were ever added), and makes UI visually unstable during re-renders.
+**Action:** Always wrap randomly generated static component assets (like particles) inside a `useState` lazy initializer function. Ensure all random properties (like inline `animationDuration`) are pre-calculated in this state rather than left inside the `style` prop to maintain visual stability.
