@@ -1,0 +1,3 @@
+## 2024-03-18 - [Dynamic List Accessibility]
+**Learning:** For dynamic participant lists where players are rapidly added and removed (like RegisterScreen), screen readers often fail to announce changes if `aria-live` is missing. Additionally, icon-only buttons (like the removal trash icon) in dynamic lists need dynamic `aria-label`s (e.g., "Remove PlayerName") rather than generic ones to provide clear context of what is being deleted.
+**Action:** Always add `aria-live="polite"` to containers that update dynamically, and ensure all icon-only list actions have dynamically interpolated `aria-label`s that reference the list item's content.
