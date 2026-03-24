@@ -50,13 +50,14 @@ const QUESTIONS_DB: Record<string, string[]> = {
 };
 
 const Confetti = () => {
-  // Cria 50 partículas com posições e cores aleatórias
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
+  // Cria 50 partículas com posições e cores aleatórias usando estado inicial preguiçoso para evitar erro de impureza
+  const [particles] = useState(() => Array.from({ length: 50 }).map((_, i) => ({
     id: i,
     x: Math.random() * 100,
     delay: Math.random() * 2,
-    color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+    color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)],
+    duration: 2 + Math.random() * 3
+  })));
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -68,7 +69,7 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDuration: `${p.duration}s`,
             animationDelay: `${p.delay}s`
           }}
         />
@@ -193,7 +194,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
       {phase === 'result' && isVictory && <Confetti />}
 
       <div className={`p-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-20 bg-slate-900/80 border-b border-white/5 pt-8 md:pt-4`}>
-        <button onClick={onBack} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white"><ChevronLeft size={24} /></button>
+        <button onClick={onBack} aria-label="Voltar" className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-white"><ChevronLeft size={24} /></button>
         <div className="flex flex-col items-center">
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">RODADA {round}</span>
             <div className={`flex items-center gap-2 text-sm font-bold ${themes.length === 1 ? themes[0].textColor.replace('text-', 'text-') : 'text-yellow-400'}`}>

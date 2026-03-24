@@ -25,9 +25,9 @@ export default function App() {
     const lockOrientation = async () => {
       try {
         // Verifica se a API de orientação está disponível
-        // @ts-ignore
+        // @ts-expect-error - Screen Orientation API is not fully typed
         if (window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
-          // @ts-ignore
+          // @ts-expect-error - Screen Orientation API is not fully typed
           await window.screen.orientation.lock('portrait');
           console.log('Orientation locked to portrait');
         }
@@ -122,7 +122,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
   return (
     <div className="flex-1 flex flex-col bg-slate-50 relative h-full">
       <div className="p-4 flex items-center bg-white shadow-sm sticky top-0 z-20 pt-8 md:pt-4 safe-top">
-        <button onClick={onBack} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"><ChevronLeft size={24} className="text-slate-700" /></button>
+        <button onClick={onBack} aria-label="Voltar" className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-slate-400"><ChevronLeft size={24} className="text-slate-700" /></button>
         <span className="ml-4 font-bold text-lg text-slate-700">Quem vai jogar?</span>
       </div>
 
@@ -199,7 +199,7 @@ const ThemeSelectionScreen = ({ onBack, onStart }: { onBack: () => void, onStart
   return (
     <div className="flex-1 flex flex-col bg-slate-50 relative h-full">
       <div className="p-4 flex items-center bg-white/90 backdrop-blur-md sticky top-0 z-20 shadow-sm pt-8 md:pt-4 safe-top">
-        <button onClick={onBack} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"><ChevronLeft size={24} className="text-slate-700" /></button>
+        <button onClick={onBack} aria-label="Voltar" className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-slate-400"><ChevronLeft size={24} className="text-slate-700" /></button>
         <div className="ml-4">
           <h2 className="font-bold text-lg text-slate-800">Escolha o Tema</h2>
           <p className="text-xs text-slate-500">O que vamos debater hoje?</p>
