@@ -1,0 +1,4 @@
+## 2024-05-18 - Avoid Math.random() for security and pure React functions
+**Vulnerability:** Weak random number generation using `Math.random()` in security-sensitive logic (player numbers assignment) and visual rendering causing linting purity errors in React functional components.
+**Learning:** `Math.random()` is predictable and not cryptographically secure, which could allow a malicious actor to predict game state. Additionally, when used during render in a functional component, it breaks React's purity guarantees and causes linting errors.
+**Prevention:** Always use `window.crypto.getRandomValues()` via a wrapper like `getSecureRandomInt()` for security-sensitive logic. For pure visual effects where cryptographic security is not needed but React purity is required, use `Math.random()` only inside `useState` lazy initializers or `useEffect` hooks, never directly in the render body.
