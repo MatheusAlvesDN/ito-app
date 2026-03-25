@@ -1,0 +1,3 @@
+## 2024-03-25 - Enhanced RegisterScreen Accessibility
+**Learning:** Dynamic lists without `aria-live="polite"` leave screen reader users unaware of state changes (like adding/removing players). Icon-only buttons (add/remove/back) require `aria-label`s for context. Keyboard navigation requires `focus-visible` styles with `outline-none` to override browser defaults.
+**Action:** Always add `aria-live="polite"` to containers with dynamic lists. Ensure all icon-only buttons have descriptive `aria-label`s. Apply `focus-visible:ring-2 focus-visible:outline-none` alongside hover states for comprehensive keyboard accessibility.
