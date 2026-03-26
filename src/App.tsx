@@ -25,9 +25,9 @@ export default function App() {
     const lockOrientation = async () => {
       try {
         // Verifica se a API de orientação está disponível
-        // @ts-ignore
+        // @ts-expect-error - The Screen Orientation API might not be fully typed or supported in all browsers
         if (window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
-          // @ts-ignore
+          // @ts-expect-error - The Screen Orientation API might not be fully typed or supported in all browsers
           await window.screen.orientation.lock('portrait');
           console.log('Orientation locked to portrait');
         }
@@ -122,28 +122,30 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
   return (
     <div className="flex-1 flex flex-col bg-slate-50 relative h-full">
       <div className="p-4 flex items-center bg-white shadow-sm sticky top-0 z-20 pt-8 md:pt-4 safe-top">
-        <button onClick={onBack} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"><ChevronLeft size={24} className="text-slate-700" /></button>
+        <button onClick={onBack} aria-label="Voltar" className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none"><ChevronLeft size={24} className="text-slate-700" /></button>
         <span className="ml-4 font-bold text-lg text-slate-700">Quem vai jogar?</span>
       </div>
 
       <div className="flex-1 p-6 flex flex-col max-w-full overflow-hidden">
         <div className="bg-white p-4 rounded-3xl shadow-lg mb-6 border border-slate-100 shrink-0">
-          <label className="block text-slate-500 font-bold mb-2 ml-1 text-xs uppercase tracking-wider">Adicionar Jogador</label>
+          <label htmlFor="player-name" className="block text-slate-500 font-bold mb-2 ml-1 text-xs uppercase tracking-wider">Adicionar Jogador</label>
           <div className="flex gap-2">
             <input
+              id="player-name"
               value={inputValue}
+              maxLength={30}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
               placeholder="Nome do participante"
               className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
             />
-            <button onClick={addPlayer} disabled={!inputValue.trim()} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
+            <button onClick={addPlayer} aria-label="Adicionar jogador" disabled={!inputValue.trim()} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none focus-visible:ring-offset-2">
               <Plus size={24} />
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-3 pb-4">
+        <div className="flex-1 overflow-y-auto space-y-3 pb-4" aria-live="polite">
           {localPlayers.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 text-slate-300">
               <Users size={48} className="mb-2 opacity-50" />
@@ -158,7 +160,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
                   </div>
                   <span className="font-bold text-slate-700 truncate max-w-[150px]">{player}</span>
                 </div>
-                <button onClick={() => { const n = [...localPlayers]; n.splice(index, 1); setLocalPlayers(n); }} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                <button onClick={() => { const n = [...localPlayers]; n.splice(index, 1); setLocalPlayers(n); }} aria-label={`Remover ${player}`} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none">
                   <Trash2 size={20} />
                 </button>
               </div>
