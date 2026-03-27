@@ -122,22 +122,23 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
   return (
     <div className="flex-1 flex flex-col bg-slate-50 relative h-full">
       <div className="p-4 flex items-center bg-white shadow-sm sticky top-0 z-20 pt-8 md:pt-4 safe-top">
-        <button onClick={onBack} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"><ChevronLeft size={24} className="text-slate-700" /></button>
+        <button aria-label="Voltar" onClick={onBack} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors focus-visible:ring-2 focus-visible:ring-yellow-400 focus-visible:outline-none"><ChevronLeft size={24} className="text-slate-700" /></button>
         <span className="ml-4 font-bold text-lg text-slate-700">Quem vai jogar?</span>
       </div>
 
       <div className="flex-1 p-6 flex flex-col max-w-full overflow-hidden">
         <div className="bg-white p-4 rounded-3xl shadow-lg mb-6 border border-slate-100 shrink-0">
-          <label className="block text-slate-500 font-bold mb-2 ml-1 text-xs uppercase tracking-wider">Adicionar Jogador</label>
+          <label htmlFor="new-player" className="block text-slate-500 font-bold mb-2 ml-1 text-xs uppercase tracking-wider">Adicionar Jogador</label>
           <div className="flex gap-2">
             <input
+              id="new-player"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
               placeholder="Nome do participante"
               className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
             />
-            <button onClick={addPlayer} disabled={!inputValue.trim()} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
+            <button aria-label="Adicionar jogador" onClick={addPlayer} disabled={!inputValue.trim()} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none">
               <Plus size={24} />
             </button>
           </div>
@@ -158,7 +159,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
                   </div>
                   <span className="font-bold text-slate-700 truncate max-w-[150px]">{player}</span>
                 </div>
-                <button onClick={() => { const n = [...localPlayers]; n.splice(index, 1); setLocalPlayers(n); }} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                <button aria-label={`Remover ${player}`} onClick={() => { const n = [...localPlayers]; n.splice(index, 1); setLocalPlayers(n); }} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none">
                   <Trash2 size={20} />
                 </button>
               </div>
@@ -199,7 +200,7 @@ const ThemeSelectionScreen = ({ onBack, onStart }: { onBack: () => void, onStart
   return (
     <div className="flex-1 flex flex-col bg-slate-50 relative h-full">
       <div className="p-4 flex items-center bg-white/90 backdrop-blur-md sticky top-0 z-20 shadow-sm pt-8 md:pt-4 safe-top">
-        <button onClick={onBack} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"><ChevronLeft size={24} className="text-slate-700" /></button>
+        <button aria-label="Voltar" onClick={onBack} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors focus-visible:ring-2 focus-visible:ring-yellow-400 focus-visible:outline-none"><ChevronLeft size={24} className="text-slate-700" /></button>
         <div className="ml-4">
           <h2 className="font-bold text-lg text-slate-800">Escolha o Tema</h2>
           <p className="text-xs text-slate-500">O que vamos debater hoje?</p>
@@ -213,8 +214,9 @@ const ThemeSelectionScreen = ({ onBack, onStart }: { onBack: () => void, onStart
           return (
             <button
               key={theme.id}
+              aria-pressed={isSelected}
               onClick={() => toggleTheme(theme.id)}
-              className={`w-full group text-left relative overflow-hidden rounded-3xl p-6 shadow-md transition-all duration-200 border-2 ${isSelected ? 'bg-white border-sky-500 ring-4 ring-sky-100 scale-[1.02]' : 'bg-white border-transparent hover:border-slate-200'}`}
+              className={`w-full group text-left relative overflow-hidden rounded-3xl p-6 shadow-md transition-all duration-200 border-2 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none ${isSelected ? 'bg-white border-sky-500 ring-4 ring-sky-100 scale-[1.02]' : 'bg-white border-transparent hover:border-slate-200'}`}
             >
               <div className={`absolute top-4 right-4 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors z-20 ${isSelected ? 'bg-sky-500 border-sky-500' : 'border-slate-300 bg-white'}`}>
                 {isSelected && <Check size={14} className="text-white" />}
