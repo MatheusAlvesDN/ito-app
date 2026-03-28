@@ -1,0 +1,4 @@
+## 2024-05-24 - Weak Random Number Generation for Game Logic
+**Vulnerability:** The application used `Math.random()` to determine game-critical logic (assigning numbers 1-100 to players and picking questions). `Math.random()` is not cryptographically secure and can be theoretically predicted if the seed state is determined, making the game unfair or vulnerable to manipulation.
+**Learning:** For a local game, `Math.random()` might seem fine, but a security-focused agent must identify predictable randomness when it affects core logic, while ignoring `Math.random()` usage for purely visual elements like particles.
+**Prevention:** Always use cryptographically secure random number generators (e.g., `window.crypto.getRandomValues`) wrapped in a utility like `getSecureRandomInt()` for any logical application assignments, saving `Math.random()` exclusively for pure UI/visual effects.
