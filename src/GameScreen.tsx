@@ -50,13 +50,21 @@ const QUESTIONS_DB: Record<string, string[]> = {
 };
 
 const Confetti = () => {
-  // Cria 50 partículas com posições e cores aleatórias
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    delay: Math.random() * 2,
-    color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+  /*
+   * ⚡ Bolt: Confetti Generation Optimization
+   * 💡 What: Used useState lazy initializer to generate 50 particles only on initial mount. Pre-calculated duration inside state.
+   * 🎯 Why: Previously, Math.random() was called 150+ times per render, recreating the array and triggering linter warnings for impure functions in render.
+   * 📊 Impact: O(1) array generation vs O(N) array generation per render. Ensures stable layout across component updates and stops React hooks purity errors.
+   */
+  const [particles] = useState(() =>
+    Array.from({ length: 50 }).map((_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      delay: Math.random() * 2,
+      duration: 2 + Math.random() * 3,
+      color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
+    }))
+  );
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -68,7 +76,7 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDuration: `${p.duration}s`,
             animationDelay: `${p.delay}s`
           }}
         />
