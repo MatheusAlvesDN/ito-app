@@ -1,0 +1,3 @@
+## 2024-05-24 - Dynamic ARIA labels and focus-visible outlines
+**Learning:** Icon-only buttons in dynamic lists (like "Remover player" or "Mover player para cima") need dynamically generated `aria-label`s to give screen readers full context of the action. Also, to improve keyboard navigation accessibility without affecting mouse users' visual experience, pairing Tailwind's `focus-visible:outline-none` with `focus-visible:ring-2` on interactive elements provides clear focus indicators for keyboard users while maintaining standard hover states for mouse users.
+**Action:** Always verify that mapped list items with icon buttons use dynamic variables in their `aria-label`s, and apply `focus-visible` utility classes universally to interactive elements like buttons and inputs.
