@@ -51,12 +51,15 @@ const QUESTIONS_DB: Record<string, string[]> = {
 
 const Confetti = () => {
   // Cria 50 partículas com posições e cores aleatórias
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    delay: Math.random() * 2,
-    color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+  const [particles] = useState(() =>
+    Array.from({ length: 50 }).map((_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      delay: Math.random() * 2,
+      color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)],
+      duration: 2 + Math.random() * 3
+    }))
+  );
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -68,7 +71,7 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDuration: `${p.duration}s`,
             animationDelay: `${p.delay}s`
           }}
         />
@@ -193,7 +196,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
       {phase === 'result' && isVictory && <Confetti />}
 
       <div className={`p-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-20 bg-slate-900/80 border-b border-white/5 pt-8 md:pt-4`}>
-        <button onClick={onBack} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white"><ChevronLeft size={24} /></button>
+        <button aria-label="Voltar" onClick={onBack} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-slate-300"><ChevronLeft size={24} /></button>
         <div className="flex flex-col items-center">
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">RODADA {round}</span>
             <div className={`flex items-center gap-2 text-sm font-bold ${themes.length === 1 ? themes[0].textColor.replace('text-', 'text-') : 'text-yellow-400'}`}>
@@ -270,8 +273,8 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
                                 <div className="flex flex-col gap-1 mr-3">
                                     {phase === 'ordering' && (
                                       <>
-                                        <button onClick={() => movePlayer(index, 'up')} disabled={index === 0} className="p-1 text-slate-500 hover:text-white disabled:opacity-0"><ArrowUp size={20} /></button>
-                                        <button onClick={() => movePlayer(index, 'down')} disabled={index === orderedPlayers.length - 1} className="p-1 text-slate-500 hover:text-white disabled:opacity-0"><ArrowDown size={20} /></button>
+                                        <button aria-label={`Mover ${player} para cima`} onClick={() => movePlayer(index, 'up')} disabled={index === 0} className="p-1 text-slate-500 hover:text-white disabled:opacity-0 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-slate-300"><ArrowUp size={20} /></button>
+                                        <button aria-label={`Mover ${player} para baixo`} onClick={() => movePlayer(index, 'down')} disabled={index === orderedPlayers.length - 1} className="p-1 text-slate-500 hover:text-white disabled:opacity-0 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-slate-300"><ArrowDown size={20} /></button>
                                       </>
                                     )}
                                     {phase === 'result' && <div className="w-8 flex justify-center text-slate-600 font-bold">#{index+1}</div>}
@@ -313,7 +316,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
                  <div className={`flex-1 rounded-2xl flex items-center justify-center font-black text-xl ${isVictory ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
                     {isVictory ? 'SUCESSO!' : 'FALHA!'}
                  </div>
-                 <button onClick={nextRound} className="bg-slate-700 hover:bg-slate-600 text-white p-4 rounded-2xl shadow-lg active:scale-95">
+                 <button aria-label="Nova Rodada" onClick={nextRound} className="bg-slate-700 hover:bg-slate-600 text-white p-4 rounded-2xl shadow-lg active:scale-95 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-slate-300">
                     <RefreshCw size={28} />
                 </button>
             </div>
