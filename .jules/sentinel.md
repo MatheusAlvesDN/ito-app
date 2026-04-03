@@ -1,0 +1,4 @@
+## 2025-05-18 - [Fix DoS and weak randomness]
+**Vulnerability:** Client-side React state arrays populated by unbounded text inputs can lead to memory exhaustion (DoS). The `addPlayer` function allowed adding an unlimited number of players. Because the random assignment logic in `GameScreen.tsx` used a `do...while` loop bound to 100 choices, adding more than 100 players would cause an infinite loop. Furthermore, the random numbers were generated using `Math.random()` which is not cryptographically secure.
+**Learning:** Client-side arrays and unbounded inputs need constraints (`maxLength` and array limits). Also, `Math.random()` shouldn't be used for secret numbers.
+**Prevention:** Always enforce constraints (`maxLength`) on text inputs and validate length/limits before state updates. Use `getSecureRandomInt()` for logical random assignments instead of `Math.random()`.
