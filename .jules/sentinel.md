@@ -1,0 +1,4 @@
+## 2024-04-03 - Client-Side DoS via Unbounded Input and Array Growth
+**Vulnerability:** The player name input lacked `maxLength` and the player list lacked a maximum size. In `src/GameScreen.tsx`, random number generation uses a `do...while` loop bounded by 100 choices. If `players.length >= 100`, this triggers an infinite loop crashing the app. Further, unbounded inputs lead to memory exhaustion.
+**Learning:** Client-side React state arrays are highly vulnerable to DoS if populated by unbounded text inputs and no maximum array size limit. State updates with very large strings or lists can degrade performance or cause an outright browser crash, especially when downstream logic expects small sizes.
+**Prevention:** Always enforce `maxLength` on text inputs that populate client-side state arrays, and enforce hard limits on array sizes in logic before appending items.
