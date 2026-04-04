@@ -1,0 +1,4 @@
+## 2025-05-18 - Client-Side Array Bounds and Loop Exhaustion DoS
+**Vulnerability:** Client-side arrays used in rendering logic (`players` state) had no max length limit, allowing unbounded input sizes which triggered an infinite loop / memory exhaustion DoS when passed to the bounded `do...while` loop in `GameScreen.tsx`.
+**Learning:** React state arrays combined with logic that operates over a fixed set of choices (like assigning unique numbers from 1-100) are highly vulnerable to DoS if the list size exceeds the number of available unique choices.
+**Prevention:** Always enforce a strict `maxLength` limit on text inputs and cap array limits before executing logic. Never use `do...while` loops with a constrained randomization pool unless the array size is guaranteed to be significantly smaller than the pool of possible random results.
