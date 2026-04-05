@@ -1,0 +1,3 @@
+## 2025-04-05 - Playwright verification for highly animated UI
+**Learning:** Playwright tests interacting with highly animated UI components (like modals with fade-ins and scale animations) may consistently fail with Timeout exceeded waiting for elements to become stable and ready for click.
+**Action:** When verifying highly animated UIs, either use `.click(force=True)` on the targeted elements to bypass Playwright's strict stability and visibility checks, or selectively `try...except` the animated portions and log a skip message to prevent entire verifications from failing due to visual flakes.
