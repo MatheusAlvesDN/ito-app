@@ -1,0 +1,4 @@
+## 2024-03-27 - [High] Prevent Infinite Loop DoS and Fix Weak RNG
+**Vulnerability:** A `do...while` loop generated 1-100 random numbers until finding an unused one, combined with an uncapped player limit. This created an infinite loop DoS risk if players exceeded the random pool size. Additionally, the app used `Math.random()` for assigning security-sensitive secret numbers to players, making values predictable.
+**Learning:** Even simple bounded logical loops can be weaponized if the collection size is unbounded by user input. `Math.random()` should strictly be limited to visual effects, not logical gameplay state or secrets.
+**Prevention:** Always hard-cap user input arrays that interact with bounded randomization loops. Always use a secure RNG (like `crypto.getRandomValues()` wrapper) for critical application logic or secret assignment.

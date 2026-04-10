@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Dices, Check, Eye, Unlock, Star, Cloud, ArrowUp, ArrowDown, RefreshCw, ArrowRight, Lock } from 'lucide-react';
 import type { Theme } from './data';
-//import { getSecureRandomInt } from './utils/secureRandom';
+import { getSecureRandomInt } from './utils/secureRandom';
 
 
 // Banco de Perguntas Simulado (DB)
@@ -96,7 +96,8 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
         const usedNumbers = new Set<number>();
         players.forEach(p => {
             let num;
-            do { num = Math.floor(Math.random() * 100) + 1; } while (usedNumbers.has(num));
+            // 🛡️ SECURITY: Use cryptographically secure RNG for logical game values
+            do { num = getSecureRandomInt(1, 100); } while (usedNumbers.has(num));
             usedNumbers.add(num);
             finalNumbers[p] = num;
         });
