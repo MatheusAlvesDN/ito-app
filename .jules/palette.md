@@ -1,0 +1,3 @@
+## 2024-04-10 - [Accessibility and Focus Visibility]
+**Learning:** React 19 apps using Tailwind often neglect keyboard focus on icon buttons and dynamic list inputs, leaving a major accessibility gap for non-mouse users navigating via Tab. Furthermore, dynamic inputs without explicit `id`/`htmlFor` associations break screen reader support.
+**Action:** When creating new interactive elements or reviewing existing ones, strictly enforce the inclusion of `aria-label` for all icon-only buttons (especially in dynamic lists like "Remove [Name]"), pair `htmlFor` with `id` on inputs, and consistently apply `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-*` to provide a clear, non-intrusive focus indicator.
