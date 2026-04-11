@@ -182,17 +182,18 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
 
 // Tela de Seleção de Temas
 const ThemeSelectionScreen = ({ onBack, onStart }: { onBack: () => void, onStart: (themes: Theme[]) => void }) => {
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  // ⚡ BOLT: Use Set for selectedIds to improve lookup performance (O(1) instead of O(n) for Array.includes)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const toggleTheme = (id: string) => {
     if (id === 'free') {
-      setSelectedIds(selectedIds.includes('free') ? [] : ['free']);
+      setSelectedIds(selectedIds.has('free') ? new Set() : new Set(['free']));
       return;
     }
-    let newSelection = [...selectedIds];
-    if (newSelection.includes('free')) newSelection = [];
-    if (newSelection.includes(id)) newSelection = newSelection.filter(tid => tid !== id);
-    else newSelection.push(id);
+    const newSelection = new Set(selectedIds);
+    if (newSelection.has('free')) newSelection.clear();
+    if (newSelection.has(id)) newSelection.delete(id);
+    else newSelection.add(id);
     setSelectedIds(newSelection);
   };
 
@@ -209,7 +210,7 @@ const ThemeSelectionScreen = ({ onBack, onStart }: { onBack: () => void, onStart
       <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-24">
         {THEMES.map((theme) => {
           const Icon = theme.icon;
-          const isSelected = selectedIds.includes(theme.id);
+          const isSelected = selectedIds.has(theme.id);
           return (
             <button
               key={theme.id}
@@ -233,7 +234,7 @@ const ThemeSelectionScreen = ({ onBack, onStart }: { onBack: () => void, onStart
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-slate-100 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] safe-bottom">
-        <button onClick={() => onStart(THEMES.filter(t => selectedIds.includes(t.id)))} disabled={selectedIds.length === 0} className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:bg-slate-200 disabled:text-slate-400 text-black font-black text-xl py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3">
+        <button onClick={() => onStart(THEMES.filter(t => selectedIds.has(t.id)))} disabled={selectedIds.size === 0} className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:bg-slate-200 disabled:text-slate-400 text-black font-black text-xl py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3">
           <span>INICIAR JOGO</span> <Play size={24} fill="currentColor" />
         </button>
       </div>
