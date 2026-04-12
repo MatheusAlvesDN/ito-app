@@ -1,0 +1,3 @@
+## 2025-04-12 - Associating Forms and Icon Accessibility
+**Learning:** Icon-only buttons (like "Back" or "Remove Player") generated in dynamic lists and standalone inputs often lack descriptive `aria-label`s and proper `htmlFor` label associations. Additionally, while hover states exist, keyboard focus states using Tailwind's `focus-visible` are missing, harming keyboard accessibility.
+**Action:** When auditing or adding inputs, always associate them with a label via `id` and `htmlFor`. Provide descriptive `aria-label` attributes to icon-only buttons, specifically interpolating dynamic content for list items (e.g., `aria-label={"Remover ${player}"}`). Ensure interactive elements include `focus-visible:outline-none focus-visible:ring-2` to support keyboard navigation.
