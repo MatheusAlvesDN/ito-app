@@ -1,0 +1,3 @@
+## 2024-05-18 - Weighted Random Selection for Datasets
+**Learning:** When selecting a random item from a partitioned dataset (e.g., questions grouped by theme in `QUESTIONS_DB`), the current approach creates a large flattened array of all questions and then performs a random pick, followed by a find to get the theme color. This causes unnecessary memory allocations (`flatMap`) and nested O(n) lookups (`themes.find` + `includes`).
+**Action:** Use a weighted random selection based on the sizes of each category, then pick randomly within the chosen category. This avoids large array instantiations and redundant lookups, making selection O(T) where T is the number of themes.
