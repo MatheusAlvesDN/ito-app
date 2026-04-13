@@ -1,0 +1,4 @@
+## 2025-04-13 - [Infinite Loop DoS via Unbounded Inputs in Randomization Pools]
+**Vulnerability:** The application allowed an unbounded number of players to be added, leading to an infinite loop Denial of Service (DoS) condition when assigning unique random numbers from a bounded pool (1-100) using a `do...while` loop. Memory exhaustion was also possible due to unbounded input field lengths for player names.
+**Learning:** Bounded randomization pools where unique values are assigned using trial-and-error loops (like `do...while`) become extremely slow or infinite as the number of requests approaches the pool size. This occurs because the loop keeps hitting already used values.
+**Prevention:** Always cap the size of input arrays or loops so that they are significantly smaller than the bounds of any randomization pool, preventing infinite loops. Additionally, implement robust `maxLength` constraints on inputs to avoid memory exhaustion from abnormally long inputs.
