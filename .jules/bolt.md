@@ -1,0 +1,3 @@
+## 2024-05-14 - Optimize Random Selection on Partitioned Datasets
+**Learning:** Using `flatMap` and `.find(..., includes)` to select a random item from a partitioned dataset creates unnecessary memory allocation (O(N) flattened array) and wastes CPU on nested lookups (O(N*M)).
+**Action:** Use weighted random selection (based on category array lengths) to select a category first, then select randomly within that category. This avoids intermediate array allocations and nested search complexity.
