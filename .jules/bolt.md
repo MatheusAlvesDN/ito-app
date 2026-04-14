@@ -1,0 +1,3 @@
+## 2025-05-18 - Avoid flatMap for weighted random selection on large datasets
+**Learning:** When selecting a random item from a partitioned dataset (e.g., questions grouped by theme in `QUESTIONS_DB`), doing a `.flatMap()` to combine all questions into a single array before doing a `Math.random()` pick introduces O(n) memory allocation overhead for array creation and O(n) time overhead for combining items. This is particularly inefficient on low-end devices running React Native/Capacitor.
+**Action:** Perform a weighted random selection across categories (themes) followed by a random pick within the selected category. This architectural pattern avoids both expensive flattened object creation (memory overhead) and redundant nested lookups (CPU overhead).

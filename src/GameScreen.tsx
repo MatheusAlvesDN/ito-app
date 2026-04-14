@@ -121,12 +121,21 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
       setCurrentQuestion("MODO LIVRE: Inventem um desafio!");
       setCurrentThemeColor('bg-slate-200');
     } else if (themes.length > 0) {
-      const allQuestions = themes.flatMap(t => QUESTIONS_DB[t.id] || []);
-      if (allQuestions.length > 0) {
-          const q = allQuestions[Math.floor(Math.random() * allQuestions.length)];
-          setCurrentQuestion(q);
-          const t = themes.find(t => (QUESTIONS_DB[t.id] || []).includes(q)) || themes[0];
-          setCurrentThemeColor(t.color);
+      // ⚡ Bolt: Weighted random selection to avoid O(N) memory allocation from flatMap
+      const validThemes = themes.filter(t => (QUESTIONS_DB[t.id] || []).length > 0);
+      if (validThemes.length > 0) {
+        const totalQuestions = validThemes.reduce((sum, t) => sum + (QUESTIONS_DB[t.id]?.length || 0), 0);
+        let randomWeight = Math.floor(Math.random() * totalQuestions);
+
+        for (const theme of validThemes) {
+          const questions = QUESTIONS_DB[theme.id];
+          if (randomWeight < questions.length) {
+            setCurrentQuestion(questions[randomWeight]);
+            setCurrentThemeColor(theme.color);
+            break;
+          }
+          randomWeight -= questions.length;
+        }
       }
     }
     setPhase('ordering');
