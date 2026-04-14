@@ -1,0 +1,3 @@
+## 2024-04-14 - Improve accessibility for icon-only buttons
+**Learning:** Icon-only buttons (like those using `lucide-react` icons for "Back", "Add", "Remove", etc.) lack descriptive names, making them inaccessible to screen readers and potentially confusing without context.
+**Action:** Always add descriptive, translated `aria-label` attributes (e.g., `aria-label="Voltar"`) to icon-only buttons. Pair this with consistent keyboard focus states using Tailwind's `focus-visible:ring-2 focus-visible:outline-none` classes to ensure they are accessible for keyboard navigation.
