@@ -1,0 +1,4 @@
+## 2024-04-14 - Infinite Loop DoS from Unbounded Array against Bounded Random Pool
+**Vulnerability:** The application allowed an unlimited number of players to be added via the UI, while the game logic assigned random numbers to each player using a `do-while` loop over a bounded pool of 1-100 without replacement. If more than 100 players were added, the application would hang in an infinite loop (DoS). In addition, unbounded strings could cause memory exhaustion and UI breaking.
+**Learning:** Bounded random selection algorithms without guaranteed termination conditions can easily turn into Denial of Service vectors when the input array size exceeds the size of the random pool.
+**Prevention:** Always limit array sizes when they are inputs to allocation algorithms relying on rejection sampling or bounded space, and add strict `maxLength` constraints to unbounded string inputs to prevent memory exhaustion and UI overflow.
