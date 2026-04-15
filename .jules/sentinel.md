@@ -1,0 +1,4 @@
+## 2024-03-24 - [CRITICAL] Prevent Infinite Loop DoS in Random Number Generation
+**Vulnerability:** A `do...while` loop was used to generate unique numbers from 1 to 100 for players without a bounded limit on the maximum number of players, which could result in an infinite loop and memory exhaustion/DoS if users were allowed to add more than 100 players.
+**Learning:** In a bounded randomization pool (e.g., picking 1-100), the loop requires at least one unpicked option remaining to terminate. Without input limits, it's possible to exceed the pool size causing infinite iterations.
+**Prevention:** Always enforce a strict input array size limit that is significantly smaller than the random pool boundaries to guarantee loop termination and prevent infinite loop DoS conditions. Also implemented input string `maxLength` for names.
