@@ -1,0 +1,3 @@
+## 2024-04-15 - React Purity and Randomized Rendering
+**Learning:** Initializing arrays with `Math.random()` directly in the functional component body (like in the `Confetti` component) causes the array to be recreated and random values to be recalculated on *every single re-render*. This leads to visual flickering and resets (especially for `animationDuration` and `animationDelay` mapped from random values). Using `useMemo` is unsafe because React may clear its cache.
+**Action:** Store pre-calculated random UI elements in a lazy initialized `useState` (e.g., `const [particles] = useState(() => Array.from(...))`) to guarantee they are calculated exactly once and never change across re-renders.
