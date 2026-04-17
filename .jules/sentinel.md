@@ -1,0 +1,4 @@
+## 2025-03-05 - Bounded Randomization and Infinite Loop DoS
+**Vulnerability:** Memory Exhaustion and Infinite Loop Denial of Service (DoS).
+**Learning:** Using an unbounded input array size against a bounded randomization pool (e.g., assigning unique numbers 1-100 to players using a `do...while` loop with rejection sampling) can lead to an infinite loop and app crash if the number of players approaches or exceeds the pool size.
+**Prevention:** Always ensure the input size is strictly capped (e.g., max 20 players) to be significantly smaller than the randomization pool (100) to guarantee termination and prevent DoS.
