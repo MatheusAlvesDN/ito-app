@@ -1,0 +1,3 @@
+## 2024-04-17 - Prevent React Pure Render Violations in Confetti
+**Learning:** `Math.random()` violates React purity rules when used directly during the render cycle. In the `Confetti` component, this led to recalculating the array of particles and their random properties (`animationDuration`, `animationDelay`, etc.) on every re-render, causing unnecessary expensive calculations and visual resets/flickering.
+**Action:** Pre-calculate all random properties like `duration` and `delay` and store them in a `useState` lazy initializer. Do not use `useMemo` as `Math.random()` still breaks purity within it.
