@@ -122,7 +122,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
   return (
     <div className="flex-1 flex flex-col bg-slate-50 relative h-full">
       <div className="p-4 flex items-center bg-white shadow-sm sticky top-0 z-20 pt-8 md:pt-4 safe-top">
-        <button onClick={onBack} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"><ChevronLeft size={24} className="text-slate-700" /></button>
+        <button onClick={onBack} aria-label="Voltar" className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none"><ChevronLeft size={24} className="text-slate-700" /></button>
         <span className="ml-4 font-bold text-lg text-slate-700">Quem vai jogar?</span>
       </div>
 
@@ -137,7 +137,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
               placeholder="Nome do participante"
               className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
             />
-            <button onClick={addPlayer} disabled={!inputValue.trim()} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
+            <button onClick={addPlayer} disabled={!inputValue.trim()} aria-label="Adicionar Jogador" className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:outline-none">
               <Plus size={24} />
             </button>
           </div>
@@ -158,7 +158,7 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
                   </div>
                   <span className="font-bold text-slate-700 truncate max-w-[150px]">{player}</span>
                 </div>
-                <button onClick={() => { const n = [...localPlayers]; n.splice(index, 1); setLocalPlayers(n); }} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                <button onClick={() => { const n = [...localPlayers]; n.splice(index, 1); setLocalPlayers(n); }} aria-label={`Remover jogador ${player}`} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none">
                   <Trash2 size={20} />
                 </button>
               </div>
@@ -199,7 +199,7 @@ const ThemeSelectionScreen = ({ onBack, onStart }: { onBack: () => void, onStart
   return (
     <div className="flex-1 flex flex-col bg-slate-50 relative h-full">
       <div className="p-4 flex items-center bg-white/90 backdrop-blur-md sticky top-0 z-20 shadow-sm pt-8 md:pt-4 safe-top">
-        <button onClick={onBack} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"><ChevronLeft size={24} className="text-slate-700" /></button>
+        <button onClick={onBack} aria-label="Voltar" className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none"><ChevronLeft size={24} className="text-slate-700" /></button>
         <div className="ml-4">
           <h2 className="font-bold text-lg text-slate-800">Escolha o Tema</h2>
           <p className="text-xs text-slate-500">O que vamos debater hoje?</p>
