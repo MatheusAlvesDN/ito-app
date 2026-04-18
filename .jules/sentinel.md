@@ -1,0 +1,4 @@
+## 2025-03-01 - DoS Vulnerability: Unbounded Arrays in Bounded Randomization Pool
+**Vulnerability:** The application allowed an arbitrary number of players to be added without any length limits. When transitioning to the game phase, it assigned unique random numbers between 1-100 to each player using a `do...while` loop and rejection sampling. If users added 100 or more players, this would result in an infinite loop (Denial of Service).
+**Learning:** Bounded random pools (like a pool of 100 choices) are common in localized games. When tying such a pool to a user-generated array, the array length must be strictly constrained well below the pool limit to prevent memory exhaustion and infinite loops.
+**Prevention:** Always enforce a hard limit on arrays or collections that map 1:1 to a bounded, non-repeating randomization pool. Enforce maximum constraints directly on UI inputs (`maxLength`) and state modification logic.
