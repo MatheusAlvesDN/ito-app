@@ -1,0 +1,3 @@
+## 2024-04-18 - Keyboard Focus Accessibility with Tailwind
+**Learning:** When applying Tailwind's custom focus rings (e.g., `focus-visible:ring-2`) for keyboard accessibility on icon-only buttons, it's crucial to pair it with `focus-visible:outline-none`. If omitted, some browsers will render both the custom Tailwind ring and the default browser outline simultaneously, creating a confusing and ugly visual experience. Also, ensuring buttons without text have `aria-label` is crucial for screen readers.
+**Action:** Always include `focus-visible:outline-none` alongside `focus-visible:ring-*` when implementing custom keyboard focus states. Always ensure icon-only buttons have descriptive `aria-label`s.
