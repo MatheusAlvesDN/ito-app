@@ -1,0 +1,3 @@
+## 2025-03-05 - Optimize Question Selection in GameScreen
+**Learning:** When selecting a random item from a partitioned dataset (like `QUESTIONS_DB` where questions are grouped by theme), flattening the entire dataset using `flatMap` and then using `find`/`includes` to find the corresponding category is extremely inefficient. It creates `O(N)` memory overhead (where `N` is the total number of questions) and `O(N)` CPU overhead for searching.
+**Action:** Always implement a weighted random selection across categories first, followed by a random pick within the selected category. This avoids unnecessary array allocation and redundant array searching.
