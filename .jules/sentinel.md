@@ -1,0 +1,4 @@
+## 2025-04-19 - DoS Risk in Bounded Random Assignment
+**Vulnerability:** Infinite loop Denial of Service (DoS) vulnerability due to unbounded player array size during unique random number assignment loop. Weak randomness via `Math.random()`.
+**Learning:** `do...while` loops bounded by random generation limits (e.g. 1 to 100) will infinite loop if the target set size reaches the pool size (in this case >= 100 players).
+**Prevention:** Strictly bound maximum input limits for dynamic arrays and use cryptographically secure random number generators (`getSecureRandomInt`) over `Math.random()` to prevent predictability.
