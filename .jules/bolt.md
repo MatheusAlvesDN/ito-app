@@ -1,0 +1,3 @@
+## 2025-04-19 - [Avoid Flattening Datasets for Random Selection]
+**Learning:** When selecting a random item from a partitioned dataset (e.g., questions grouped by theme), `themes.flatMap(...)` followed by `themes.find(includes)` creates O(N) memory overhead and O(T*Q) CPU overhead for lookup. This is particularly expensive when datasets scale.
+**Action:** Instead, perform a weighted random selection based on the sizes of the individual partitions. Calculate the `total` size across partitions, pick a random index up to that `total`, and iterate through the partitions sequentially to find which partition (and then which item) contains the selected index, achieving O(1) memory overhead and O(T) CPU efficiency.
