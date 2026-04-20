@@ -1,0 +1,3 @@
+## 2025-04-20 - [Optimize question selection overhead]
+**Learning:** Selecting a random item from a partitioned dataset using `.flatMap()` across all categories creates a significant amount of intermediate arrays and memory allocation overhead. This is further compounded by using `find()` and `includes()` to trace back the category of the selected item.
+**Action:** Use a weighted random selection approach instead. First, calculate weights for each category (e.g., number of questions in a theme), perform a random pick to select the category, and then randomly pick an item within that selected category. This completely avoids flattening the arrays and redundant array lookups.

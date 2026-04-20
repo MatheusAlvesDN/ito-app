@@ -121,12 +121,30 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
       setCurrentQuestion("MODO LIVRE: Inventem um desafio!");
       setCurrentThemeColor('bg-slate-200');
     } else if (themes.length > 0) {
-      const allQuestions = themes.flatMap(t => QUESTIONS_DB[t.id] || []);
-      if (allQuestions.length > 0) {
-          const q = allQuestions[Math.floor(Math.random() * allQuestions.length)];
-          setCurrentQuestion(q);
-          const t = themes.find(t => (QUESTIONS_DB[t.id] || []).includes(q)) || themes[0];
-          setCurrentThemeColor(t.color);
+      // ⚡ Bolt: Use weighted random selection to avoid expensive flatMap and find/includes
+      let totalQuestions = 0;
+      const themeWeights = themes.map(t => {
+        const count = (QUESTIONS_DB[t.id] || []).length;
+        totalQuestions += count;
+        return { theme: t, count };
+      });
+
+      if (totalQuestions > 0) {
+        let randomChoice = Math.floor(Math.random() * totalQuestions);
+        let selectedTheme = themes[0];
+        for (const { theme, count } of themeWeights) {
+          if (randomChoice < count) {
+            selectedTheme = theme;
+            break;
+          }
+          randomChoice -= count;
+        }
+
+        const categoryQuestions = QUESTIONS_DB[selectedTheme.id] || [];
+        const q = categoryQuestions[Math.floor(Math.random() * categoryQuestions.length)];
+
+        setCurrentQuestion(q);
+        setCurrentThemeColor(selectedTheme.color);
       }
     }
     setPhase('ordering');
