@@ -1,0 +1,3 @@
+## 2024-04-20 - Missing ARIA Labels on Icon-Only Buttons
+**Learning:** Icon-only navigation and action buttons (like Lucide React icons for 'Voltar', 'Mover para cima/baixo') in highly animated React components are entirely invisible to screen readers without proper aria-labels, creating significant accessibility barriers for core gameplay flows.
+**Action:** Always verify icon-only buttons (`<button><Icon/></button>`) have explicit, localized `aria-label` attributes to ensure keyboard and screen reader accessibility aligns with visual intent.
