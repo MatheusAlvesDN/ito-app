@@ -1,0 +1,3 @@
+## 2024-10-18 - Weighted Random Selection over Array Flattening
+**Learning:** Selecting a random item from a partitioned dataset (like questions grouped by theme) by flattening all subsets into a single large array using `flatMap` is computationally expensive (unnecessary object allocation) and requires inefficient reverse-lookups to map the item back to its parent category.
+**Action:** Use a weighted random selection approach: calculate category weights (lengths), select a category randomly based on weight, and perform a single random pick within the chosen category to achieve ~10x better performance.

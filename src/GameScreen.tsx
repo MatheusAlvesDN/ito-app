@@ -121,12 +121,24 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
       setCurrentQuestion("MODO LIVRE: Inventem um desafio!");
       setCurrentThemeColor('bg-slate-200');
     } else if (themes.length > 0) {
-      const allQuestions = themes.flatMap(t => QUESTIONS_DB[t.id] || []);
-      if (allQuestions.length > 0) {
-          const q = allQuestions[Math.floor(Math.random() * allQuestions.length)];
-          setCurrentQuestion(q);
-          const t = themes.find(t => (QUESTIONS_DB[t.id] || []).includes(q)) || themes[0];
-          setCurrentThemeColor(t.color);
+      // ⚡ BOLT OPTIMIZATION: Weighted random selection across themes avoids expensive flatMap array creation
+      // and redundant O(N) lookups via find() and includes(), improving question selection performance.
+      const validThemes = themes.filter(t => (QUESTIONS_DB[t.id] || []).length > 0);
+      if (validThemes.length > 0) {
+          const totalQuestions = validThemes.reduce((sum, t) => sum + QUESTIONS_DB[t.id].length, 0);
+          let rand = Math.floor(Math.random() * totalQuestions);
+          let selectedTheme = validThemes[0];
+          for (const t of validThemes) {
+              const count = QUESTIONS_DB[t.id].length;
+              if (rand < count) {
+                  selectedTheme = t;
+                  break;
+              }
+              rand -= count;
+          }
+          const questions = QUESTIONS_DB[selectedTheme.id];
+          setCurrentQuestion(questions[Math.floor(Math.random() * questions.length)]);
+          setCurrentThemeColor(selectedTheme.color);
       }
     }
     setPhase('ordering');
