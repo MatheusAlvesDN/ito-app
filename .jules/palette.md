@@ -1,0 +1,3 @@
+## 2024-05-24 - Playwright Locators vs Complex React Rendering
+**Learning:** Playwright's `get_by_role` can struggle to accurately match accessible names when the target button's inner HTML contains dynamic React nodes, text nodes intermixed with spans, or heavily animated transition classes, leading to unexpected Timeout or Strict Mode Violation errors even when the DOM visually appears correct.
+**Action:** When writing Playwright tests to verify accessibility updates on complex animated components, prioritize `locator("button").filter(has_text="...")` over `get_by_role("button", name="...")` if the accessible name fails to reliably resolve the element during test execution.
