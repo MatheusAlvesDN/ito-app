@@ -121,12 +121,39 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
       setCurrentQuestion("MODO LIVRE: Inventem um desafio!");
       setCurrentThemeColor('bg-slate-200');
     } else if (themes.length > 0) {
-      const allQuestions = themes.flatMap(t => QUESTIONS_DB[t.id] || []);
-      if (allQuestions.length > 0) {
-          const q = allQuestions[Math.floor(Math.random() * allQuestions.length)];
-          setCurrentQuestion(q);
-          const t = themes.find(t => (QUESTIONS_DB[t.id] || []).includes(q)) || themes[0];
-          setCurrentThemeColor(t.color);
+      // ⚡ BOLT: Optimized random selection using weighted approach
+      // Avoids expensive flatMap array creation and subsequent find/includes lookups
+      let totalQuestions = 0;
+      const themeData: { theme: Theme, count: number }[] = [];
+
+      // Calculate weights
+      for (const t of themes) {
+        const questions = QUESTIONS_DB[t.id] || [];
+        if (questions.length > 0) {
+          totalQuestions += questions.length;
+          themeData.push({ theme: t, count: questions.length });
+        }
+      }
+
+      if (totalQuestions > 0) {
+        // Weighted random theme selection
+        let randomWeight = Math.floor(Math.random() * totalQuestions);
+        let selectedTheme = themeData[0].theme;
+        let selectedQuestions = QUESTIONS_DB[selectedTheme.id] || [];
+
+        for (const data of themeData) {
+          if (randomWeight < data.count) {
+            selectedTheme = data.theme;
+            selectedQuestions = QUESTIONS_DB[selectedTheme.id];
+            break;
+          }
+          randomWeight -= data.count;
+        }
+
+        // Random question within selected theme
+        const q = selectedQuestions[Math.floor(Math.random() * selectedQuestions.length)];
+        setCurrentQuestion(q);
+        setCurrentThemeColor(selectedTheme.color);
       }
     }
     setPhase('ordering');

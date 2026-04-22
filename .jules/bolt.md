@@ -1,0 +1,3 @@
+## 2025-01-20 - Optimize Random Selection in Partitioned Data
+**Learning:** Selecting a random item from a partitioned dataset (like `QUESTIONS_DB` grouped by theme) by first flattening the entire structure (`flatMap`) and then doing nested lookups (`includes` or `find`) is highly inefficient. It incurs unnecessary memory overhead (flattened array creation) and CPU overhead (nested iteration).
+**Action:** Use a weighted random selection strategy across the partitions (themes) followed by a random pick within the selected partition. This avoids expensive data transformations and operates in $O(T)$ time where $T$ is the number of active partitions.
