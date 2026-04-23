@@ -1,0 +1,4 @@
+## 2024-05-15 - Prevent DoS via Input Bounds
+**Vulnerability:** Unbounded array generation for player assignments could lead to memory exhaustion and infinite loops in the GameScreen logic.
+**Learning:** Even simple logic bugs like unbounded limits can be exploited to cause a Denial of Service. In `src/App.tsx`, we enforce bounds strictly for input validation that feeds into state objects, like `localPlayers` array to protect subsequent execution loops (e.g., `do...while` randomized numbering bounded at 100 choices).
+**Prevention:** Always bound input arrays (e.g., maximum players limit) and restrict string sizes (e.g., `maxLength`) when they dictate execution loops or heavy state generation.
