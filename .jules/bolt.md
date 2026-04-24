@@ -1,0 +1,3 @@
+## 2024-04-24 - Avoid Math.random() in Render for Visual Elements
+**Learning:** Using `Math.random()` directly in the component body (during render) violates React's purity rules. In visual components like `Confetti` particles, this causes unnecessary recalculations and flickering on every re-render, as the random values change constantly.
+**Action:** Always wrap visual element configurations that depend on `Math.random()` (like position, color, or delay) inside a `useState` lazy initializer `useState(() => ...)` so the random values are calculated only once per component mount, preserving stability and avoiding unnecessary re-computations on re-renders.
