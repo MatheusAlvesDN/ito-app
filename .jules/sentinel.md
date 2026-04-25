@@ -1,0 +1,4 @@
+## 2025-03-09 - DoS Vulnerability via Unbounded Input Array and Bounded Loop
+**Vulnerability:** A Denial of Service (DoS) vulnerability and potential memory exhaustion occurred in `GameScreen.tsx` where a `do...while` loop assigned unique random numbers (1-100) to an arbitrarily large array of players.
+**Learning:** If the number of players input on the client exceeds or approaches the bounds of the random number pool (100), the rejection sampling loop cannot find enough unique values, leading to an infinite loop that crashes the application/browser. The input array was not strictly capped at the source (`App.tsx`).
+**Prevention:** Always bound user inputs (both length of strings and size of collections) strictly on the client side (and server, if applicable) *before* passing them to bounded algorithms. Input lengths should also be limited via `maxLength` to avoid excessive memory allocation.
