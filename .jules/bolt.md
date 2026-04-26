@@ -1,0 +1,3 @@
+## 2025-04-26 - Avoid flatMap for random selection from partitioned datasets
+**Learning:** When randomly picking an item from multiple categories (e.g., selecting a random question from multiple themes), using `flatMap` to pool all items into a single array is inefficient because it consumes O(N) additional memory and CPU cycles to create the new array. We can achieve this in O(1) space and faster time.
+**Action:** Instead of flattening the datasets, calculate the total count of items across all categories, pick a single global random index `[0, total - 1]`, and then iterate through the categories, subtracting the category's length from the index until the correct category and local index are found.
