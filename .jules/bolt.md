@@ -1,0 +1,3 @@
+## 2024-05-24 - Avoiding memory allocation on randomized partitioned data
+**Learning:** In `GameScreen.tsx`, randomly selecting a question by flattening arrays using `flatMap` and then performing `.find(..., includes(...))` to recover the parent category creates massive unnecessary memory allocation and CPU overhead (O(N) data copies).
+**Action:** When picking a random item from a partitioned dataset, iterate through the categories once to calculate total size, generate a random index based on the total size, and then iterate again to find the item and its parent in O(C) operations without allocating large flattened arrays.
