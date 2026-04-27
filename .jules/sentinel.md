@@ -1,0 +1,4 @@
+## 2024-04-27 - Infinite Loop DoS from Unbounded Array and Bounded Randomization Pool
+**Vulnerability:** An infinite loop Denial of Service (DoS) and potential memory exhaustion condition. `GameScreen.tsx` assigns unique random numbers from 1 to 100 to players using a `do...while` loop that runs until a unique number is found. The number of players added in `App.tsx` was unbounded. If a user added 100 or more players, the loop in `GameScreen.tsx` would run forever attempting to find an available number in the pool of 100.
+**Learning:** Bounded randomization pools (like 1 to 100) must never be used in conjunction with unbounded inputs (like user-added array items) without explicit size limits enforced at the input layer.
+**Prevention:** Always enforce a strict maximum size (e.g., max 20 players) for arrays that will be mapped against bounded finite pools to prevent infinite loops, and enforce `maxLength` on user text inputs to prevent string-based memory exhaustion.
