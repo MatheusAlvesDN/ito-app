@@ -1,0 +1,3 @@
+## 2025-04-28 - [Optimized randomized element selection logic]
+**Learning:** Selecting a random element from a partitioned dataset using `flatMap()` causes a huge memory allocation overhead which impacts the app memory consumption and processing times unnecessarily. Furthermore, finding the theme by stepping through the entire generated list linearly with `.includes` adds extra computational burden.
+**Action:** Replace `flatMap()` and `.includes()` on array of arrays with length summation computation and index tracking to drastically cut processing time and reduce garbage collection workload.
