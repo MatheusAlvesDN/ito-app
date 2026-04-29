@@ -1,0 +1,3 @@
+## 2026-04-29 - [Index-based Random Element Selection over Arrays]
+**Learning:** Selecting a random element from a multi-dimensional array partitioned by categories using `flatMap` forces the JS runtime to allocate a completely new flattened array and then using `find` + `includes` iterates again through it. This creates an O(N) memory allocation and O(N) lookup where N is the total number of items, which can be computationally expensive on low-end devices and slow as databases scale up.
+**Action:** Always prefer calculating the total number of elements without duplication, generating a single global random index, and iterating through the partitions to subtract their length from the index to locate the specific element in O(P) time where P is the number of partitions.
