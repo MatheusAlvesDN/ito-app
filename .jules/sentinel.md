@@ -1,0 +1,4 @@
+## 2024-04-30 - Infinite Loop Denial of Service via Unbounded Randomization Pool
+**Vulnerability:** A `do...while` loop was assigning unique random numbers (1 to 100) to players in `GameScreen`. Since there was no limit on the number of players that could be added in `App.tsx`, adding > 100 players caused an infinite loop DoS and a browser crash since unique numbers couldn't be satisfied from the finite pool of 100 choices.
+**Learning:** This existed because the input layer (`App.tsx`) lacked validation to cap user inputs aligned with the constraints of the logic layer (`GameScreen.tsx`), exposing the application to client-side memory exhaustion and DoS from maliciously long input arrays.
+**Prevention:** Always enforce a hard maximum length/limit on user inputs and arrays that directly interact with bounded logic loops or database queries. Ensure input bounds are significantly smaller than fixed randomization pools.
