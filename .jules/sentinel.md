@@ -1,0 +1,4 @@
+## 2024-05-02 - Memory Exhaustion / DoS in Random Number Generation
+**Vulnerability:** A lack of boundary checks on the maximum number of players allowed a malicious user to add more than 100 players. This directly led to an infinite `do...while` loop and memory exhaustion in `GameScreen.tsx` because the random assignment logic attempts to uniquely assign numbers from a pool limited to 1-100.
+**Learning:** Input arrays that dictate the number of iterations in bounded random selection logic (without replacement) must have their size strictly validated to be less than or equal to the size of the selection pool.
+**Prevention:** Always enforce logical maximums on input collections at the UI level (e.g., maximum 20 players) and enforce input length limits (`maxLength`) on unbounded text inputs to prevent resource exhaustion.
