@@ -1,0 +1,3 @@
+## 2024-05-03 - Optimize random item selection in partitioned datasets
+**Learning:** Selecting a random item from multiple categories using `flatMap` to merge arrays, followed by array element lookup using `includes()` within a `find()` loop, is extremely inefficient. It results in unnecessary memory allocations for the merged array and O(N^2) complexity due to repeated full scans.
+**Action:** When picking a random item across multiple categories, iterate once to calculate the total item count, generate a global random index, and iterate again to locate the specific item and its parent category. This achieves O(N) complexity without intermediate array allocations.
