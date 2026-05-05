@@ -1,0 +1,4 @@
+## 2025-03-01 - Infinite Loop DoS from Unbounded Array Inputs
+**Vulnerability:** Unbounded string array input limits allowed a user to bypass random number bounds, causing an infinite loop. The `GameScreen.tsx` randomly selected unique numbers 1-100 in a do-while loop based on player size without validation. Adding more than 100 players would result in a DoS because a unique number could not be found, freezing the app.
+**Learning:** If business logic randomly picks unrepeated elements from a bounded pool, ensure the number of input sources that consumes this pool is also firmly bounded. Length bounds should exist in UI inputs and components.
+**Prevention:** Bound unbounded user inputs immediately at the UI level and strictly enforce max limits on arrays passed to logic bounded by pool limits.
