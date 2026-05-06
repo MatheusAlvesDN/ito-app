@@ -1,0 +1,3 @@
+## 2024-05-06 - Optimize Random Item Selection from Partitioned Datasets
+**Learning:** Optimizing random item selection from a partitioned dataset (e.g., grouped by categories) shouldn't be done using `flatMap` followed by `find()` and `includes()` for reverse-lookup, as this causes O(N^2) complexity and unnecessary allocations. It's more efficient to calculate the total number of items, generate a global random index, and iterate through the partitions to locate the specific item in O(N) time with O(1) allocation overhead, preserving the uniform probability distribution.
+**Action:** When implementing random selection from partitioned data, pre-calculate partition sizes and index directly instead of flattening the arrays and iterating to find matches.
