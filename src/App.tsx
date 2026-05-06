@@ -158,7 +158,12 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
                   </div>
                   <span className="font-bold text-slate-700 truncate max-w-[150px]">{player}</span>
                 </div>
-                <button onClick={() => { const n = [...localPlayers]; n.splice(index, 1); setLocalPlayers(n); }} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                <button
+                  onClick={() => { const n = [...localPlayers]; n.splice(index, 1); setLocalPlayers(n); }}
+                  className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-red-400 outline-none"
+                  aria-label="Remover jogador"
+                  title="Remover jogador"
+                >
                   <Trash2 size={20} />
                 </button>
               </div>
