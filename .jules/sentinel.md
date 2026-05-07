@@ -1,0 +1,4 @@
+## 2025-05-07 - Add Application-layer DoS protection in array and text inputs
+**Vulnerability:** A vulnerability was discovered in the `addPlayer` routine where an array limit was not enforced and an input's `maxLength` was missing, which allowed users to endlessly generate names of extreme length. Furthermore, a `do...while` bounds logic that expected limited array permutations in GameScreen.tsx could have eventually triggered an infinite loop causing memory exhaustion.
+**Learning:** Even simple client-side features without immediate API impact can trigger excessive memory consumption and infinite loop hangs if user input directly dictates bounds inside application logic loops.
+**Prevention:** Always restrict dynamically expanding data structures and set hard `maxLength` boundaries on raw inputs to ensure predictable memory behavior and fast component renders.
