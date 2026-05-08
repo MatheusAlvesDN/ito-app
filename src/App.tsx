@@ -1,6 +1,6 @@
 import { useEffect, useReducer } from 'react';
-import { Play, Cloud, ChevronLeft, Zap, Ghost } from 'lucide-react';
-import { THEMES, type Theme } from './data';
+import { Play, Cloud, ChevronLeft, Zap, Ghost, UserSearch } from 'lucide-react';
+import { THEMES } from './data';
 
 // --- IMPORTS DOS COMPONENTES ---
 import RegisterScreenClassic from './ito/RegisterScreen';
@@ -9,9 +9,12 @@ import GameScreenIto from './ito/GameScreen';
 import RegisterScreenImpostor from './impostor/RegisterScreen';
 import ThemeSelectionImpostor from './impostor/ThemeSelection';
 import GameScreenImpostor from './impostor/GameScreen';
+import RegisterScreenWhoAmI from './whoami/RegisterScreen';
+import ThemeSelectionWhoAmI from './whoami/ThemeSelection';
+import GameScreenWhoAmI from './whoami/GameScreen';
 
 // --- TIPOS ---
-export type GameMode = 'classic' | 'impostor';
+export type GameMode = 'classic' | 'impostor' | 'whoami';
 
 // Define todas as telas possíveis
 type Screen = 
@@ -22,13 +25,16 @@ type Screen =
   | 'theme-classic'
   | 'theme-impostor'
   | 'game-classic'
-  | 'game-impostor';
+  | 'game-impostor'
+  | 'register-whoami'
+  | 'theme-whoami'
+  | 'game-whoami';
 
 type State = {
   screen: Screen;
   gameMode: GameMode;
   players: string[];
-  themes: Theme[];
+  themes: any[];
 };
 
 type Action =
@@ -36,8 +42,9 @@ type Action =
   | { type: 'GO_MODE_SELECTION' }
   | { type: 'SELECT_MODE_CLASSIC' }
   | { type: 'SELECT_MODE_IMPOSTOR' }
+  | { type: 'SELECT_MODE_WHOAMI' }
   | { type: 'PLAYERS_CONFIRMED'; players: string[] }
-  | { type: 'THEMES_CONFIRMED'; themes: Theme[] }
+  | { type: 'THEMES_CONFIRMED'; themes: any[] }
   | { type: 'RESET' };
 
 const STORAGE_KEY = 'ito_app_state_v4'; // Versão 4
@@ -80,10 +87,20 @@ function reducer(state: State, action: Action): State {
         screen: 'register-impostor' 
       };
 
+    case 'SELECT_MODE_WHOAMI':
+      return { 
+        ...state, 
+        gameMode: 'whoami', 
+        screen: 'register-whoami' 
+      };
+
     case 'PLAYERS_CONFIRMED':
       // Decide qual tela de tema mostrar baseado no modo atual
       if (state.gameMode === 'impostor') {
         return { ...state, players: action.players, screen: 'theme-impostor' };
+      }
+      if (state.gameMode === 'whoami') {
+        return { ...state, players: action.players, screen: 'theme-whoami' };
       }
       return { ...state, players: action.players, screen: 'theme-classic' };
 
@@ -91,6 +108,9 @@ function reducer(state: State, action: Action): State {
       // Decide qual tela de jogo mostrar
       if (state.gameMode === 'impostor') {
         return { ...state, themes: action.themes, screen: 'game-impostor' };
+      }
+      if (state.gameMode === 'whoami') {
+        return { ...state, themes: action.themes, screen: 'game-whoami' };
       }
       return { ...state, themes: action.themes, screen: 'game-classic' };
 
@@ -148,6 +168,7 @@ export default function App() {
             onBack={() => dispatch({ type: 'GO_HOME' })}
             onSelectClassic={() => dispatch({ type: 'SELECT_MODE_CLASSIC' })}
             onSelectImpostor={() => dispatch({ type: 'SELECT_MODE_IMPOSTOR' })}
+            onSelectWhoAmI={() => dispatch({ type: 'SELECT_MODE_WHOAMI' })}
           />
         );
 
@@ -199,14 +220,40 @@ export default function App() {
           />
         );
 
+      // --- FLUXO QUEM SOU EU ---
+      case 'register-whoami':
+        return (
+          <RegisterScreenWhoAmI
+            onBack={() => dispatch({ type: 'GO_MODE_SELECTION' })}
+            onNext={(players) => dispatch({ type: 'PLAYERS_CONFIRMED', players })}
+          />
+        );
+      case 'theme-whoami':
+        return (
+          <ThemeSelectionWhoAmI
+            onBack={() => dispatch({ type: 'SELECT_MODE_WHOAMI' })}
+            onStart={(themes) => dispatch({ type: 'THEMES_CONFIRMED', themes })}
+          />
+        );
+      case 'game-whoami':
+        return (
+          <GameScreenWhoAmI
+            onBack={() => dispatch({ type: 'GO_HOME' })}
+            players={state.players}
+            themes={state.themes}
+          />
+        );
+
       default:
         return <HomeScreen onPlay={() => dispatch({ type: 'GO_MODE_SELECTION' })} />;
     }
   };
 
   return (
-    <div className="w-full h-screen bg-white text-slate-900 font-sans overflow-hidden flex flex-col selection:bg-yellow-200">
-      {renderScreen()}
+    <div className="w-full h-screen bg-white text-slate-900 font-sans overflow-hidden flex flex-col selection:bg-yellow-200 relative">
+      <div className="flex-1 flex flex-col overflow-y-auto w-full max-h-screen">
+        {renderScreen()}
+      </div>
     </div>
   );
 }
@@ -224,10 +271,10 @@ const HomeScreen = ({ onPlay }: { onPlay: () => void }) => {
       </div>
 
       <div className="z-10 flex flex-col items-center mb-16 animate-fade-in-down">
-        <h1 className="text-9xl font-black tracking-tighter text-white drop-shadow-lg select-none" style={{ fontFamily: 'system-ui, sans-serif' }}>
-          ITO
+        <h1 className="text-7xl md:text-8xl font-black tracking-tighter text-white drop-shadow-lg select-none text-center leading-tight" style={{ fontFamily: 'system-ui, sans-serif' }}>
+          PARTY<br/>GAMES
         </h1>
-        <p className="text-sky-900 mt-2 font-bold tracking-[0.2em] text-sm uppercase bg-white/30 px-4 py-1 rounded-full backdrop-blur-sm">
+        <p className="text-sky-900 mt-4 font-bold tracking-[0.2em] text-sm uppercase bg-white/30 px-4 py-1 rounded-full backdrop-blur-sm">
           Mobile Experience
         </p>
       </div>
@@ -249,21 +296,23 @@ const ModeSelectionScreen = ({
   onBack,
   onSelectClassic,
   onSelectImpostor,
+  onSelectWhoAmI,
 }: {
   onBack: () => void;
   onSelectClassic: () => void;
   onSelectImpostor: () => void;
+  onSelectWhoAmI: () => void;
 }) => {
   return (
     <div className="flex-1 flex flex-col bg-slate-50 relative h-full">
-      <div className="p-4 flex items-center bg-white shadow-sm sticky top-0 z-20 pt-8 md:pt-4 safe-top">
+      <div className="p-4 flex items-center bg-white shadow-sm sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
         <button onClick={onBack} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
           <ChevronLeft size={24} className="text-slate-700" />
         </button>
         <span className="ml-4 font-bold text-lg text-slate-700">Modo de Jogo</span>
       </div>
 
-      <div className="flex-1 p-6 flex flex-col justify-center gap-6">
+      <div className="flex-1 p-6 flex flex-col justify-start md:justify-center gap-6 overflow-y-auto pb-12">
         {/* ITO Clássico */}
         <button
           onClick={onSelectClassic}
@@ -297,6 +346,26 @@ const ModeSelectionScreen = ({
              <p className="text-slate-400 font-medium">Um traidor entre nós. Quem recebeu a pergunta diferente?</p>
              <div className="inline-block bg-purple-900/50 px-2 py-1 rounded text-xs text-purple-200 mt-2 font-bold border border-purple-500/30">
                Mín. 3 Jogadores
+             </div>
+           </div>
+        </button>
+
+        {/* Quem Sou Eu */}
+        <button
+          onClick={onSelectWhoAmI}
+          className="group relative w-full bg-teal-800 p-8 rounded-3xl shadow-lg border-2 border-teal-700 hover:border-emerald-500 hover:bg-teal-700 transition-all duration-200 transform hover:scale-[1.02] active:scale-95 text-left overflow-hidden"
+        >
+           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <UserSearch size={100} className="text-emerald-400 fill-emerald-400" />
+           </div>
+           <div className="relative z-10 flex flex-col gap-2">
+             <div className="w-14 h-14 bg-teal-700 rounded-2xl flex items-center justify-center text-emerald-400 mb-2">
+                <UserSearch size={32} />
+             </div>
+             <h3 className="text-3xl font-black text-white">QUEM SOU EU?</h3>
+             <p className="text-teal-200 font-medium">Você é o único que não sabe o personagem que tirou!</p>
+             <div className="inline-block bg-teal-900/50 px-2 py-1 rounded text-xs text-teal-300 mt-2 font-bold border border-emerald-500/30">
+               Mín. 2 Jogadores
              </div>
            </div>
         </button>

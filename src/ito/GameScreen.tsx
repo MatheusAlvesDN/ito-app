@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Dices, Check, Eye, Unlock, Star, Cloud, RefreshCw, ArrowRight, Lock, GripVertical } from 'lucide-react';
+import { ChevronLeft, Dices, Check, Unlock, Star, Cloud, RefreshCw, Lock, GripVertical } from 'lucide-react';
 import { QUESTIONS_DB } from './data';
 import type { Theme } from '../data';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -124,9 +124,8 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
   const [round, setRound] = useState(1);
   const [orderedPlayers, setOrderedPlayers] = useState<string[]>([]);
   const [isVictory, setIsVictory] = useState(false);
-  const [viewingPlayer, setViewingPlayer] = useState<string | null>(null);
+  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
-  const [playersSeen, setPlayersSeen] = useState<string[]>([]);
 
   // Configuração dos sensores para Mobile e Desktop
   const sensors = useSensors(
@@ -160,8 +159,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
 
   const startRound = () => {
     setPhase('rolling');
-    setPlayersSeen([]);
-    setViewingPlayer(null);
+    setCurrentPlayerIndex(0);
     setIsRevealed(false);
     setOrderedPlayers([...players]);
   };
@@ -213,35 +211,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
     setPhase('init');
   };
 
-  if (viewingPlayer) {
-    return (
-      <div className="w-full h-full absolute inset-0 z-50 bg-slate-900 flex flex-col items-center justify-center p-6 animate-fade-in">
-        <div className="absolute inset-0 bg-black opacity-95"></div>
-        <div className="relative z-10 w-full max-w-sm bg-slate-800 rounded-3xl p-8 border border-slate-700 shadow-2xl flex flex-col items-center text-center space-y-6">
-          {!isRevealed ? (
-            <>
-              <div className="w-24 h-24 bg-slate-700 rounded-full flex items-center justify-center animate-pulse mb-4">
-                <Lock className="text-yellow-500" size={48} />
-              </div>
-              <h2 className="text-2xl font-bold text-white">Passe para <span className="text-yellow-400 block text-4xl mt-2">{viewingPlayer}</span></h2>
-              <p className="text-slate-400 text-sm">Garanta que ninguém mais está olhando.</p>
-              <button onClick={() => setIsRevealed(true)} className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold text-xl py-4 rounded-xl mt-4 shadow-lg active:scale-95">REVELAR</button>
-            </>
-          ) : (
-            <>
-              <div className="flex flex-col items-center animate-bounce-subtle py-6">
-                <span className="text-slate-400 font-medium mb-4 uppercase tracking-widest text-xs">Seu número é</span>
-                <span className="text-9xl font-black text-yellow-400 drop-shadow-[0_0_25px_rgba(250,204,21,0.6)]">{playerNumbers[viewingPlayer]}</span>
-              </div>
-              <div className="w-full pt-6 border-t border-slate-700">
-                <button onClick={() => { setPlayersSeen([...playersSeen, viewingPlayer]); setViewingPlayer(null); }} className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold text-lg py-4 rounded-xl transition-colors">OK, MEMORIZEI</button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
+  // Remover a lógica antiga de renderização sobreposta
 
   const mainThemeColor = themes.length === 1 ? themes[0].buttonColor : 'bg-yellow-400 hover:bg-yellow-300';
 
@@ -281,18 +251,47 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
         )}
 
         {phase === 'numbers' && (
-          <div className="animate-fade-in pb-24">
-            <p className="text-center text-slate-400 mb-6">Toque no seu nome. <br /><strong className="text-white">Mantenha segredo!</strong></p>
-            <div className="grid grid-cols-2 gap-4">
-              {players.map((player) => {
-                const hasSeen = playersSeen.includes(player);
-                return (
-                  <button key={player} onClick={() => !hasSeen && setViewingPlayer(player)} disabled={hasSeen} className={`p-4 rounded-2xl border transition-all flex flex-col items-center justify-center h-32 relative overflow-hidden ${hasSeen ? 'bg-slate-800/40 border-slate-800 opacity-50' : 'bg-slate-800 border-slate-600 hover:border-yellow-400 shadow-lg active:scale-95'}`}>
-                    <span className="text-slate-200 font-bold mb-2 truncate w-full text-center text-lg">{player}</span>
-                    {hasSeen ? <Check size={28} className="text-green-500" /> : <Eye size={28} className="text-yellow-400" />}
-                  </button>
-                );
-              })}
+          <div className="flex-1 flex flex-col items-center justify-center animate-fade-in pb-24 mt-8">
+            <h2 className="text-2xl font-black text-white mb-2">Vez de {players[currentPlayerIndex]}</h2>
+            <p className="text-slate-400 mb-6 uppercase tracking-widest text-xs font-bold">Passe o celular para ele(a)!</p>
+            
+            <div className="w-full max-w-sm aspect-[3/4] relative perspective-1000">
+              <div className={`w-full h-full relative transition-all duration-500 transform-style-3d bg-slate-800 rounded-3xl border-4 ${
+                  isRevealed ? 'border-yellow-400 shadow-[0_0_50px_rgba(250,204,21,0.3)]' : 'border-slate-700 shadow-xl'
+                }`}>
+                {!isRevealed ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                    <div className="bg-slate-700/50 p-6 rounded-full mb-6 animate-pulse">
+                      <Lock size={64} className="text-slate-400" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-2">Toque para ver</h3>
+                    <p className="text-slate-400">Garanta que ninguém mais está olhando!</p>
+                    <button onClick={() => setIsRevealed(true)} className="absolute inset-0 w-full h-full z-10" />
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-slate-800 rounded-3xl overflow-hidden">
+                    <span className="text-slate-400 font-medium mb-4 uppercase tracking-widest text-xs">Seu número é</span>
+                    <span className="text-9xl font-black text-yellow-400 drop-shadow-[0_0_25px_rgba(250,204,21,0.6)]">{playerNumbers[players[currentPlayerIndex]]}</span>
+                    <button onClick={() => {
+                        setIsRevealed(false);
+                        if (currentPlayerIndex < players.length - 1) {
+                          setCurrentPlayerIndex(prev => prev + 1);
+                        } else {
+                          startOrdering();
+                        }
+                      }} 
+                      className="absolute bottom-6 left-6 right-6 py-4 bg-yellow-400 hover:bg-yellow-300 text-black font-bold text-xl rounded-xl transition-colors z-20 shadow-lg active:scale-95 flex items-center justify-center gap-2 flex-col leading-tight"
+                    >
+                      <span className="text-base font-medium opacity-80 uppercase tracking-wider text-black">Memorizou?</span>
+                      {currentPlayerIndex < players.length - 1 ? "PRÓXIMO" : "IR PARA O JOGO"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="mt-8 bg-slate-800 px-6 py-2 rounded-full border border-slate-700 font-bold text-slate-400">
+              Jogador {currentPlayerIndex + 1} de {players.length}
             </div>
           </div>
         )}
@@ -353,11 +352,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
             <Dices size={24} /> <span>SORTEAR</span>
           </button>
         )}
-        {phase === 'numbers' && (
-          <button onClick={startOrdering} disabled={playersSeen.length < players.length} className={`w-full font-black text-xl py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 ${playersSeen.length < players.length ? 'bg-slate-800 text-slate-600 cursor-not-allowed' : `${mainThemeColor} text-black active:scale-95 animate-pulse`}`}>
-            {playersSeen.length < players.length ? <span>AGUARDANDO ({playersSeen.length}/{players.length})</span> : <><span>ORDENAR</span><ArrowRight size={24} /></>}
-          </button>
-        )}
+        {/* Numbers phase footer logic removed since it proceeds automatically */}
         {phase === 'ordering' && (
           <button onClick={checkResult} className="w-full bg-green-500 hover:bg-green-400 text-white font-black text-xl py-4 rounded-2xl shadow-[0_4px_14px_rgba(34,197,94,0.4)] active:scale-95 flex items-center justify-center gap-2">
             <Check size={28} /> <span>REVELAR ORDEM</span>
