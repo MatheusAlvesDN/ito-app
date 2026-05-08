@@ -113,7 +113,9 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
   const [localPlayers, setLocalPlayers] = useState<string[]>([]);
 
   const addPlayer = () => {
-    if (inputValue.trim()) {
+    // SECURITY: Limit maximum players to 20 to prevent potential DoS / memory exhaustion
+    // during the do...while random number generation in GameScreen.tsx
+    if (inputValue.trim() && localPlayers.length < 20) {
       setLocalPlayers([...localPlayers, inputValue.trim()]);
       setInputValue('');
     }
@@ -128,16 +130,20 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
 
       <div className="flex-1 p-6 flex flex-col max-w-full overflow-hidden">
         <div className="bg-white p-4 rounded-3xl shadow-lg mb-6 border border-slate-100 shrink-0">
-          <label className="block text-slate-500 font-bold mb-2 ml-1 text-xs uppercase tracking-wider">Adicionar Jogador</label>
+          <label className="block text-slate-500 font-bold mb-2 ml-1 text-xs uppercase tracking-wider">
+            Adicionar Jogador {localPlayers.length >= 20 && <span className="text-red-500 ml-2">(Máximo atingido)</span>}
+          </label>
           <div className="flex gap-2">
             <input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
               placeholder="Nome do participante"
-              className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
+              maxLength={30}
+              disabled={localPlayers.length >= 20}
+              className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-yellow-400 outline-none transition-all disabled:opacity-50"
             />
-            <button onClick={addPlayer} disabled={!inputValue.trim()} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
+            <button onClick={addPlayer} disabled={!inputValue.trim() || localPlayers.length >= 20} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
               <Plus size={24} />
             </button>
           </div>
