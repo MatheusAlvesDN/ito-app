@@ -1,0 +1,4 @@
+## 2024-05-15 - Client-Side DoS via Unbounded Inputs and do...while loops
+**Vulnerability:** A client-side Denial of Service (DoS) and infinite loop risk was present in `src/GameScreen.tsx`. The application randomly generated a number between 1 and 100 for each player using a `do...while` loop that retried if a number was already used. If a user registered more than 100 players, the available numbers would run out, causing an infinite loop that crashed the browser tab.
+**Learning:** Even client-side logic must establish strict boundaries on user input, especially when that input drives loops with finite constraints (like selecting from a fixed set of 100 numbers).
+**Prevention:** Always implement hard limits on user-provided arrays/lists that influence application logic, and validate lengths in the UI to prevent exceeding those limits. For this app, capping `localPlayers` to 20 and restricting name lengths prevents both the logic error and memory exhaustion.
