@@ -1,0 +1,3 @@
+## 2024-05-09 - Missing Accessible Labels on Icon-Only UI Elements
+**Learning:** In highly visual mobile-first interfaces like this one, important navigation and action buttons (like 'Back', 'Add', 'Remove', 'Move Up/Down', and 'Next Round') are often implemented using only SVG icons. While visually intuitive, this causes severe accessibility barriers as screen readers have no text to announce. Additionally, forms without explicit id and htmlFor label associations can be confusing.
+**Action:** When working on interactive UI components, always ensure icon-only buttons include descriptive `aria-label` attributes translated to the app's primary language. Ensure input elements are explicitly linked to their labels using `id` and `htmlFor`.
