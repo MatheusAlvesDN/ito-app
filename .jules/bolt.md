@@ -1,0 +1,3 @@
+## 2025-05-09 - O(N^2) Anti-Pattern in Partitioned Dataset Random Selection
+**Learning:** Using `flatMap` to merge arrays from a partitioned dataset (like categories/themes), selecting a random item, and then doing an O(N^2) reverse-lookup using `find` and `includes` to determine the original partition of the selected item is highly inefficient and causes unnecessary array allocations.
+**Action:** When picking a random item from multiple sub-arrays and retaining its parent group context, always calculate the total count of items to generate a global random index, then iterate through the groups and subtract the group's length from the index until you locate the item. This reduces complexity from O(N^2) to O(N).
