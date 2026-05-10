@@ -1,0 +1,3 @@
+## 2024-05-10 - O(N^2) Array Partition Search Bottleneck
+**Learning:** Using `flatMap` to merge partitioned category arrays into a single list, picking a random item, and then repeatedly calling `.find()` and `.includes()` to reverse-lookup the parent category results in an O(N^2) complexity and unnecessary allocations. This is highly inefficient in hot paths or with large data structures.
+**Action:** Replace `flatMap` with O(N) length summations to determine the total item count. Generate a single global random index, then iterate through the category buckets (subtracting lengths) to find the exact item and its parent category simultaneously in O(T) time (where T is the number of categories).
