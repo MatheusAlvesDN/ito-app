@@ -1,0 +1,4 @@
+## 2024-06-25 - Memory Exhaustion / DoS via Unbounded Input and Random Logic
+**Vulnerability:** A combination of unbounded array growth in player registration and a bounded `do...while` loop for random number assignment (bounded implicitly by 100 choices) created a severe Denial of Service (DoS) and infinite loop risk.
+**Learning:** If users can add more than 100 players, the random assignment logic in `GameScreen.tsx` (`do { num = Math.floor(Math.random() * 100) + 1; } while (usedNumbers.has(num));`) will loop infinitely because there are no available unique numbers left between 1 and 100. Additionally, excessively long strings for player names could exhaust memory.
+**Prevention:** Always enforce strict upper limits on user-generated collections (e.g., maximum 20 players) and maximum lengths on individual text inputs (`maxLength={30}`) to prevent resource exhaustion and ensure dependent logic (like random number distribution) can safely resolve.
