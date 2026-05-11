@@ -1,0 +1,3 @@
+## 2024-05-11 - Optimize random item selection from partitioned datasets
+**Learning:** Avoid using `flatMap` to merge arrays followed by `find()` and `includes()` for reverse-lookup to pick a random item across multiple categories. This causes O(N^2) complexity and unnecessary memory allocations. Do not randomly pick a category first and then an item within it, as this skews the uniform probability distribution.
+**Action:** Calculate the total number of items, generate a global random index, and iterate through the categories by subtracting the category length to locate the specific item in O(N) time without intermediate arrays.
