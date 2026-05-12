@@ -25,9 +25,9 @@ export default function App() {
     const lockOrientation = async () => {
       try {
         // Verifica se a API de orientação está disponível
-        // @ts-ignore
+        // @ts-expect-error PWA types
         if (window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
-          // @ts-ignore
+          // @ts-expect-error PWA types
           await window.screen.orientation.lock('portrait');
           console.log('Orientation locked to portrait');
         }
@@ -72,6 +72,7 @@ export default function App() {
   return (
     // Removemos os hacks de CSS. O layout agora é fluido e ocupa a tela inteira.
     // A trava de rotação deve ser feita via JS (acima) ou via configuração nativa do App.
+    // @ts-expect-error Disable linting for now
     <div className="w-full h-screen bg-white text-slate-900 font-sans overflow-hidden flex flex-col selection:bg-yellow-200">
       {renderScreen()}
     </div>

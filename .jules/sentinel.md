@@ -1,0 +1,4 @@
+## 2024-05-12 - Secure Random Number Generation for Game Logic
+**Vulnerability:** Insecure randomness (`Math.random()`) was being used for core game logic (assigning player secret numbers and selecting questions), which could potentially allow prediction of outcomes.
+**Learning:** `Math.random()` is not cryptographically secure and should never be used for security-sensitive operations or core game mechanics where predictability is a flaw.
+**Prevention:** Always use cryptographically secure random number generators, such as `window.crypto.getRandomValues()` (via the `getSecureRandomInt` utility), for critical logic like game randomizations, while `Math.random()` remains acceptable for visual-only non-critical elements like confetti animations.
