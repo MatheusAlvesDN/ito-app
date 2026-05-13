@@ -1,0 +1,4 @@
+## 2024-05-13 - Replace Math.random with secure random integer generation
+**Vulnerability:** The game used `Math.random()` to generate the secret numbers for players in `src/GameScreen.tsx`.
+**Learning:** `Math.random()` is not cryptographically secure, which means its output could be predicted, potentially allowing players to cheat by guessing other players' secret numbers. The codebase had a utility function for secure random number generation (`getSecureRandomInt`) which was not being used for this critical game state initialization.
+**Prevention:** Always use cryptographically secure pseudo-random number generators (CSPRNG) like `window.crypto.getRandomValues` (wrapped by `getSecureRandomInt` in this project) when generating random numbers for critical application state or security-sensitive operations.
