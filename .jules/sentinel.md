@@ -1,0 +1,4 @@
+## 2024-05-14 - Replaced insecure random number generation
+**Vulnerability:** Use of `Math.random()` for critical game logic (assigning secret numbers to players and selecting questions), which can make outcomes predictable.
+**Learning:** Even in a seemingly simple game, using predictable random number generation for secret assignments compromises the fairness and integrity of the game. The `Math.random()` function is not cryptographically secure. The codebase already had a `getSecureRandomInt` function using `window.crypto.getRandomValues()` that should have been used.
+**Prevention:** Always use cryptographically secure random number generators like `window.crypto.getRandomValues()` (or wrapper functions like `getSecureRandomInt`) when generating values that need to be secret, unpredictable, or are used for game logic affecting outcomes.
