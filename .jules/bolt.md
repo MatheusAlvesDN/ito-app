@@ -1,0 +1,3 @@
+## 2025-05-14 - Optimized Question Selection Logic
+**Learning:** Using `flatMap` to merge arrays followed by `find().includes()` for reverse-lookup to select a random item from partitioned datasets creates O(N^2) complexity and unnecessary memory allocations. This is inefficient, especially when scaling datasets. Randomly picking a category first and then an item within it also skews the uniform probability distribution.
+**Action:** Always calculate the total number of items first, generate a global random index, and iterate through the categories to locate the specific item in O(N) time without allocating new arrays.
