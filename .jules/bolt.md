@@ -1,0 +1,3 @@
+## 2024-05-15 - Optimize Random Selection from Partitioned Data
+**Learning:** Using `flatMap` to merge arrays followed by `.find()` and `.includes()` for reverse-lookups creates O(N^2) complexity and redundant allocations. It significantly harms performance on large datasets.
+**Action:** Replace `flatMap` with a single iteration that calculates total items, generates a global random index, and iterates through categories sequentially to find the chosen item while preserving uniformly random distribution.

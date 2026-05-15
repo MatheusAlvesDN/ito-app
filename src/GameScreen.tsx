@@ -51,12 +51,13 @@ const QUESTIONS_DB: Record<string, string[]> = {
 
 const Confetti = () => {
   // Cria 50 partículas com posições e cores aleatórias
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
+  const [particles] = useState(() => Array.from({ length: 50 }).map((_, i) => ({
     id: i,
     x: Math.random() * 100,
     delay: Math.random() * 2,
-    color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+    color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)],
+    duration: 2 + Math.random() * 3
+  })));
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -68,7 +69,7 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDuration: `${p.duration}s`,
             animationDelay: `${p.delay}s`
           }}
         />
@@ -121,12 +122,22 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
       setCurrentQuestion("MODO LIVRE: Inventem um desafio!");
       setCurrentThemeColor('bg-slate-200');
     } else if (themes.length > 0) {
-      const allQuestions = themes.flatMap(t => QUESTIONS_DB[t.id] || []);
-      if (allQuestions.length > 0) {
-          const q = allQuestions[Math.floor(Math.random() * allQuestions.length)];
-          setCurrentQuestion(q);
-          const t = themes.find(t => (QUESTIONS_DB[t.id] || []).includes(q)) || themes[0];
-          setCurrentThemeColor(t.color);
+      let totalQuestions = 0;
+      for (const t of themes) {
+        totalQuestions += (QUESTIONS_DB[t.id] || []).length;
+      }
+
+      if (totalQuestions > 0) {
+        let globalIndex = Math.floor(Math.random() * totalQuestions);
+        for (const t of themes) {
+          const questions = QUESTIONS_DB[t.id] || [];
+          if (globalIndex < questions.length) {
+            setCurrentQuestion(questions[globalIndex]);
+            setCurrentThemeColor(t.color);
+            break;
+          }
+          globalIndex -= questions.length;
+        }
       }
     }
     setPhase('ordering');
