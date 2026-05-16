@@ -1,0 +1,4 @@
+## 2024-05-16 - DoS Vulnerability via Unbounded Input Limits
+**Vulnerability:** A combination of unbounded maximum string length on player names and no cap on the maximum number of players permitted can cause severe performance issues or an infinite loop Denial of Service (DoS) vulnerability.
+**Learning:** In GameScreen.tsx, the `do...while` loop logic is bounded to 100 random choices. If a malicious actor configures more than 100 players, the random number generator will run out of valid unique integers and cause an infinite loop, crashing the device. Memory limits could also be exhausted with large string values for player names.
+**Prevention:** Impose reasonable boundary limits on any user input. Specifically, limit input lengths (e.g. `maxLength={30}`) and the absolute quantity of configurable entries (e.g. `maxPlayers=20`) to prevent memory exhaustion and logic crashes downstream.
