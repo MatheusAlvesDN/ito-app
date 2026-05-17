@@ -1,0 +1,3 @@
+## 2024-05-17 - Avoid `flatMap` and `includes` for Random Item Selection
+**Learning:** In codebases with partitioned datasets (e.g., questions grouped by theme), flattening arrays using `flatMap` followed by a `.find()` + `.includes()` reverse lookup to determine the category creates an O(N^2) complexity and causes unnecessary memory allocations per render/action. Generating a random category and then an item within it also breaks uniform probability.
+**Action:** Instead, calculate the total count of items O(N), select a global random index, and iterate through the categories O(N), subtracting category lengths until the target item is reached. This achieves the result in O(N) without array copies and guarantees uniform randomness.
