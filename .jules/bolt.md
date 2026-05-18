@@ -1,0 +1,3 @@
+## 2025-02-28 - Optimizing Random Element Access in Partitioned Datasets
+**Learning:** Selecting a random element from a partitioned dataset (like categories/themes mapped to arrays) using `flatMap` to merge arrays followed by `.find()` and `.includes()` for reverse-lookup is computationally expensive, leading to O(n²) complexity and unnecessary allocations.
+**Action:** Always avoid `flatMap` and array reverse-lookups for selection. Instead, calculate the total length of the combined dataset via an O(n) loop, generate a single global random index, and then loop through the partitions subtracting each group's size until the selected item is found. This reduces time dramatically without skewing the uniform probability distribution of element selection.

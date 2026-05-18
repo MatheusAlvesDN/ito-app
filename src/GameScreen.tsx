@@ -51,12 +51,16 @@ const QUESTIONS_DB: Record<string, string[]> = {
 
 const Confetti = () => {
   // Cria 50 partículas com posições e cores aleatórias
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
+  // ⚡ BOLT OPTIMIZATION / REACT PURITY FIX:
+  // Using useState lazy initialization guarantees randomness is generated only ONCE per Confetti component mount,
+  // preventing layout thrashing and adhering to React Purity guidelines (no Math.random during render).
+  const [particles] = useState(() => Array.from({ length: 50 }).map((_, i) => ({
     id: i,
     x: Math.random() * 100,
     delay: Math.random() * 2,
+    duration: 2 + Math.random() * 3,
     color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+  })));
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -68,7 +72,7 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDuration: `${p.duration}s`,
             animationDelay: `${p.delay}s`
           }}
         />
@@ -121,12 +125,30 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
       setCurrentQuestion("MODO LIVRE: Inventem um desafio!");
       setCurrentThemeColor('bg-slate-200');
     } else if (themes.length > 0) {
-      const allQuestions = themes.flatMap(t => QUESTIONS_DB[t.id] || []);
-      if (allQuestions.length > 0) {
-          const q = allQuestions[Math.floor(Math.random() * allQuestions.length)];
-          setCurrentQuestion(q);
-          const t = themes.find(t => (QUESTIONS_DB[t.id] || []).includes(q)) || themes[0];
-          setCurrentThemeColor(t.color);
+      // ⚡ BOLT OPTIMIZATION:
+      // O(n) calculation of total questions + bounded random lookup, avoiding O(n²) array allocation & reverse lookups.
+      let totalQuestions = 0;
+      for (const theme of themes) {
+        totalQuestions += (QUESTIONS_DB[theme.id] || []).length;
+      }
+
+      if (totalQuestions > 0) {
+          let globalIndex = Math.floor(Math.random() * totalQuestions);
+          let selectedQuestion = '';
+          let selectedTheme = themes[0];
+
+          for (const theme of themes) {
+              const questions = QUESTIONS_DB[theme.id] || [];
+              if (globalIndex < questions.length) {
+                  selectedQuestion = questions[globalIndex];
+                  selectedTheme = theme;
+                  break;
+              }
+              globalIndex -= questions.length;
+          }
+
+          setCurrentQuestion(selectedQuestion);
+          setCurrentThemeColor(selectedTheme.color);
       }
     }
     setPhase('ordering');
