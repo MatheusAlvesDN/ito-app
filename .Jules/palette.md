@@ -1,0 +1,3 @@
+## 2025-05-18 - Added Accessibility (ARIA labels) to Icon-Only Buttons
+**Learning:** Icon-only buttons (like the `ChevronLeft` for navigating back, or `Trash2` for deleting items) require explicit `aria-label` attributes to be perceivable by screen reader users, since the SVG content itself is typically hidden or meaningless. Furthermore, context-aware, dynamic labels (e.g., ``aria-label={`Remover ${player}`}``) provide far more clarity than static ones.
+**Action:** When creating or modifying interactive elements that rely solely on visual iconography, I will prioritize adding descriptive and dynamic `aria-label`s to ensure the UI is fully accessible to assistive technologies.
