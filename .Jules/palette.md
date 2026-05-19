@@ -1,0 +1,3 @@
+## 2025-02-23 - Added ARIA labels to icon-only buttons
+**Learning:** Found several icon-only buttons (like `ChevronLeft`, `Plus`, `Trash2`, `ArrowUp`, `ArrowDown`, and `RefreshCw`) throughout the application (in `src/App.tsx` and `src/GameScreen.tsx`) that lacked `aria-label` attributes. This is a common accessibility issue pattern in this app's components, which makes navigation difficult for screen reader users as they receive no context about the button's purpose.
+**Action:** Always verify icon-only buttons and explicitly add descriptive `aria-label` attributes to ensure they are accessible to screen readers, improving the overall inclusivity of the application.
