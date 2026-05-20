@@ -1,0 +1,3 @@
+## 2024-05-17 - Add ARIA Labels to Icon-Only Buttons
+**Learning:** Icon-only buttons (like Voltar, Adicionar jogador, Remover jogador, Mover para cima/baixo, Nova rodada) lack context for screen readers. Using icon elements from `lucide-react` within a `<button>` without any visible text makes the application less accessible.
+**Action:** Added `aria-label` attributes with descriptive Portuguese text to all icon-only buttons across the application components (`RegisterScreen`, `ThemeSelectionScreen`, `GameScreen`) to improve accessibility for screen reader users. Next time, always ensure buttons containing only icons have appropriate `aria-label`s.
