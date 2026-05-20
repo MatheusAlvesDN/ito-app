@@ -1,0 +1,3 @@
+## 2024-05-24 - Avoid `flatMap` and `includes` for reverse-lookup
+**Learning:** When optimizing random item selection from a partitioned dataset (e.g., grouped by categories), avoid using `flatMap` to merge arrays followed by `find()` and `includes()` for reverse-lookup, as this causes O(N^2) complexity and unnecessary allocations. It's surprisingly inefficient, as benchmarks showed ~30x speedup with a better approach.
+**Action:** Instead, calculate the total number of items, generate a global random index, and iterate to locate the specific item in O(N) where N is the number of categories. This prevents large array allocations and avoids the slow O(N) lookup within `find`.
