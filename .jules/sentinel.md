@@ -1,0 +1,4 @@
+## 2024-05-21 - Insecure Randomness in Game Logic
+**Vulnerability:** Weak random number generation using `Math.random()` was used for sensitive game state (player numbers and question selection).
+**Learning:** `Math.random()` is not cryptographically secure and can be predictable. In a game relying on secrecy and unpredictability, this could allow a malicious user to predict outcomes or assigned numbers, violating the core game mechanics.
+**Prevention:** Always use `window.crypto.getRandomValues()` (via the existing `getSecureRandomInt` utility) instead of `Math.random()` for any logic where unpredictability is essential for security or game integrity.
