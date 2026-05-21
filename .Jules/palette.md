@@ -1,0 +1,3 @@
+## 2024-05-21 - [Icon-only buttons missing ARIA labels]
+**Learning:** Icon-only buttons without accessible names (like `aria-label`) are a common accessibility issue pattern specific to this app's components, making it difficult for screen readers to understand the purpose of actions like "Go Back", "Add", "Remove", "Move Up", "Move Down", and "Refresh".
+**Action:** Always verify that buttons containing only icons (`ChevronLeft`, `Plus`, `Trash2`, `ArrowUp`, `ArrowDown`, `RefreshCw`) have an appropriate and localized `aria-label` attribute (e.g., "Voltar", "Adicionar jogador", etc.) to ensure keyboard and screen reader accessibility.
