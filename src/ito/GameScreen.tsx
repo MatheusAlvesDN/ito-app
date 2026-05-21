@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Dices, Check, Unlock, Star, Cloud, RefreshCw, Lock, GripVertical } from 'lucide-react';
+import { ChevronLeft, Dices, Check, Unlock, Star, Cloud, RefreshCw, Lock, GripVertical, Heart } from 'lucide-react';
 import { QUESTIONS_DB } from './data';
 import type { Theme } from '../data';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -126,6 +126,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
   const [isVictory, setIsVictory] = useState(false);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
+  const [lives, setLives] = useState(3);
 
   // Configuração dos sensores para Mobile e Desktop
   const sensors = useSensors(
@@ -202,6 +203,11 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
         break;
       }
     }
+    
+    if (!correct) {
+      setLives(prev => Math.max(0, prev - 1));
+    }
+    
     setIsVictory(correct);
     setPhase('result');
   };
@@ -227,7 +233,15 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
             {themes.length === 1 ? themes[0].name : 'Mix de Temas'}
           </div>
         </div>
-        <div className="w-10" />
+        <div className="flex items-center gap-1 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700/50">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Heart 
+              key={i} 
+              size={14} 
+              className={`transition-all duration-300 ${i < lives ? 'text-red-500 fill-red-500 animate-pulse' : 'text-slate-600'}`} 
+            />
+          ))}
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col p-6 overflow-y-auto overflow-x-hidden">
@@ -307,6 +321,47 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
               <Cloud className="absolute -top-4 -right-4 text-white opacity-20 transform rotate-12" size={120} />
             </div>
 
+            {phase === 'result' && (
+              <div className="bg-slate-800/80 border border-slate-700/50 rounded-2xl p-5 mb-6 shadow-inner shrink-0 animate-fade-in relative overflow-visible">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-8 text-center">
+                  Linha do Tempo dos Números (1 a 100)
+                </div>
+                <div className="relative h-2 flex items-center bg-slate-950 rounded-full border border-slate-800 px-4">
+                  {/* Linha de fundo com gradiente */}
+                  <div className="absolute left-2 right-2 h-1 bg-gradient-to-r from-blue-500 via-yellow-400 to-red-500 rounded-full opacity-80" />
+                  
+                  {/* Marcadores dos Jogadores */}
+                  {Object.entries(playerNumbers).map(([player, num]) => {
+                    // Mapeia o número 1-100 para 5% a 95%
+                    const leftPercent = 5 + (num - 1) * 0.9;
+                    return (
+                      <div 
+                        key={player}
+                        className="absolute transform -translate-x-1/2 flex flex-col items-center group"
+                        style={{ left: `${leftPercent}%` }}
+                      >
+                        {/* Nome do jogador e número posicionados acima */}
+                        <div className="absolute bottom-3 bg-slate-900 border border-slate-700 text-[10px] font-black text-white px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap opacity-90 group-hover:opacity-100 transition-opacity z-10 flex items-center gap-1">
+                          <span className="max-w-[50px] truncate">{player}</span>
+                          <span className="text-yellow-400 font-black">{num}</span>
+                        </div>
+                        
+                        {/* Bolinha indicadora */}
+                        <div className="w-4 h-4 rounded-full bg-yellow-400 border-2 border-slate-950 shadow-md group-hover:scale-125 transition-transform flex items-center justify-center z-20">
+                          <div className="w-1.5 h-1.5 rounded-full bg-slate-950" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-between text-[9px] text-slate-500 font-bold px-1 mt-3">
+                  <span>1 (Mínimo)</span>
+                  <span>50 (Meio)</span>
+                  <span>100 (Máximo)</span>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-between px-4 mb-2 text-xs font-bold text-slate-500 uppercase tracking-widest shrink-0">
               <span>Menor (1)</span><span>Maior (100)</span>
             </div>
@@ -359,13 +414,33 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
           </button>
         )}
         {phase === 'result' && (
-          <div className="flex gap-3">
-            <div className={`flex-1 rounded-2xl flex items-center justify-center font-black text-xl ${isVictory ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
-              {isVictory ? 'SUCESSO!' : 'FALHA!'}
-            </div>
-            <button onClick={nextRound} className="bg-slate-700 hover:bg-slate-600 text-white p-4 rounded-2xl shadow-lg active:scale-95">
-              <RefreshCw size={28} />
-            </button>
+          <div className="flex flex-col gap-3 w-full">
+            {lives === 0 ? (
+              <div className="flex flex-col gap-3 w-full">
+                <div className="bg-red-600 text-white font-black text-xl py-4 rounded-2xl shadow-[0_4px_14px_rgba(220,38,38,0.4)] text-center animate-pulse">
+                  FIM DE JOGO (SEM VIDAS!)
+                </div>
+                <button 
+                  onClick={() => {
+                    setLives(3);
+                    setRound(1);
+                    setPhase('init');
+                  }} 
+                  className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-black text-xl py-4 rounded-2xl shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <RefreshCw size={24} /> <span>RECOMEÇAR</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-3 w-full">
+                <div className={`flex-1 rounded-2xl flex items-center justify-center font-black text-xl py-4 ${isVictory ? 'bg-green-500 text-white shadow-[0_4px_14px_rgba(34,197,94,0.4)]' : 'bg-red-500 text-white shadow-[0_4px_14px_rgba(239,68,68,0.4)]'}`}>
+                  {isVictory ? 'SUCESSO!' : 'FALHA!'}
+                </div>
+                <button onClick={nextRound} className="bg-slate-700 hover:bg-slate-600 text-white p-4 rounded-2xl shadow-lg active:scale-95 flex items-center justify-center shrink-0">
+                  <RefreshCw size={28} />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
