@@ -1,0 +1,3 @@
+## 2024-05-22 - Optimizing random question selection from grouped themes
+**Learning:** Using `flatMap` to merge multiple category arrays into a single array, picking an item, and then using `find` and `includes` to locate its original category results in O(N^2) complexity and creates unnecessary allocations. This is inefficient for repeated random selection.
+**Action:** When selecting a random item from partitioned datasets, generate a global random index based on the total count, and then iterate through the categories to subtract their lengths from the index until finding the item and its category simultaneously in O(N) time without allocating merged arrays.
