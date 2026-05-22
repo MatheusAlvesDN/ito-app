@@ -1,0 +1,4 @@
+## 2025-02-28 - Insecure Randomness in Game Logic
+**Vulnerability:** Game logic (generating secret player numbers and selecting questions) was using `Math.random()`, which is a weak pseudo-random number generator that can be predictable.
+**Learning:** `Math.random()` should never be used for security-sensitive logic or where fairness depends on unguessable values. The codebase already had a `getSecureRandomInt` function specifically built for this purpose in `src/utils/secureRandom.ts`.
+**Prevention:** Always use cryptographically secure randomness (e.g., `window.crypto.getRandomValues()`) when randomly generating secrets, tokens, or assigning critical game values, and prefer utilizing existing secure wrappers like `getSecureRandomInt` over native `Math.random()`.
