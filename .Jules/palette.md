@@ -1,0 +1,3 @@
+## 2023-10-27 - Icon-only buttons accessibility
+**Learning:** Icon-only buttons using lucide-react icons without explicit text or aria-labels cause significant accessibility issues for screen readers. This pattern is prominent in the app's navigation and game controls (e.g., Back, Move Up/Down, Refresh, Delete).
+**Action:** Always add explicit `aria-label` attributes to `button` elements that rely solely on SVG icons for visual communication. Include contextual variables in the label when applicable (e.g., `aria-label={\`Mover ${player} para cima\`}`) to ensure screen reader users have full context of the action.
