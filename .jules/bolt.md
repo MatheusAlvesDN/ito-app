@@ -1,0 +1,3 @@
+## 2024-06-25 - Optimization for Random Item Selection from Partitioned Datasets
+**Learning:** Using `flatMap` to merge arrays from partitioned datasets (like categories or themes) followed by `find()` and `includes()` for reverse-lookup to find the corresponding theme introduces unnecessary O(N^2) complexity and memory allocations.
+**Action:** Instead, calculate the total number of items across all selected partitions, generate a global random index, and then iterate through the partitions to locate the specific item and its corresponding partition (theme) in a single pass. This avoids intermediate array creations and is more performant.
