@@ -1,0 +1,4 @@
+## 2025-02-23 - Use cryptographically secure random number generator for game logic
+**Vulnerability:** Weak random number generation using `Math.random()` was used for crucial game mechanics (player number assignment and question selection).
+**Learning:** In a local application using web technologies, relying on `Math.random()` can be predictable and does not provide cryptographically secure randomness, which is important for ensuring fairness and unpredictability in games. The project provides a `getSecureRandomInt` utility for this purpose.
+**Prevention:** Always use `window.crypto.getRandomValues()` (via the `getSecureRandomInt` utility function) instead of `Math.random()` when performing operations that require strong randomness, such as core game logic or security-sensitive generation.

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Dices, Check, Eye, Unlock, Star, Cloud, ArrowUp, ArrowDown, RefreshCw, ArrowRight, Lock } from 'lucide-react';
 import type { Theme } from './data';
-//import { getSecureRandomInt } from './utils/secureRandom';
+import { getSecureRandomInt } from './utils/secureRandom';
 
 
 // Banco de Perguntas Simulado (DB)
@@ -96,7 +96,8 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
         const usedNumbers = new Set<number>();
         players.forEach(p => {
             let num;
-            do { num = Math.floor(Math.random() * 100) + 1; } while (usedNumbers.has(num));
+            // SECURE: Use cryptographically secure random numbers for game logic
+            do { num = getSecureRandomInt(1, 100); } while (usedNumbers.has(num));
             usedNumbers.add(num);
             finalNumbers[p] = num;
         });
@@ -123,7 +124,8 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
     } else if (themes.length > 0) {
       const allQuestions = themes.flatMap(t => QUESTIONS_DB[t.id] || []);
       if (allQuestions.length > 0) {
-          const q = allQuestions[Math.floor(Math.random() * allQuestions.length)];
+          // SECURE: Use cryptographically secure random numbers for game logic
+          const q = allQuestions[getSecureRandomInt(0, allQuestions.length - 1)];
           setCurrentQuestion(q);
           const t = themes.find(t => (QUESTIONS_DB[t.id] || []).includes(q)) || themes[0];
           setCurrentThemeColor(t.color);
