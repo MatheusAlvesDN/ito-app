@@ -12,7 +12,9 @@
   "dependencies": {
     "@capacitor/android": "^8.0.2",
     "@capacitor/core": "^8.0.2",
+    "@playwright/test": "^1.60.0",
     "lucide-react": "^0.563.0",
+    "playwright": "^1.60.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
