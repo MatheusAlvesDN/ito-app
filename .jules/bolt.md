@@ -1,0 +1,3 @@
+## 2024-05-24 - O(N^2) Bottleneck in Random Item Selection
+**Learning:** Found a performance bottleneck when selecting a random item from partitioned datasets. The code used `flatMap` to merge arrays, followed by `find()` and `includes()` for reverse lookup to identify the item's category. This causes O(N^2) complexity and unnecessary memory allocations.
+**Action:** When picking a random element from multiple categories, calculate the total count of items first, generate a global random index, and iterate through categories decrementing the index to find the item and its category in O(N) without intermediate arrays.
