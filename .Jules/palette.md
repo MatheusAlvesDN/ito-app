@@ -1,0 +1,3 @@
+## 2025-02-12 - App.tsx RegisterScreen accessibility enhancements
+**Learning:** Icon-only buttons (Plus, Trash2) and inputs without explicit label connections present critical accessibility barriers, especially on mobile web applications where screen readers need precise context.
+**Action:** Always ensure inputs have `id` attributes linked to their corresponding `<label>` using `htmlFor`, and add descriptive `aria-label` attributes in Portuguese (e.g., 'Adicionar Jogador', 'Remover Jogador') to any icon-only interactive elements.
