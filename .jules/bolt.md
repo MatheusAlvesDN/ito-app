@@ -1,0 +1,3 @@
+## 2024-05-25 - Avoid flatMap and Reverse-Lookup in Random Selection
+**Learning:** In `GameScreen.tsx`, selecting a random question from multiple themes was done by first merging all arrays with `flatMap`, generating a random index, and then using `.find()` and `.includes()` across the theme arrays to determine the corresponding theme color. This resulted in O(N²) complexity and unnecessary array allocations, especially noticeable as the `QUESTIONS_DB` grows.
+**Action:** Instead of merging arrays and reverse-looking up the item, calculate the total number of items, generate a global random index, and iterate through the original categories to locate the item and its corresponding category in a single O(N) pass without extra allocations.
