@@ -1,24 +1,48 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, CheckCircle2, Circle, Eye, EyeOff, RotateCcw, Trophy, Home, UserSearch, ArrowRight } from 'lucide-react';
 import { type WhoAmITheme } from './data';
+import { syncService } from '../utils/syncService';
 
 type Props = {
   onBack: () => void;
   players: string[];
   themes: WhoAmITheme[];
+  isMultiplayer?: boolean;
+  isHost?: boolean;
+  syncGameState?: any;
+  playerId?: string;
+  connectedPlayers?: { id: string; name: string }[];
 };
 
 type PlayerData = {
+  id?: string;
   name: string;
   personality: string;
   guessedCorrectly: boolean;
 };
 
-export default function GameScreenWhoAmI({ onBack, players, themes }: Props) {
-  const [playerData, setPlayerData] = useState<PlayerData[]>([]);
-  const [phase, setPhase] = useState<'reveal' | 'scoring' | 'ended'>('reveal');
+export default function GameScreenWhoAmI({
+  onBack,
+  players,
+  themes,
+  isMultiplayer = false,
+  isHost = false,
+  syncGameState = null,
+  playerId = '',
+  connectedPlayers = [],
+}: Props) {
+  // --- LOCAL STATES ---
+  const [localPlayerData, setLocalPlayerData] = useState<PlayerData[]>([]);
+  const [localPhase, setLocalPhase] = useState<'reveal' | 'scoring' | 'ended'>('reveal');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [revealStep, setRevealStep] = useState<'hidden' | 'showing'>('hidden');
+
+  // --- LOCAL PEAK/REVEAL OPTION FOR MULTIPLAYER ---
+  const [revealedMyOwn, setRevealedMyOwn] = useState(false);
+
+  // --- DERIVED MULTIPLAYER STATES ---
+  const phase = isMultiplayer ? (syncGameState?.phase || 'playing') : localPhase;
+  const playerData = isMultiplayer ? (syncGameState?.playerData || []) : localPlayerData;
 
   // Initialize game
   const startGame = () => {
@@ -41,16 +65,53 @@ export default function GameScreenWhoAmI({ onBack, players, themes }: Props) {
       guessedCorrectly: false,
     }));
     
-    setPlayerData(initialData);
-    setPhase('reveal');
+    setLocalPlayerData(initialData);
+    setLocalPhase('reveal');
     setCurrentIndex(0);
     setRevealStep('hidden');
   };
 
+  const startMultiplayerGame = () => {
+    if (!connectedPlayers || connectedPlayers.length < 2) return;
+
+    // Gather personalities
+    let allPersonalities = themes.flatMap(t => t.personalities);
+    allPersonalities = [...allPersonalities].sort(() => 0.5 - Math.random());
+
+    let selected: string[] = [];
+    while (selected.length < connectedPlayers.length && allPersonalities.length > 0) {
+      selected = selected.concat(allPersonalities);
+    }
+    selected = selected.slice(0, connectedPlayers.length);
+
+    const initialData: PlayerData[] = connectedPlayers.map((player, i) => ({
+      id: player.id,
+      name: player.name,
+      personality: selected[i],
+      guessedCorrectly: false,
+    }));
+
+    setRevealedMyOwn(false);
+
+    // Sync playing phase directly
+    syncService.syncState({
+      phase: 'playing',
+      playerData: initialData
+    });
+  };
+
   useEffect(() => {
-    startGame();
+    if (!isMultiplayer) {
+      startGame();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [players, themes]);
+
+  useEffect(() => {
+    if (isMultiplayer && isHost && syncGameState?.phase === 'setup') {
+      startMultiplayerGame();
+    }
+  }, [isHost, isMultiplayer, syncGameState?.phase, syncGameState?.roundKey]);
 
   const handleReveal = () => setRevealStep('showing');
 
@@ -59,16 +120,41 @@ export default function GameScreenWhoAmI({ onBack, players, themes }: Props) {
       setCurrentIndex(prev => prev + 1);
       setRevealStep('hidden');
     } else {
-      setPhase('scoring');
+      setLocalPhase('scoring');
     }
   };
 
   const toggleGuess = (index: number) => {
-    setPlayerData((prev) => {
-      const copy = [...prev];
+    if (isMultiplayer) {
+      const copy = [...playerData];
       copy[index].guessedCorrectly = !copy[index].guessedCorrectly;
-      return copy;
-    });
+      syncService.syncState({ playerData: copy });
+    } else {
+      setLocalPlayerData((prev) => {
+        const copy = [...prev];
+        copy[index].guessedCorrectly = !copy[index].guessedCorrectly;
+        return copy;
+      });
+    }
+  };
+
+  const handlePlayAgain = () => {
+    if (isMultiplayer) {
+      syncService.syncState({
+        phase: 'setup',
+        roundKey: Date.now()
+      });
+    } else {
+      startGame();
+    }
+  };
+
+  const handleEndRound = () => {
+    if (isMultiplayer) {
+      syncService.syncState({ phase: 'ended' });
+    } else {
+      setLocalPhase('ended');
+    }
   };
 
   // ------------------------------------------------------------------
@@ -76,32 +162,38 @@ export default function GameScreenWhoAmI({ onBack, players, themes }: Props) {
   // ------------------------------------------------------------------
   if (phase === 'ended') {
     return (
-      <div className="flex-1 flex flex-col bg-teal-900 text-white h-full relative overflow-hidden">
-        <div className="flex-1 p-6 flex flex-col items-center justify-center animate-fade-in z-10">
-          <Trophy size={80} className="text-yellow-400 mb-6 drop-shadow-lg" />
-          <h2 className="text-4xl font-black mb-2 text-center">Fim da Rodada!</h2>
-          <p className="text-teal-200 mb-8 text-center text-lg">Confira quem conseguiu adivinhar:</p>
+      <div className="flex-1 flex flex-col bg-slate-955 text-white h-full relative overflow-hidden font-sans">
+        {/* Background ambient glow */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/10 rounded-full blur-[120px] pointer-events-none" />
 
-          <div className="w-full max-w-md space-y-4 mb-8 overflow-y-auto max-h-[50vh] pr-2">
-            {playerData.map((p, i) => (
+        {/* Área Central Rolável */}
+        <div className="flex-1 p-6 flex flex-col items-center justify-center animate-fade-in z-10 overflow-y-auto">
+          <div className="bg-slate-900 border border-white/5 p-6 rounded-full mb-4 shadow-xl">
+            <Trophy size={64} className="text-yellow-450 drop-shadow-md" />
+          </div>
+          <h2 className="text-3xl font-black mb-1 text-center font-outfit">Fim da Rodada!</h2>
+          <p className="text-slate-400 mb-6 text-center text-sm font-medium">Veja quem conseguiu adivinhar o personagem:</p>
+
+          <div className="w-full max-w-md space-y-3 mb-6 overflow-y-auto max-h-[45vh] pr-1">
+            {playerData.map((p: PlayerData, i: number) => (
               <div 
                 key={i} 
-                className={`p-4 rounded-2xl flex items-center justify-between border-2 ${
+                className={`p-4 rounded-2xl flex items-center justify-between border-2 transition-all duration-200 ${
                   p.guessedCorrectly 
-                    ? 'bg-emerald-800/50 border-emerald-500' 
-                    : 'bg-red-900/30 border-red-500/50'
+                    ? 'bg-emerald-950/20 border-emerald-500/40 shadow-sm' 
+                    : 'bg-red-950/10 border-red-500/20 opacity-80'
                 }`}
               >
                 <div>
-                  <p className="font-bold text-xl">{p.name}</p>
-                  <p className="text-sm opacity-80 mt-1">Era: <span className="font-bold text-white">{p.personality}</span></p>
+                  <p className="font-bold text-lg font-outfit text-white">{p.name}</p>
+                  <p className="text-xs text-slate-455 mt-0.5 font-medium">Era: <span className="font-bold text-slate-200">{p.personality}</span></p>
                 </div>
                 {p.guessedCorrectly ? (
-                  <div className="flex items-center gap-2 text-emerald-400 font-bold bg-emerald-900/50 px-3 py-1 rounded-full">
-                    <CheckCircle2 size={18} /> Acertou
+                  <div className="flex items-center gap-1 text-emerald-455 font-black text-xs bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full font-outfit uppercase tracking-wider">
+                    <CheckCircle2 size={14} className="fill-emerald-400/20" /> Acertou
                   </div>
                 ) : (
-                  <div className="text-red-400 font-bold text-sm bg-red-950/50 px-3 py-1 rounded-full border border-red-500/30">
+                  <div className="text-red-400 font-bold text-xs bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full font-outfit uppercase tracking-wider">
                     Errou
                   </div>
                 )}
@@ -109,18 +201,25 @@ export default function GameScreenWhoAmI({ onBack, players, themes }: Props) {
             ))}
           </div>
 
-          <div className="flex flex-col gap-4 w-full max-w-md mt-auto pb-8">
-            <button
-              onClick={startGame}
-              className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xl py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3"
-            >
-              <RotateCcw size={24} /> Jogar Novamente
-            </button>
+          <div className="flex flex-col gap-3 w-full max-w-md mt-auto pt-4 shrink-0">
+            {(!isMultiplayer || isHost) ? (
+              <button
+                onClick={handlePlayAgain}
+                className="w-full bg-emerald-500 hover:bg-emerald-450 text-white font-black text-lg py-4 rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 font-outfit"
+              >
+                <RotateCcw size={20} /> Jogar Novamente
+              </button>
+            ) : (
+              <div className="w-full bg-slate-900/50 p-4 rounded-2xl border border-white/5 text-center flex items-center justify-center gap-3 animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="text-xs text-slate-400 font-black uppercase tracking-wider font-outfit">Aguardando líder reiniciar...</span>
+              </div>
+            )}
             <button
               onClick={onBack}
-              className="w-full bg-teal-800 hover:bg-teal-700 text-white font-bold text-lg py-4 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-3 border border-teal-600"
+              className="w-full bg-slate-900 hover:bg-slate-800 text-slate-350 font-bold text-base py-3.5 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 border border-white/5 font-outfit"
             >
-              <Home size={20} /> Voltar ao Início
+              <Home size={18} /> Voltar ao Início
             </button>
           </div>
         </div>
@@ -129,69 +228,71 @@ export default function GameScreenWhoAmI({ onBack, players, themes }: Props) {
   }
 
   // ------------------------------------------------------------------
-  // RENDER REVEAL PHASE
+  // RENDER REVEAL PHASE (Only local single phone mode goes here)
   // ------------------------------------------------------------------
-  if (phase === 'reveal') {
+  if (!isMultiplayer && phase === 'reveal') {
     const currentPlayer = playerData[currentIndex];
     
     if (!currentPlayer) return null; // safety check
     
     return (
-      <div className="flex-1 flex flex-col bg-slate-100 relative h-full">
-        {/* Header */}
-        <div className="p-4 flex items-center bg-teal-600 shadow-md sticky top-0 z-20 pt-8 md:pt-4 safe-top text-white">
-          <button onClick={onBack} className="p-2 bg-teal-700/50 rounded-full hover:bg-teal-700 transition-colors">
+      <div className="flex-1 flex flex-col bg-slate-955 text-white relative h-full overflow-hidden font-sans">
+        {/* Header Fixo */}
+        <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
+          <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-slate-355 transition-colors">
             <ChevronLeft size={24} />
           </button>
-          <div className="ml-4 flex-1">
-            <span className="font-black text-lg tracking-wide uppercase">Revelando</span>
+          <div className="flex flex-col items-center flex-1">
+            <span className="font-black text-lg tracking-wide uppercase font-outfit text-white">REVELANDO</span>
           </div>
-          <div className="text-sm font-bold bg-teal-800/50 px-3 py-1 rounded-full">
+          <div className="text-xs font-black bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full text-emerald-400 font-outfit">
             {currentIndex + 1} de {players.length}
           </div>
         </div>
 
+        {/* Área Central */}
         <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center gap-6 text-center animate-fade-in">
           {revealStep === 'hidden' ? (
             <>
-              <UserSearch size={80} className="text-teal-300 drop-shadow-sm mb-4" />
-              <h2 className="text-3xl font-black text-slate-800 mb-2">Vez de {currentPlayer.name}</h2>
-              <div className="bg-red-100 border-2 border-red-400 rounded-2xl p-6 shadow-md max-w-sm w-full">
-                <p className="text-red-700 font-bold text-lg mb-2 flex items-center justify-center gap-2 uppercase tracking-wide">
-                  <EyeOff size={24} /> Atenção!
+              <div className="bg-slate-900 border border-white/5 p-5 rounded-full mb-2 shadow-xl">
+                <UserSearch size={56} className="text-emerald-450" />
+              </div>
+              <h2 className="text-2xl font-black text-white font-outfit">Vez de {currentPlayer.name}</h2>
+              <div className="bg-red-950/20 border-2 border-red-500/20 rounded-3xl p-6 shadow-xl max-w-xs w-full animate-fade-in-scale">
+                <p className="text-red-400 font-black text-base mb-2 flex items-center justify-center gap-1.5 uppercase tracking-wider font-outfit">
+                  <EyeOff size={20} /> Atenção!
                 </p>
-                <p className="text-red-900 font-medium">
-                  <span className="font-black text-xl">{currentPlayer.name}</span>, não olhe a tela!<br/>
-                  (Ou coloque o celular na testa).<br/><br/>
-                  Os outros jogadores devem memorizar quem é esta pessoa.
+                <p className="text-red-200/80 text-xs sm:text-sm font-medium leading-relaxed">
+                  <span className="font-black text-white text-base font-outfit block mb-1">{currentPlayer.name}</span>
+                  Não olhe para a tela! Coloque o celular na testa e aguarde as pistas.
                 </p>
               </div>
               <button
                 onClick={handleReveal}
-                className="w-full max-w-sm mt-8 py-5 bg-teal-600 hover:bg-teal-500 text-white rounded-2xl font-black text-xl flex items-center justify-center gap-3 transition-colors shadow-lg active:scale-95 border-b-4 border-teal-800"
+                className="w-full max-w-xs mt-6 py-4.5 bg-emerald-500 hover:bg-emerald-450 text-white rounded-2xl font-black text-lg flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 font-outfit"
               >
-                <Eye size={28} /> Revelar Personagem
+                <Eye size={22} /> Revelar Personagem
               </button>
             </>
           ) : (
             <>
-              <div className="w-full max-w-sm bg-gradient-to-br from-teal-500 to-emerald-600 rounded-3xl p-8 text-center text-white shadow-xl relative overflow-hidden animate-fade-in-down">
-                <div className="absolute opacity-10 top-0 left-0 w-full h-full flex items-center justify-center pointer-events-none">
-                   <UserSearch size={250} />
+              <div className="w-full max-w-xs bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-8 text-center text-white shadow-2xl relative overflow-hidden animate-fade-in-scale border border-emerald-400/20">
+                <div className="absolute opacity-5 top-0 left-0 w-full h-full flex items-center justify-center pointer-events-none">
+                   <UserSearch size={220} />
                 </div>
-                <p className="text-teal-100 font-bold uppercase tracking-wider mb-2 relative z-10 text-sm">
+                <p className="text-emerald-100/70 font-bold uppercase tracking-widest mb-3 relative z-10 text-[10px] font-outfit">
                   {currentPlayer.name} é:
                 </p>
-                <p className="text-4xl sm:text-5xl font-black relative z-10 drop-shadow-md leading-tight">
+                <p className="text-3xl sm:text-4xl font-black relative z-10 drop-shadow-md leading-tight font-outfit select-none">
                   {currentPlayer.personality}
                 </p>
               </div>
               
               <button
                 onClick={handleNextReveal}
-                className="w-full max-w-sm mt-8 py-5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-2xl font-black text-xl flex items-center justify-center gap-3 transition-colors shadow-lg active:scale-95 border-b-4 border-emerald-700"
+                className="w-full max-w-xs mt-6 py-4.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black text-lg flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 border border-white/5 font-outfit"
               >
-                Continuar <ArrowRight size={28} />
+                Continuar <ArrowRight size={22} />
               </button>
             </>
           )}
@@ -201,55 +302,89 @@ export default function GameScreenWhoAmI({ onBack, players, themes }: Props) {
   }
 
   // ------------------------------------------------------------------
-  // RENDER SCORING PHASE
+  // RENDER SCORING/PLAYING PHASE
   // ------------------------------------------------------------------
   return (
-    <div className="flex-1 flex flex-col bg-slate-100 relative h-full">
-      {/* Header */}
-      <div className="p-4 flex items-center bg-teal-600 shadow-md sticky top-0 z-20 pt-8 md:pt-4 safe-top text-white">
-        <button onClick={onBack} className="p-2 bg-teal-700/50 rounded-full hover:bg-teal-700 transition-colors">
+    <div className="flex-1 flex flex-col bg-slate-955 text-slate-100 relative h-full overflow-hidden font-sans">
+      {/* Header Fixo */}
+      <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
+        <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-emerald-400 transition-colors">
           <ChevronLeft size={24} />
         </button>
-        <div className="ml-4 flex-1">
-          <span className="font-black text-lg tracking-wide uppercase">Pontuação</span>
-        </div>
+        <span className="ml-4 font-black text-xl text-white font-outfit">Dicas & Personagens</span>
       </div>
 
-      <div className="p-4 bg-teal-50 border-b border-teal-200">
-        <p className="text-teal-800 text-center font-medium">Deem as dicas! Quem for adivinhando o se personagem ganha os pontos.</p>
+      <div className="p-4 bg-emerald-500/10 border-b border-emerald-500/20 text-center shrink-0">
+        <p className="text-emerald-300 text-xs sm:text-sm font-semibold font-sans px-2">
+          {isMultiplayer 
+            ? "Olhe para seus amigos! Você vê os personagens deles, mas o seu está oculto."
+            : "Deem as dicas! Quem for adivinhando seu respectivo personagem ganha a pontuação."}
+        </p>
       </div>
 
-      {/* Players List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {playerData.map((p, index) => {
+      {/* Players List Rolável */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
+        {playerData.map((p: PlayerData, index: number) => {
+          const isMe = isMultiplayer && p.id === playerId;
           return (
-            <div key={index} className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 flex items-center justify-between">
-              <span className="font-bold text-2xl text-slate-800">{p.name}</span>
+            <div key={index} className="bg-slate-900/30 p-4 rounded-3xl border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm hover:border-emerald-500/20 transition-all duration-200 relative overflow-hidden">
+              <div className="flex-1">
+                <span className="font-black text-xl text-white font-outfit block truncate max-w-[200px]">{p.name}</span>
+                <p className="text-xs text-slate-455 mt-1 font-medium">
+                  {isMe ? (
+                    revealedMyOwn ? (
+                      <span className="text-red-400 font-bold bg-red-950/20 px-2 py-0.5 rounded border border-red-500/10">Você é: <strong className="text-white text-sm">{p.personality}</strong></span>
+                    ) : (
+                      <span className="text-yellow-455 font-bold bg-yellow-950/10 px-2.5 py-1 rounded-lg border border-yellow-500/10 animate-pulse">❓ Oculto para você! Coloque na testa</span>
+                    )
+                  ) : (
+                    <span>É: <strong className="text-emerald-300 font-black text-sm uppercase tracking-wide font-outfit">{p.personality}</strong></span>
+                  )}
+                </p>
+              </div>
               
-              <button
-                onClick={() => toggleGuess(index)}
-                className={`flex items-center gap-2 px-4 py-3 rounded-2xl transition-all shadow-sm ${
-                  p.guessedCorrectly 
-                    ? 'bg-emerald-500 text-white border-b-4 border-emerald-700 active:border-b-0 active:translate-y-1' 
-                    : 'bg-slate-100 text-slate-500 border border-slate-300 hover:bg-slate-200 active:scale-95'
-                }`}
-              >
-                {p.guessedCorrectly ? <CheckCircle2 size={24} className="fill-emerald-200"/> : <Circle size={24} />}
-                <span className="font-bold uppercase tracking-wide">Acertou</span>
-              </button>
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                {isMe && !revealedMyOwn && (
+                  <button
+                    onClick={() => setRevealedMyOwn(true)}
+                    className="px-3.5 py-2 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 font-bold text-xs hover:bg-red-500/20 transition-all font-outfit uppercase tracking-wider"
+                  >
+                    Olhar
+                  </button>
+                )}
+                
+                <button
+                  onClick={() => toggleGuess(index)}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl transition-all text-xs font-black tracking-wider uppercase font-outfit border ${
+                    p.guessedCorrectly 
+                      ? 'bg-emerald-500 hover:bg-emerald-450 border-emerald-600 text-white shadow-sm' 
+                      : 'bg-slate-900/50 hover:bg-slate-900 border-white/5 text-slate-455'
+                  }`}
+                >
+                  {p.guessedCorrectly ? <CheckCircle2 size={16} className="fill-emerald-300/20"/> : <Circle size={16} />}
+                  <span>Acertou</span>
+                </button>
+              </div>
             </div>
           );
         })}
       </div>
 
-      {/* Footer / End Round */}
-      <div className="p-4 bg-white border-t border-slate-200 shrink-0 safe-bottom pb-8 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
-        <button
-          onClick={() => setPhase('ended')}
-          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black text-xl py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"
-        >
-          Finalizar Rodada <ChevronLeft className="rotate-180" size={24} />
-        </button>
+      {/* Footer Fixo */}
+      <div className="p-6 bg-slate-900 border-t border-white/5 shrink-0 safe-bottom shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
+        {(!isMultiplayer || isHost) ? (
+          <button
+            onClick={handleEndRound}
+            className="w-full bg-white hover:bg-slate-200 text-slate-955 font-black text-lg py-4 rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 font-outfit"
+          >
+            <span>FINALIZAR RODADA</span> <ChevronLeft className="rotate-180" size={24} />
+          </button>
+        ) : (
+          <div className="w-full bg-slate-955/50 p-4 rounded-2xl border border-white/5 text-center flex items-center justify-center gap-3 animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-emerald-450 animate-ping" />
+            <span className="text-xs text-slate-450 font-black uppercase tracking-wider font-outfit">Líder finalizará rodada em breve...</span>
+          </div>
+        )}
       </div>
     </div>
   );

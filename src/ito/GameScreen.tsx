@@ -219,73 +219,84 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
 
   // Remover a lógica antiga de renderização sobreposta
 
-  const mainThemeColor = themes.length === 1 ? themes[0].buttonColor : 'bg-yellow-400 hover:bg-yellow-300';
+  const mainThemeColor = themes.length === 1 ? themes[0].buttonColor : 'bg-yellow-400 hover:bg-yellow-350';
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-900 text-white relative h-full">
+    <div className="flex-1 flex flex-col bg-slate-950 text-white relative h-full overflow-hidden font-sans">
       {phase === 'result' && isVictory && <Confetti />}
 
-      <div className={`p-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-20 bg-slate-900/80 border-b border-white/5 pt-8 md:pt-4`}>
-        <button onClick={onBack} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white"><ChevronLeft size={24} /></button>
+      {/* Header Fixo */}
+      <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
+        <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+          <ChevronLeft size={24} />
+        </button>
         <div className="flex flex-col items-center">
-          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">RODADA {round}</span>
-          <div className={`flex items-center gap-2 text-sm font-bold ${themes.length === 1 ? themes[0].textColor.replace('text-', 'text-') : 'text-yellow-400'}`}>
+          <span className="text-[9px] text-slate-450 font-bold uppercase tracking-wider font-outfit">RODADA {round}</span>
+          <div className="flex items-center gap-1.5 text-sm font-black text-yellow-400 font-outfit uppercase">
             {themes.length === 1 ? themes[0].name : 'Mix de Temas'}
           </div>
         </div>
-        <div className="flex items-center gap-1 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700/50">
+        <div className="flex items-center gap-1 bg-slate-900/80 px-3 py-1.5 rounded-full border border-white/5 shadow-inner">
           {Array.from({ length: 3 }).map((_, i) => (
             <Heart 
               key={i} 
               size={14} 
-              className={`transition-all duration-300 ${i < lives ? 'text-red-500 fill-red-500 animate-pulse' : 'text-slate-600'}`} 
+              className={`transition-all duration-300 ${i < lives ? 'text-red-500 fill-red-500 animate-pulse' : 'text-slate-700'}`} 
             />
           ))}
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col p-6 overflow-y-auto overflow-x-hidden">
+      {/* Área Central Rolável (Sem cortes) */}
+      <div className="flex-1 flex flex-col p-6 overflow-y-auto overflow-x-hidden pb-6">
         {phase === 'init' && (
-          <div className="flex-1 flex flex-col items-center justify-center space-y-8 animate-fade-in">
-            <div className="w-40 h-40 rounded-full bg-slate-800 border-8 border-slate-700 flex items-center justify-center shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-              <Dices size={64} className="text-yellow-400" />
+          <div className="flex-1 flex flex-col items-center justify-center space-y-8 animate-fade-in py-8">
+            <div className="relative">
+              <div className="absolute inset-0 bg-yellow-400/20 blur-3xl rounded-full" />
+              <div className="w-36 h-36 rounded-full bg-slate-900 border-4 border-slate-800 flex items-center justify-center shadow-2xl relative z-10">
+                <Dices size={56} className="text-yellow-400" />
+              </div>
             </div>
-            <div className="text-center space-y-3">
-              <h2 className="text-3xl font-black text-white">Novo Sorteio</h2>
-              <p className="text-slate-400 max-w-xs mx-auto text-lg">Todos receberão novos números secretos.</p>
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-black text-white font-outfit">Sorteio de Números</h2>
+              <p className="text-slate-400 max-w-xs mx-auto text-sm">Cada participante receberá uma carta secreta numerada de 1 a 100.</p>
             </div>
           </div>
         )}
 
         {phase === 'rolling' && (
-          <div className="flex-1 flex flex-col items-center justify-center space-y-8 animate-fade-in">
-            <div className="text-6xl font-black text-slate-700 animate-pulse">?</div>
-            <p className="text-yellow-400 font-bold tracking-widest uppercase animate-pulse">Embaralhando...</p>
+          <div className="flex-1 flex flex-col items-center justify-center space-y-6 animate-fade-in py-8">
+            <div className="relative w-16 h-16 flex items-center justify-center">
+              <div className="absolute inset-0 border-4 border-yellow-400/20 rounded-full" />
+              <div className="absolute inset-0 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-lg font-black text-yellow-450">?</span>
+            </div>
+            <p className="text-yellow-400 font-bold tracking-widest text-xs uppercase animate-pulse">Embaralhando Cartas...</p>
           </div>
         )}
 
         {phase === 'numbers' && (
-          <div className="flex-1 flex flex-col items-center justify-center animate-fade-in pb-24 mt-8">
-            <h2 className="text-2xl font-black text-white mb-2">Vez de {players[currentPlayerIndex]}</h2>
-            <p className="text-slate-400 mb-6 uppercase tracking-widest text-xs font-bold">Passe o celular para ele(a)!</p>
+          <div className="flex-1 flex flex-col items-center justify-center animate-fade-in py-4">
+            <h2 className="text-2xl font-black text-white mb-1 font-outfit">Vez de {players[currentPlayerIndex]}</h2>
+            <p className="text-slate-400 mb-6 uppercase tracking-widest text-[10px] font-bold">Entregue o celular para ele(a)!</p>
             
-            <div className="w-full max-w-sm aspect-[3/4] relative perspective-1000">
-              <div className={`w-full h-full relative transition-all duration-500 transform-style-3d bg-slate-800 rounded-3xl border-4 ${
-                  isRevealed ? 'border-yellow-400 shadow-[0_0_50px_rgba(250,204,21,0.3)]' : 'border-slate-700 shadow-xl'
+            <div className="w-full max-w-[280px] aspect-[3/4.2] relative perspective-1000">
+              <div className={`w-full h-full relative transition-all duration-500 transform-style-3d bg-slate-900 rounded-3xl border-2 shadow-2xl ${
+                  isRevealed ? 'border-yellow-400 shadow-yellow-500/10' : 'border-white/5'
                 }`}>
                 {!isRevealed ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                    <div className="bg-slate-700/50 p-6 rounded-full mb-6 animate-pulse">
-                      <Lock size={64} className="text-slate-400" />
+                    <div className="bg-slate-800/40 border border-white/5 p-5 rounded-full mb-6 animate-pulse">
+                      <Lock size={48} className="text-slate-400" />
                     </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">Toque para ver</h3>
-                    <p className="text-slate-400">Garanta que ninguém mais está olhando!</p>
+                    <h3 className="text-xl font-black text-white mb-2 font-outfit">Toque para ver</h3>
+                    <p className="text-xs text-slate-450 leading-relaxed font-medium">Nenhum outro jogador pode olhar.</p>
                     <button onClick={() => setIsRevealed(true)} className="absolute inset-0 w-full h-full z-10" />
                   </div>
                 ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-slate-800 rounded-3xl overflow-hidden">
-                    <span className="text-slate-400 font-medium mb-4 uppercase tracking-widest text-xs">Seu número é</span>
-                    <span className="text-9xl font-black text-yellow-400 drop-shadow-[0_0_25px_rgba(250,204,21,0.6)]">{playerNumbers[players[currentPlayerIndex]]}</span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-slate-900 rounded-3xl overflow-hidden">
+                    <span className="text-slate-450 font-bold mb-3 uppercase tracking-widest text-[10px] font-outfit">Seu número secreto é</span>
+                    <span className="text-8xl font-black text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)] font-outfit select-none">{playerNumbers[players[currentPlayerIndex]]}</span>
                     <button onClick={() => {
                         setIsRevealed(false);
                         if (currentPlayerIndex < players.length - 1) {
@@ -294,45 +305,44 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
                           startOrdering();
                         }
                       }} 
-                      className="absolute bottom-6 left-6 right-6 py-4 bg-yellow-400 hover:bg-yellow-300 text-black font-bold text-xl rounded-xl transition-colors z-20 shadow-lg active:scale-95 flex items-center justify-center gap-2 flex-col leading-tight"
+                      className="absolute bottom-5 left-5 right-5 py-3.5 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-base rounded-2xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 flex-col leading-tight font-outfit"
                     >
-                      <span className="text-base font-medium opacity-80 uppercase tracking-wider text-black">Memorizou?</span>
-                      {currentPlayerIndex < players.length - 1 ? "PRÓXIMO" : "IR PARA O JOGO"}
+                      <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest text-black">Entendido?</span>
+                      {currentPlayerIndex < players.length - 1 ? "PRÓXIMO JOGADOR" : "IR PARA O JOGO"}
                     </button>
                   </div>
                 )}
               </div>
             </div>
             
-            <div className="mt-8 bg-slate-800 px-6 py-2 rounded-full border border-slate-700 font-bold text-slate-400">
+            <div className="mt-6 bg-slate-900/60 px-5 py-1.5 rounded-full border border-white/5 font-bold text-xs text-slate-400 font-outfit">
               Jogador {currentPlayerIndex + 1} de {players.length}
             </div>
           </div>
         )}
 
         {(phase === 'ordering' || phase === 'result') && (
-          <div className="flex flex-col h-full animate-fade-in pb-24">
-            <div className={`${currentThemeColor || 'bg-slate-800'} rounded-2xl p-6 mb-6 shadow-lg border-2 border-white/10 relative overflow-hidden transition-all duration-500 shrink-0`}>
-              <div className="flex items-center gap-2 mb-2 opacity-70 relative z-10 text-slate-900">
-                {themes.some(t => t.id === 'free') ? <Unlock size={16} /> : <Star size={16} />}
-                <span className="text-xs font-bold uppercase tracking-widest">Tema</span>
+          <div className="flex flex-col w-full animate-fade-in">
+            {/* Bloco de Tema */}
+            <div className={`${currentThemeColor || 'bg-slate-900/50'} rounded-3xl p-5 mb-5 shadow-lg border border-white/5 relative overflow-hidden shrink-0 transition-all duration-300`}>
+              <div className={`flex items-center gap-2 mb-1.5 opacity-80 ${currentThemeColor ? 'text-slate-800' : 'text-slate-200'}`}>
+                {themes.some(t => t.id === 'free') ? <Unlock size={14} /> : <Star size={14} />}
+                <span className="text-[10px] font-bold uppercase tracking-widest font-outfit">Situação Proposta</span>
               </div>
-              <h3 className="text-2xl font-black text-slate-900 leading-tight relative z-10 drop-shadow-sm">{currentQuestion}</h3>
-              <Cloud className="absolute -top-4 -right-4 text-white opacity-20 transform rotate-12" size={120} />
+              <h3 className={`text-base sm:text-lg font-black leading-snug font-outfit ${currentThemeColor ? 'text-slate-955' : 'text-white'}`}>{currentQuestion}</h3>
+              <Cloud className={`absolute -top-4 -right-4 opacity-10 transform rotate-12 pointer-events-none ${currentThemeColor ? 'text-white/20' : 'text-slate-500/10'}`} size={120} />
             </div>
 
+            {/* Linha do Tempo de Resultados */}
             {phase === 'result' && (
-              <div className="bg-slate-800/80 border border-slate-700/50 rounded-2xl p-5 mb-6 shadow-inner shrink-0 animate-fade-in relative overflow-visible">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-8 text-center">
+              <div className="bg-slate-900/30 border border-white/5 rounded-3xl p-5 mb-5 shadow-inner shrink-0 animate-fade-in relative">
+                <div className="text-[9px] font-bold text-slate-450 uppercase tracking-wider mb-8 text-center font-outfit">
                   Linha do Tempo dos Números (1 a 100)
                 </div>
-                <div className="relative h-2 flex items-center bg-slate-950 rounded-full border border-slate-800 px-4">
-                  {/* Linha de fundo com gradiente */}
-                  <div className="absolute left-2 right-2 h-1 bg-gradient-to-r from-blue-500 via-yellow-400 to-red-500 rounded-full opacity-80" />
+                <div className="relative h-2 flex items-center bg-slate-950 rounded-full border border-white/5 px-4 mx-2">
+                  <div className="absolute left-2 right-2 h-1 bg-gradient-to-r from-blue-500 via-yellow-400 to-red-500 rounded-full opacity-60" />
                   
-                  {/* Marcadores dos Jogadores */}
                   {Object.entries(playerNumbers).map(([player, num]) => {
-                    // Mapeia o número 1-100 para 5% a 95%
                     const leftPercent = 5 + (num - 1) * 0.9;
                     return (
                       <div 
@@ -340,39 +350,37 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
                         className="absolute transform -translate-x-1/2 flex flex-col items-center group"
                         style={{ left: `${leftPercent}%` }}
                       >
-                        {/* Nome do jogador e número posicionados acima */}
-                        <div className="absolute bottom-3 bg-slate-900 border border-slate-700 text-[10px] font-black text-white px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap opacity-90 group-hover:opacity-100 transition-opacity z-10 flex items-center gap-1">
-                          <span className="max-w-[50px] truncate">{player}</span>
-                          <span className="text-yellow-400 font-black">{num}</span>
+                        <div className="absolute bottom-4 bg-slate-900 border border-white/10 text-[9px] font-black text-white px-2 py-0.5 rounded shadow-lg whitespace-nowrap opacity-90 group-hover:opacity-100 transition-opacity z-10 flex items-center gap-1 font-outfit">
+                          <span className="max-w-[40px] truncate">{player}</span>
+                          <span className="text-yellow-400 font-bold">{num}</span>
                         </div>
                         
-                        {/* Bolinha indicadora */}
-                        <div className="w-4 h-4 rounded-full bg-yellow-400 border-2 border-slate-950 shadow-md group-hover:scale-125 transition-transform flex items-center justify-center z-20">
-                          <div className="w-1.5 h-1.5 rounded-full bg-slate-950" />
+                        <div className="w-3.5 h-3.5 rounded-full bg-yellow-400 border-2 border-slate-950 shadow-md group-hover:scale-125 transition-transform flex items-center justify-center z-20">
+                          <div className="w-1.5 h-1.5 bg-slate-950 rounded-full" />
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <div className="flex justify-between text-[9px] text-slate-500 font-bold px-1 mt-3">
-                  <span>1 (Mínimo)</span>
-                  <span>50 (Meio)</span>
-                  <span>100 (Máximo)</span>
+                <div className="flex justify-between text-[8px] text-slate-500 font-bold px-3 mt-3 font-outfit">
+                  <span>1 (MÍNIMO)</span>
+                  <span>50 (MEIO)</span>
+                  <span>100 (MÁXIMO)</span>
                 </div>
               </div>
             )}
 
-            <div className="flex justify-between px-4 mb-2 text-xs font-bold text-slate-500 uppercase tracking-widest shrink-0">
+            <div className="flex justify-between px-3 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0 font-outfit">
               <span>Menor (1)</span><span>Maior (100)</span>
             </div>
 
-            {/* Contexto DND Kit */}
+            {/* Lista Arrastável */}
             <DndContext 
               sensors={sensors} 
               collisionDetection={closestCenter} 
               onDragEnd={handleDragEnd}
             >
-              <div className="flex-1 z-10 overflow-y-auto pb-4">
+              <div className="flex-1 z-10 pb-4">
                 <SortableContext 
                   items={orderedPlayers} 
                   strategy={verticalListSortingStrategy}
@@ -401,23 +409,23 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
         )}
       </div>
 
-      <div className="p-6 bg-slate-900 border-t border-slate-800 z-40 absolute bottom-0 w-full shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+      {/* Rodapé Fixo Flex (Nunca posicionado de forma absoluta) */}
+      <div className="p-6 bg-slate-900 border-t border-white/5 z-40 shrink-0 safe-bottom shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
         {phase === 'init' && (
-          <button onClick={startRound} className={`w-full ${mainThemeColor} text-black font-black text-xl py-4 rounded-2xl shadow-lg active:scale-95 flex items-center justify-center gap-2`}>
-            <Dices size={24} /> <span>SORTEAR</span>
+          <button onClick={startRound} className={`w-full ${mainThemeColor} text-black font-black text-lg py-4 rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 font-outfit`} style={{ animationDelay: '0.1s' }}>
+            <Dices size={22} /> <span>SORTEAR CARTAS</span>
           </button>
         )}
-        {/* Numbers phase footer logic removed since it proceeds automatically */}
         {phase === 'ordering' && (
-          <button onClick={checkResult} className="w-full bg-green-500 hover:bg-green-400 text-white font-black text-xl py-4 rounded-2xl shadow-[0_4px_14px_rgba(34,197,94,0.4)] active:scale-95 flex items-center justify-center gap-2">
-            <Check size={28} /> <span>REVELAR ORDEM</span>
+          <button onClick={checkResult} className="w-full bg-green-500 hover:bg-green-400 text-white font-black text-lg py-4 rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 font-outfit">
+            <Check size={24} /> <span>REVELAR ORDEM</span>
           </button>
         )}
         {phase === 'result' && (
           <div className="flex flex-col gap-3 w-full">
             {lives === 0 ? (
-              <div className="flex flex-col gap-3 w-full">
-                <div className="bg-red-600 text-white font-black text-xl py-4 rounded-2xl shadow-[0_4px_14px_rgba(220,38,38,0.4)] text-center animate-pulse">
+              <div className="flex flex-col gap-3 w-full animate-fade-in">
+                <div className="bg-red-650 text-white font-black text-lg py-4 rounded-2xl text-center animate-pulse font-outfit">
                   FIM DE JOGO (SEM VIDAS!)
                 </div>
                 <button 
@@ -426,18 +434,18 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
                     setRound(1);
                     setPhase('init');
                   }} 
-                  className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-black text-xl py-4 rounded-2xl shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                  className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-black text-lg py-4 rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2 font-outfit"
                 >
-                  <RefreshCw size={24} /> <span>RECOMEÇAR</span>
+                  <RefreshCw size={20} /> <span>RECOMEÇAR</span>
                 </button>
               </div>
             ) : (
-              <div className="flex gap-3 w-full">
-                <div className={`flex-1 rounded-2xl flex items-center justify-center font-black text-xl py-4 ${isVictory ? 'bg-green-500 text-white shadow-[0_4px_14px_rgba(34,197,94,0.4)]' : 'bg-red-500 text-white shadow-[0_4px_14px_rgba(239,68,68,0.4)]'}`}>
+              <div className="flex gap-3 w-full animate-fade-in">
+                <div className={`flex-1 rounded-2xl flex items-center justify-center font-black text-lg py-4 font-outfit shadow-md ${isVictory ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
                   {isVictory ? 'SUCESSO!' : 'FALHA!'}
                 </div>
-                <button onClick={nextRound} className="bg-slate-700 hover:bg-slate-600 text-white p-4 rounded-2xl shadow-lg active:scale-95 flex items-center justify-center shrink-0">
-                  <RefreshCw size={28} />
+                <button onClick={nextRound} className="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-2xl shadow-md active:scale-95 transition-colors shrink-0">
+                  <RefreshCw size={22} />
                 </button>
               </div>
             )}

@@ -24,18 +24,20 @@ export default function ThemeSelectionImpostor({ onBack, onStart }: Props) {
   const selectedThemes = THEMES.filter((t) => selectedIds.includes(t.id));
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-900 relative h-full text-white">
-      <div className="p-4 flex items-center bg-slate-900/90 backdrop-blur-md sticky top-0 z-20 shadow-sm pt-8 md:pt-4 safe-top border-b border-slate-800">
-        <button onClick={onBack} className="p-2 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors">
-          <ChevronLeft size={24} className="text-purple-400" />
+    <div className="flex-1 flex flex-col bg-slate-950 relative h-full overflow-hidden text-slate-100 font-sans">
+      {/* Header Fixo */}
+      <div className="p-4 flex items-center bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 shadow-sm pt-8 md:pt-4 safe-top shrink-0">
+        <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-purple-400 transition-colors">
+          <ChevronLeft size={24} />
         </button>
         <div className="ml-4">
-          <h2 className="font-bold text-lg text-white">Temas (Impostor)</h2>
-          <p className="text-xs text-slate-400">Escolha os contextos das perguntas</p>
+          <h2 className="font-black text-xl text-white font-outfit">Temas (Impostor)</h2>
+          <p className="text-xs text-slate-450 font-medium">Escolha os contextos das perguntas</p>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-24">
+      {/* Área Central Rolável (Sem sobreposições) */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-4">
         {THEMES.map((theme) => {
            // Filtra o tema "Free" se quiser, pois impostor precisa de perguntas prontas
            if (theme.id === 'free') return null; 
@@ -46,22 +48,22 @@ export default function ThemeSelectionImpostor({ onBack, onStart }: Props) {
             <button
               key={theme.id}
               onClick={() => toggleTheme(theme.id)}
-              className={`w-full group text-left relative overflow-hidden rounded-3xl p-6 shadow-md transition-all duration-200 border-2 ${
+              className={`w-full group text-left relative overflow-hidden rounded-3xl p-5 shadow-lg transition-all duration-200 border-2 ${
                 isSelected 
-                  ? 'bg-slate-800 border-purple-500 ring-4 ring-purple-900/50 scale-[1.02]' 
-                  : 'bg-slate-800 border-transparent hover:border-slate-700'
+                  ? 'bg-slate-900 border-purple-500 ring-4 ring-purple-900/40 scale-[1.01]' 
+                  : 'bg-slate-900/50 border-white/5 hover:border-slate-800'
               }`}
             >
-              <div className={`absolute top-4 right-4 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors z-20 ${isSelected ? 'bg-purple-500 border-purple-500' : 'border-slate-600 bg-slate-800'}`}>
-                {isSelected && <Check size={14} className="text-white" />}
+              <div className={`absolute top-5 right-5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors z-20 ${isSelected ? 'bg-purple-500 border-purple-500' : 'border-slate-700 bg-slate-900'}`}>
+                {isSelected && <Check size={14} className="text-white stroke-[3px]" />}
               </div>
-              <div className="flex items-start gap-4 relative z-10 pr-6">
-                <div className={`p-4 rounded-2xl ${theme.color} text-slate-900 shadow-sm opacity-90`}>
-                  <Icon size={32} />
+              <div className="flex items-start gap-4 relative z-10 pr-8">
+                <div className={`p-3.5 rounded-2xl ${theme.color} text-slate-950 shadow-sm shrink-0 opacity-90`}>
+                  <Icon size={24} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-black text-xl text-white mb-1">{theme.name}</h3>
-                  <p className="text-slate-400 font-medium text-sm leading-relaxed">{theme.description}</p>
+                  <h3 className="font-black text-lg text-white mb-0.5 font-outfit">{theme.name}</h3>
+                  <p className="text-slate-400 font-medium text-xs sm:text-sm leading-relaxed">{theme.description}</p>
                 </div>
               </div>
             </button>
@@ -69,13 +71,14 @@ export default function ThemeSelectionImpostor({ onBack, onStart }: Props) {
         })}
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-900 border-t border-slate-800 safe-bottom">
+      {/* Rodapé Fixo Flex */}
+      <div className="p-6 bg-slate-950 border-t border-white/5 shrink-0 safe-bottom shadow-[0_-8px_24px_rgba(0,0,0,0.2)]">
         <button
           onClick={() => onStart(selectedThemes)}
           disabled={selectedIds.length === 0}
-          className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-slate-800 disabled:text-slate-600 text-white font-black text-xl py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3"
+          className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-slate-900 disabled:text-slate-600 text-white font-black text-lg py-4 rounded-2xl shadow-md hover:shadow-lg disabled:shadow-none transition-all duration-150 active:scale-95 disabled:active:scale-100 flex items-center justify-center gap-2 font-outfit"
         >
-          <span>INICIAR IMPOSTOR</span> <Ghost size={24} fill="currentColor" />
+          <span>INICIAR IMPOSTOR</span> <Ghost size={20} fill="currentColor" />
         </button>
       </div>
     </div>

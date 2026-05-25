@@ -10,6 +10,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { type Theme, IMPOSTOR_SCENARIOS, type ImpostorScenario } from './data';
+import { syncService } from '../utils/syncService';
 
 type GameStep = 'distribution' | 'discussion' | 'reveal';
 
@@ -17,37 +18,49 @@ type Props = {
   onBack: () => void;
   players: string[];
   themes: Theme[];
+  isMultiplayer?: boolean;
+  isHost?: boolean;
+  syncGameState?: any;
+  playerId?: string;
+  connectedPlayers?: { id: string; name: string }[];
 };
 
-export default function GameScreenImpostor({ onBack, players, themes }: Props) {
-  // --- ESTADOS DO JOGO ---
-  const [step, setStep] = useState<GameStep>('distribution');
+export default function GameScreenImpostor({
+  onBack,
+  players,
+  themes,
+  isMultiplayer = false,
+  isHost = false,
+  syncGameState = null,
+  playerId = '',
+  connectedPlayers = [],
+}: Props) {
+  // --- ESTADOS LOCAIS ---
+  const [localStep, setLocalStep] = useState<GameStep>('distribution');
   const [roundKey, setRoundKey] = useState(0);
 
-  // Dados da rodada atual
-  const [impostorIndex, setImpostorIndex] = useState<number>(-1);
-  const [honestQuestion, setHonestQuestion] = useState<string>('');
-  const [impostorQuestion, setImpostorQuestion] = useState<string>('');
+  const [localImpostorIndex, setLocalImpostorIndex] = useState<number>(-1);
+  const [localHonestQuestion, setLocalHonestQuestion] = useState<string>('');
+  const [localImpostorQuestion, setLocalImpostorQuestion] = useState<string>('');
   
-  // Controle de distribuição
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [isCardRevealed, setIsCardRevealed] = useState(false);
+
+  // --- ESTADOS DERIVADOS MULTIPLAYER ---
+  const step = isMultiplayer ? (syncGameState?.step || 'distribution') : localStep;
+  const honestQuestion = isMultiplayer ? (syncGameState?.honestQuestion || '') : localHonestQuestion;
+  const impostorQuestion = isMultiplayer ? (syncGameState?.impostorQuestion || '') : localImpostorQuestion;
+  const impostorPlayerId = isMultiplayer ? (syncGameState?.impostorPlayerId || '') : '';
+  const viewedPlayers = isMultiplayer ? (syncGameState?.viewedPlayers || []) : [];
 
   // --- LÓGICA DE INICIALIZAÇÃO ---
 
   const getScenarios = () => {
-    // Começa com o pool padrão
     let pool: ImpostorScenario[] = [...IMPOSTOR_SCENARIOS['default']];
     
-    // Adiciona cenários baseados nos temas selecionados
     themes.forEach((t) => {
-      // Verifica se existe o ID no objeto IMPOSTOR_SCENARIOS
       if (IMPOSTOR_SCENARIOS[t.id]) {
         pool = [...pool, ...IMPOSTOR_SCENARIOS[t.id]];
-      }
-      // Se selecionou 'free', garante que 'default' esteja lá (já está, mas reforça a lógica)
-      if (t.id === 'free') {
-        // A lógica atual já inclui default no início, então ok.
       }
     });
     return pool;
@@ -58,15 +71,14 @@ export default function GameScreenImpostor({ onBack, players, themes }: Props) {
 
     // 1. Sortear Impostor
     const newImpostorIndex = Math.floor(Math.random() * players.length);
-    setImpostorIndex(newImpostorIndex);
+    setLocalImpostorIndex(newImpostorIndex);
 
     // 2. Sortear Perguntas do Data.ts
     const scenarios = getScenarios();
     
-    // Fallback de segurança caso não tenha cenários
     if (scenarios.length === 0) {
-       setHonestQuestion('Erro: Sem perguntas');
-       setImpostorQuestion('Erro');
+       setLocalHonestQuestion('Erro: Sem perguntas');
+       setLocalImpostorQuestion('Erro');
        return;
     }
 
@@ -77,18 +89,57 @@ export default function GameScreenImpostor({ onBack, players, themes }: Props) {
       Math.floor(Math.random() * randomScenario.impostorVariations.length)
     ];
 
-    setHonestQuestion(honestQ);
-    setImpostorQuestion(impostorQ);
+    setLocalHonestQuestion(honestQ);
+    setLocalImpostorQuestion(impostorQ);
 
     // 3. Resetar estados
-    setStep('distribution');
+    setLocalStep('distribution');
     setCurrentPlayerIndex(0);
     setIsCardRevealed(false);
   };
 
+  const setupMultiplayerRound = () => {
+    if (!connectedPlayers || connectedPlayers.length < 3) return;
+
+    // 1. Sortear Impostor por ID
+    const randomPlayer = connectedPlayers[Math.floor(Math.random() * connectedPlayers.length)];
+    const impostorId = randomPlayer.id;
+
+    // 2. Sortear Perguntas
+    const scenarios = getScenarios();
+    if (scenarios.length === 0) return;
+
+    const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+    const honestQ = randomScenario.honest;
+    const impostorQ = randomScenario.impostorVariations[
+      Math.floor(Math.random() * randomScenario.impostorVariations.length)
+    ];
+
+    // Reset local reveals
+    setIsCardRevealed(false);
+
+    // 3. Enviar estado sincronizado
+    syncService.syncState({
+      phase: 'game',
+      step: 'distribution',
+      impostorPlayerId: impostorId,
+      honestQuestion: honestQ,
+      impostorQuestion: impostorQ,
+      viewedPlayers: []
+    });
+  };
+
   useEffect(() => {
-    setupRound();
+    if (!isMultiplayer) {
+      setupRound();
+    }
   }, [roundKey]);
+
+  useEffect(() => {
+    if (isMultiplayer && isHost && syncGameState?.phase === 'setup') {
+      setupMultiplayerRound();
+    }
+  }, [isHost, isMultiplayer, syncGameState?.phase, syncGameState?.roundKey]);
 
   // --- HANDLERS ---
 
@@ -97,7 +148,7 @@ export default function GameScreenImpostor({ onBack, players, themes }: Props) {
     if (currentPlayerIndex < players.length - 1) {
       setCurrentPlayerIndex((prev) => prev + 1);
     } else {
-      setStep('discussion');
+      setLocalStep('discussion');
     }
   };
 
@@ -107,82 +158,118 @@ export default function GameScreenImpostor({ onBack, players, themes }: Props) {
 
   // --- RENDER ---
   
-  if (players.length < 3) {
+  if (!isMultiplayer && players.length < 3) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-50 text-center">
-        <div className="bg-red-100 p-6 rounded-full mb-4">
-          <AlertTriangle size={48} className="text-red-500" />
+      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-950 text-center text-slate-100 font-sans h-full">
+        <div className="bg-red-950/20 border-2 border-red-500/20 p-6 rounded-full mb-4">
+          <AlertTriangle size={48} className="text-red-555 animate-bounce" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Jogadores Insuficientes</h2>
-        <p className="text-slate-600 mb-6">O modo Impostor precisa de no mínimo 3 pessoas.</p>
-        <button onClick={onBack} className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold">Voltar</button>
+        <h2 className="text-2xl font-black text-white mb-2 font-outfit">Jogadores Insuficientes</h2>
+        <p className="text-slate-400 mb-6 text-sm font-medium">O modo Impostor precisa de no mínimo 3 pessoas.</p>
+        <button onClick={onBack} className="bg-slate-900 border border-white/5 text-white px-6 py-3 rounded-2xl font-bold font-outfit active:scale-95 transition-all">Voltar</button>
       </div>
     );
   }
 
   // FASE 1: DISTRIBUIÇÃO
   if (step === 'distribution') {
-    const currentPlayerName = players[currentPlayerIndex];
-    const isImpostor = currentPlayerIndex === impostorIndex;
+    const currentPlayerName = isMultiplayer 
+      ? (connectedPlayers.find(p => p.id === playerId)?.name || '') 
+      : players[currentPlayerIndex];
+      
+    const isImpostor = isMultiplayer 
+      ? playerId === impostorPlayerId 
+      : currentPlayerIndex === localImpostorIndex;
+      
     const questionToShow = isImpostor ? impostorQuestion : honestQuestion;
 
+    const handleRevealCard = () => {
+      setIsCardRevealed(true);
+      if (isMultiplayer) {
+        const currentViewed = syncGameState?.viewedPlayers || [];
+        if (!currentViewed.includes(playerId)) {
+          syncService.syncState({
+            viewedPlayers: [...currentViewed, playerId]
+          });
+        }
+      }
+    };
+
     return (
-      <div className="flex-1 flex flex-col bg-slate-900 relative">
-        <div className="p-4 pt-8 safe-top flex items-center justify-between">
-          <button onClick={onBack} className="p-2 bg-white/10 rounded-full hover:bg-white/20 text-white">
+      <div className="flex-1 flex flex-col bg-slate-955 text-slate-100 relative h-full overflow-hidden font-sans">
+        {/* Header Fixo */}
+        <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
+          <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
             <ChevronLeft size={24} />
           </button>
           <div className="flex flex-col items-end">
-             <span className="text-white/60 text-xs font-bold uppercase tracking-widest">Distribuição</span>
-             <span className="text-white font-bold">{currentPlayerIndex + 1} de {players.length}</span>
+             <span className="text-purple-455 text-[10px] font-black uppercase tracking-widest font-outfit">Distribuição</span>
+             <span className="text-white text-xs font-bold font-outfit">
+               {isMultiplayer 
+                 ? `${viewedPlayers.length} de ${connectedPlayers.length} Viram` 
+                 : `${currentPlayerIndex + 1} de ${players.length}`}
+             </span>
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col p-6 items-center justify-center">
-          <div className="mb-8 text-center">
-            <p className="text-slate-400 text-sm font-bold uppercase tracking-wider mb-2">Passe o celular para</p>
-            <h1 className="text-4xl font-black text-white">{currentPlayerName}</h1>
+        {/* Área Central Rolável */}
+        <div className="flex-1 flex flex-col p-6 items-center justify-center overflow-y-auto">
+          <div className="mb-6 text-center animate-fade-in">
+            {isMultiplayer ? (
+              <>
+                <p className="text-slate-450 text-xs font-bold uppercase tracking-wider mb-2 font-outfit">Seu Apelido</p>
+                <h1 className="text-3xl font-black text-white font-outfit">{currentPlayerName}</h1>
+              </>
+            ) : (
+              <>
+                <p className="text-slate-455 text-xs font-bold uppercase tracking-wider mb-2 font-outfit">Passe o celular para</p>
+                <h1 className="text-3xl sm:text-4xl font-black text-white font-outfit">{currentPlayerName}</h1>
+              </>
+            )}
           </div>
 
-          <div className="w-full max-w-sm aspect-[3/4] relative perspective-1000">
-            <div className={`w-full h-full relative transition-all duration-500 transform-style-3d bg-slate-800 rounded-3xl border-4 ${
+          <div className="w-full max-w-[280px] aspect-[3/4.2] relative perspective-1000">
+            <div className={`w-full h-full relative transition-all duration-500 transform-style-3d bg-slate-900 rounded-3xl border-2 shadow-2xl ${
                 isCardRevealed 
-                  ? (isImpostor ? 'border-purple-500 shadow-[0_0_50px_rgba(168,85,247,0.4)]' : 'border-yellow-400 shadow-[0_0_50px_rgba(250,204,21,0.3)]') 
-                  : 'border-slate-700 shadow-xl'
+                  ? (isImpostor ? 'border-purple-550 shadow-purple-550/20' : 'border-yellow-450 shadow-yellow-450/20') 
+                  : 'border-white/5 shadow-xl'
               }`}>
               {!isCardRevealed ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                  <div className="bg-slate-700/50 p-6 rounded-full mb-6 animate-pulse">
-                    <EyeOff size={64} className="text-slate-400" />
+                  <div className="bg-slate-800/40 border border-white/5 p-5 rounded-full mb-6 animate-pulse">
+                    <EyeOff size={48} className="text-slate-400" />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">Toque para ver</h3>
-                  <p className="text-slate-400">Garanta que ninguém mais está olhando!</p>
-                  <button onClick={() => setIsCardRevealed(true)} className="absolute inset-0 w-full h-full z-10" />
+                  <h3 className="text-xl font-black text-white mb-2 font-outfit">Toque para ver</h3>
+                  <p className="text-xs text-slate-450 leading-relaxed font-medium">Garanta que ninguém mais está olhando!</p>
+                  <button onClick={handleRevealCard} className="absolute inset-0 w-full h-full z-10" />
                 </div>
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-slate-800 rounded-3xl overflow-hidden">
-                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
-                      {isImpostor ? <Ghost size={300} /> : <Users size={300} />}
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-slate-900 rounded-3xl overflow-hidden">
+                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] pointer-events-none">
+                      {isImpostor ? <Ghost size={260} /> : <Users size={260} />}
                    </div>
-                   <div className="z-10 relative">
-                      <div className={`inline-flex items-center gap-2 px-4 py-1 rounded-full mb-6 text-sm font-bold uppercase tracking-wider ${
-                        isImpostor ? 'bg-purple-500/20 text-purple-300' : 'bg-yellow-400/20 text-yellow-300'
+                   <div className="z-10 relative flex flex-col items-center h-full justify-between py-2">
+                      <div className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider font-outfit ${
+                        isImpostor ? 'bg-purple-500/10 border border-purple-500/20 text-purple-300' : 'bg-yellow-400/10 border border-yellow-400/20 text-yellow-300'
                       }`}>
-                        {isImpostor ? <><Ghost size={16}/> Seu Papel</> : <><Users size={16}/> Seu Papel</>}
+                        {isImpostor ? <><Ghost size={14}/> Seu Papel</> : <><Users size={14}/> Seu Papel</>}
                       </div>
-                      <h2 className="text-3xl font-black text-white leading-tight mb-4">{questionToShow}</h2>
-                      {isImpostor ? (
-                         <p className="text-purple-300 text-sm font-medium bg-purple-900/40 p-3 rounded-lg border border-purple-500/30">
-                           Você é o Impostor! Finja que sabe do que eles estão falando.
-                         </p>
-                      ) : (
-                         <p className="text-yellow-200/80 text-sm font-medium">
-                           Encontre quem tem uma pergunta diferente.
-                         </p>
-                      )}
+                      
+                      <div className="my-auto">
+                        <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight mb-4 font-outfit">{questionToShow}</h2>
+                        {isImpostor ? (
+                           <p className="text-purple-300 text-xs sm:text-sm font-medium bg-purple-950/40 p-4 rounded-2xl border border-purple-500/20">
+                             Você é o Impostor! Finja que sabe do que eles estão falando e misture-se.
+                           </p>
+                        ) : (
+                           <p className="text-yellow-250/80 text-xs sm:text-sm font-medium bg-yellow-950/20 p-4 rounded-2xl border border-yellow-500/10">
+                             Você faz parte do grupo honesto. Descubra quem tem uma pergunta diferente.
+                           </p>
+                        )}
+                      </div>
                    </div>
-                   <button onClick={() => setIsCardRevealed(false)} className="absolute bottom-6 left-6 right-6 py-4 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 z-20">
-                     <EyeOff size={20} /> Esconder
+                   <button onClick={() => setIsCardRevealed(false)} className="absolute bottom-5 left-5 right-5 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-2xl transition-colors flex items-center justify-center gap-1.5 z-20 text-sm font-outfit">
+                     <EyeOff size={18} /> Esconder Papel
                    </button>
                 </div>
               )}
@@ -190,15 +277,32 @@ export default function GameScreenImpostor({ onBack, players, themes }: Props) {
           </div>
         </div>
 
-        {!isCardRevealed && (
-          <div className="p-6 bg-slate-900 safe-bottom">
-             <button onClick={handleNextPlayer} className="w-full bg-white text-slate-900 font-bold text-xl py-4 rounded-2xl shadow-lg hover:bg-slate-100 transition-all active:scale-95 flex items-center justify-center gap-2">
-               {currentPlayerIndex === players.length - 1 ? (
-                 <>INICIAR DISCUSSÃO <MessageCircle size={24} /></>
+        {/* Rodapé Fixo */}
+        {(!isCardRevealed || isMultiplayer) && (
+          <div className="p-6 bg-slate-900 border-t border-white/5 shrink-0 safe-bottom shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
+             {isMultiplayer ? (
+               isHost ? (
+                 <button
+                   onClick={() => syncService.syncState({ step: 'discussion' })}
+                   className="w-full bg-purple-650 hover:bg-purple-600 text-white font-black text-lg py-4 rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 font-outfit"
+                 >
+                   <span>INICIAR DISCUSSÃO</span> <MessageCircle size={20} />
+                 </button>
                ) : (
-                 <>PRÓXIMO JOGADOR <ArrowRight size={24} /></>
-               )}
-             </button>
+                 <div className="w-full bg-slate-950/50 p-4 rounded-2xl border border-white/5 text-center flex items-center justify-center gap-3 animate-pulse">
+                   <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping" />
+                   <span className="text-xs text-slate-400 font-black uppercase tracking-wider font-outfit">Aguardando líder iniciar debate...</span>
+                 </div>
+               )
+             ) : (
+               <button onClick={handleNextPlayer} className="w-full bg-white text-slate-955 font-black text-lg py-4 rounded-2xl shadow-md hover:bg-slate-100 transition-all active:scale-95 flex items-center justify-center gap-2 font-outfit">
+                 {currentPlayerIndex === players.length - 1 ? (
+                   <>INICIAR DISCUSSÃO <MessageCircle size={20} /></>
+                 ) : (
+                   <>PRÓXIMO JOGADOR <ArrowRight size={20} /></>
+                 )}
+               </button>
+             )}
           </div>
         )}
       </div>
@@ -208,22 +312,54 @@ export default function GameScreenImpostor({ onBack, players, themes }: Props) {
   // FASE 2: DISCUSSÃO
   if (step === 'discussion') {
     return (
-      <div className="flex-1 flex flex-col bg-slate-50 relative">
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <div className="bg-yellow-100 p-8 rounded-full mb-8 animate-bounce" style={{ animationDuration: '3s' }}>
-            <MessageCircle size={80} className="text-yellow-600 fill-yellow-600" />
+      <div className="flex-1 flex flex-col bg-slate-955 text-white relative h-full overflow-hidden font-sans">
+        {/* Header Fixo */}
+        <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
+          <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+            <ChevronLeft size={24} />
+          </button>
+          <span className="font-black text-xl text-white font-outfit">Discussão</span>
+        </div>
+
+        {/* Área Central */}
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center overflow-y-auto">
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-purple-500/10 blur-3xl rounded-full" />
+            <div className="bg-slate-900 border border-white/5 p-8 rounded-full shadow-2xl relative z-10 animate-bounce" style={{ animationDuration: '4s' }}>
+              <MessageCircle size={72} className="text-purple-400 fill-purple-400/10" />
+            </div>
           </div>
-          <h1 className="text-4xl font-black text-slate-900 mb-4">Hora de Debater!</h1>
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 max-w-sm w-full space-y-4">
-             <p className="text-slate-600 text-lg leading-relaxed">Façam perguntas sobre o tema secreto.</p>
-             <div className="h-px bg-slate-100 w-full" />
-             <p className="text-slate-500 text-sm"><strong className="text-slate-800">Objetivo:</strong> Descobrir o Impostor.</p>
+          <h1 className="text-3xl font-black text-white mb-3 font-outfit">Hora do Debate!</h1>
+          <div className="bg-slate-900/40 p-6 rounded-3xl border border-white/5 max-w-sm w-full space-y-4 shadow-xl">
+             <p className="text-slate-400 text-sm leading-relaxed font-medium">
+               Façam perguntas inteligentes e subjetivas uns aos outros sobre o tema secreto.
+             </p>
+             <div className="h-px bg-white/5 w-full" />
+             <p className="text-xs text-slate-450 font-medium">
+               <strong className="text-purple-400 uppercase tracking-widest font-outfit block mb-1">Seu Objetivo:</strong> 
+               Detectar quem está parecendo confuso ou dando respostas desalinhadas.
+             </p>
           </div>
         </div>
-        <div className="p-6 bg-white border-t border-slate-100 safe-bottom">
-           <button onClick={() => setStep('reveal')} className="w-full bg-slate-900 text-white font-bold text-xl py-4 rounded-2xl shadow-lg hover:bg-slate-800 transition-all active:scale-95">
-             REVELAR IDENTIDADE
-           </button>
+
+        {/* Rodapé Fixo */}
+        <div className="p-6 bg-slate-900 border-t border-white/5 shrink-0 safe-bottom shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
+           {isMultiplayer ? (
+             isHost ? (
+               <button onClick={() => syncService.syncState({ step: 'reveal' })} className="w-full bg-purple-600 hover:bg-purple-550 text-white font-black text-lg py-4 rounded-2xl shadow-md transition-all active:scale-95 font-outfit">
+                 REVELAR IMPOSTOR
+               </button>
+             ) : (
+               <div className="w-full bg-slate-955/50 p-4 rounded-2xl border border-white/5 text-center flex items-center justify-center gap-3 animate-pulse">
+                 <span className="w-2 h-2 rounded-full bg-purple-450 animate-ping" />
+                 <span className="text-xs text-slate-400 font-black uppercase tracking-wider font-outfit">Líder revelará impostor em breve...</span>
+               </div>
+             )
+           ) : (
+             <button onClick={() => setLocalStep('reveal')} className="w-full bg-purple-600 hover:bg-purple-550 text-white font-black text-lg py-4 rounded-2xl shadow-md transition-all active:scale-95 font-outfit">
+               REVELAR IMPOSTOR
+             </button>
+           )}
         </div>
       </div>
     );
@@ -231,45 +367,80 @@ export default function GameScreenImpostor({ onBack, players, themes }: Props) {
 
   // FASE 3: REVELAÇÃO
   if (step === 'reveal') {
-    const impostorName = players[impostorIndex];
+    const impostorName = isMultiplayer
+      ? (connectedPlayers.find(p => p.id === impostorPlayerId)?.name || 'Desconhecido')
+      : players[localImpostorIndex];
+
+    const handlePlayAgain = () => {
+      if (isMultiplayer) {
+        syncService.syncState({
+          phase: 'setup',
+          roundKey: Date.now()
+        });
+      } else {
+        handleNewRound();
+      }
+    };
+
     return (
-      <div className="flex-1 flex flex-col bg-slate-900 text-white relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-           <Ghost size={400} className="absolute -right-20 -top-20 text-purple-500 rotate-12" />
+      <div className="flex-1 flex flex-col bg-slate-955 text-white relative overflow-hidden font-sans h-full">
+        {/* Header Fixo */}
+        <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
+          <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+            <ChevronLeft size={24} />
+          </button>
+          <span className="font-black text-xl text-white font-outfit">Revelação</span>
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center z-10">
-          <p className="text-slate-400 font-bold uppercase tracking-[0.3em] mb-6">O Impostor era</p>
-          <div className="relative mb-10">
-            <div className="absolute inset-0 bg-purple-500 blur-2xl opacity-40 rounded-full animate-pulse" />
-            <div className="w-32 h-32 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-2xl relative z-10 border-4 border-slate-800">
-               <span className="text-6xl font-black text-white">{impostorName.charAt(0).toUpperCase()}</span>
+
+        <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
+           <Ghost size={400} className="absolute -right-20 -top-20 text-purple-550 rotate-12" />
+        </div>
+
+        {/* Área Central com Scroll */}
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center z-10 overflow-y-auto">
+          <p className="text-slate-450 font-black uppercase tracking-[0.3em] text-[10px] mb-4 font-outfit">O Impostor Infiltrado era</p>
+          
+          <div className="relative mb-8 select-none">
+            <div className="absolute inset-0 bg-purple-550/30 blur-3xl rounded-full" />
+            <div className="w-28 h-28 bg-gradient-to-br from-purple-500 to-indigo-700 rounded-full flex items-center justify-center shadow-2xl relative z-10 border-4 border-slate-900">
+               <span className="text-5xl font-black text-white font-outfit">{impostorName.charAt(0).toUpperCase()}</span>
             </div>
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 border border-purple-500 px-4 py-1 rounded-full whitespace-nowrap z-20">
-               <span className="font-bold text-purple-300">{impostorName}</span>
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-slate-900 border border-purple-500 px-4 py-1.5 rounded-full whitespace-nowrap z-20 shadow-md">
+               <span className="font-black text-xs text-purple-300 font-outfit tracking-wide uppercase">{impostorName}</span>
             </div>
           </div>
+
           <div className="w-full max-w-sm space-y-4">
-             <div className="bg-slate-800/80 p-4 rounded-xl border-l-4 border-yellow-400 text-left backdrop-blur-sm">
-                <div className="flex items-center gap-2 mb-1">
-                   <Users size={16} className="text-yellow-400" />
-                   <span className="text-xs font-bold text-slate-400 uppercase">Pergunta da Maioria</span>
+             <div className="bg-slate-900/40 p-5 rounded-3xl border-l-4 border-yellow-400 text-left shadow-lg">
+                <div className="flex items-center gap-2 mb-1 opacity-70">
+                   <Users size={14} className="text-yellow-400" />
+                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-outfit">Tema do Grupo</span>
                 </div>
-                <p className="text-xl font-bold text-white">{honestQuestion}</p>
+                <p className="text-lg font-black text-white font-outfit leading-snug">{honestQuestion}</p>
              </div>
-             <div className="bg-slate-800/80 p-4 rounded-xl border-l-4 border-purple-500 text-left backdrop-blur-sm">
-                <div className="flex items-center gap-2 mb-1">
-                   <Ghost size={16} className="text-purple-400" />
-                   <span className="text-xs font-bold text-slate-400 uppercase">Pergunta do Impostor</span>
+             <div className="bg-slate-900/40 p-5 rounded-3xl border-l-4 border-purple-500 text-left shadow-lg">
+                <div className="flex items-center gap-2 mb-1 opacity-70">
+                   <Ghost size={14} className="text-purple-400" />
+                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-outfit">Tema do Impostor</span>
                 </div>
-                <p className="text-xl font-bold text-white">{impostorQuestion}</p>
+                <p className="text-lg font-black text-white font-outfit leading-snug">{impostorQuestion}</p>
              </div>
           </div>
         </div>
-        <div className="p-6 bg-slate-900 border-t border-slate-800 safe-bottom flex flex-col gap-3">
-           <button onClick={handleNewRound} className="w-full bg-yellow-400 text-black font-black text-xl py-4 rounded-2xl shadow-[0_4px_0_rgb(161,98,7)] active:shadow-none hover:translate-y-1 active:translate-y-1 transition-all flex items-center justify-center gap-2">
-             <RefreshCw size={24} /> JOGAR NOVAMENTE
-           </button>
-           <button onClick={onBack} className="w-full bg-transparent text-slate-400 font-bold py-4 rounded-2xl hover:text-white transition-colors">
+
+        {/* Rodapé Fixo */}
+        <div className="p-6 bg-slate-900 border-t border-white/5 safe-bottom flex flex-col gap-3 shrink-0 shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
+           {(!isMultiplayer || isHost) ? (
+             <button onClick={handlePlayAgain} className="w-full bg-yellow-400 text-black font-black text-lg py-4 rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 font-outfit">
+               <RefreshCw size={20} /> JOGAR NOVAMENTE
+             </button>
+           ) : (
+             <div className="w-full bg-slate-955/50 p-4 rounded-2xl border border-white/5 text-center flex items-center justify-center gap-3 animate-pulse">
+               <span className="w-2 h-2 rounded-full bg-yellow-400 animate-ping" />
+               <span className="text-xs text-slate-450 font-black uppercase tracking-wider font-outfit">Aguardando líder reiniciar...</span>
+             </div>
+           )}
+           <button onClick={onBack} className="w-full bg-transparent text-slate-450 font-bold py-2 rounded-2xl hover:text-white transition-colors text-sm font-outfit">
              Sair para o Menu
            </button>
         </div>
