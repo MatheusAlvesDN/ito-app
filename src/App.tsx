@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useState } from 'react';
-import { Play, Cloud, ChevronLeft, Zap, Ghost, UserSearch, Wifi, Server, Users, RefreshCw, Smartphone, Copy, Plus, LogIn, Crown, ArrowRight } from 'lucide-react';
+import { Play, Cloud, ChevronLeft, Zap, Ghost, UserSearch, Wifi, Users, RefreshCw, Smartphone, Copy, Plus, LogIn, Crown, ArrowRight } from 'lucide-react';
 import { THEMES } from './data';
 import { syncService } from './utils/syncService';
 
@@ -211,8 +211,6 @@ const LobbySetupScreen = ({
   onBack,
   playerName,
   setPlayerName,
-  serverIp,
-  setServerIp,
   isConnecting,
   errorMsg,
   handleConnect,
@@ -221,8 +219,6 @@ const LobbySetupScreen = ({
   onBack: () => void;
   playerName: string;
   setPlayerName: (val: string) => void;
-  serverIp: string;
-  setServerIp: (val: string) => void;
   isConnecting: boolean;
   errorMsg: string;
   handleConnect: (customIp: string, actionType: 'create' | 'join', joinCode?: string) => void;
@@ -239,7 +235,7 @@ const LobbySetupScreen = ({
         <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-slate-200 transition-colors">
           <ChevronLeft size={24} />
         </button>
-        <span className="ml-4 font-black text-xl text-white font-outfit">Configurar Multiplayer</span>
+        <span className="ml-4 font-black text-xl text-white font-outfit">Configurar Sala</span>
       </div>
 
       <div className="flex-1 p-6 flex flex-col justify-center max-w-sm mx-auto w-full overflow-y-auto pb-12 gap-5">
@@ -247,8 +243,8 @@ const LobbySetupScreen = ({
           <div className="inline-flex p-3.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-400 mb-3 animate-pulse">
             <Wifi size={32} />
           </div>
-          <h2 className="text-2xl font-black text-white font-outfit tracking-tight">Sala de Jogo</h2>
-          <p className="text-slate-450 text-xs mt-1 font-medium">Preencha os dados e escolha se quer criar ou entrar.</p>
+          <h2 className="text-2xl font-black text-white font-outfit tracking-tight">Multiplayer P2P</h2>
+          <p className="text-slate-450 text-xs mt-1 font-medium">Jogue direto pelo seu celular sem fio via rede local.</p>
         </div>
 
         {errorMsg && (
@@ -269,29 +265,12 @@ const LobbySetupScreen = ({
             />
           </div>
 
-          <div>
-            <label className="block text-[11px] font-black uppercase tracking-wider text-slate-400 mb-1.5 font-outfit flex justify-between items-center">
-              <span>IP do Computador Host</span>
-              <span className="text-[9px] text-slate-500 normal-case">(Rodando server.js)</span>
-            </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"><Server size={16} /></span>
-              <input
-                type="text"
-                placeholder="Ex: 192.168.1.150 ou localhost"
-                value={serverIp}
-                onChange={(e) => setServerIp(e.target.value)}
-                className={`w-full bg-slate-900 border-2 border-white/5 pl-11 pr-4 py-3 rounded-2xl text-white font-mono text-sm placeholder:text-slate-650 outline-none transition-all ${ringColorClass}`}
-              />
-            </div>
-          </div>
-
           <div className="h-px bg-white/5 my-2" />
 
           {/* Opção 1: Criar Sala */}
           <button
-            onClick={() => handleConnect(serverIp, 'create')}
-            disabled={!playerName.trim() || !serverIp.trim() || isConnecting}
+            onClick={() => handleConnect('', 'create')}
+            disabled={!playerName.trim() || isConnecting}
             className={`w-full py-4 bg-gradient-to-r ${activeColorClass} disabled:from-slate-900 disabled:to-slate-900 disabled:text-slate-600 disabled:border-2 disabled:border-white/5 text-white font-black text-base rounded-2xl shadow-md transition-all active:scale-[0.98] disabled:active:scale-100 flex items-center justify-center gap-2 font-outfit`}
           >
             {isConnecting ? (
@@ -315,8 +294,8 @@ const LobbySetupScreen = ({
               />
             </div>
             <button
-              onClick={() => handleConnect(serverIp, 'join', roomToJoin)}
-              disabled={!playerName.trim() || !serverIp.trim() || roomToJoin.trim().length !== 4 || isConnecting}
+              onClick={() => handleConnect('', 'join', roomToJoin)}
+              disabled={!playerName.trim() || roomToJoin.trim().length !== 4 || isConnecting}
               className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 disabled:bg-slate-900 disabled:text-slate-600 disabled:border-slate-850 text-white font-bold text-sm rounded-xl transition-all active:scale-[0.98] disabled:active:scale-100 flex items-center justify-center gap-2 border border-white/5 font-outfit"
             >
               {isConnecting ? (
@@ -494,7 +473,6 @@ export default function App() {
   const [isHost, setIsHost] = useState(false);
   const [connectedPlayers, setConnectedPlayers] = useState<{ id: string; name: string }[]>([]);
   const [syncGameState, setSyncGameState] = useState<any>(null);
-  const [serverIp, setServerIp] = useState('localhost');
   const [playerName, setPlayerName] = useState('');
   const [playerId, setPlayerId] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -502,10 +480,6 @@ export default function App() {
 
   // Carregar configurações iniciais salvas
   useEffect(() => {
-    const savedIp = localStorage.getItem('ito_multiplayer_ip');
-    if (savedIp) {
-      setServerIp(savedIp);
-    }
     const savedName = localStorage.getItem('ito_player_name');
     if (savedName) {
       setPlayerName(savedName);
@@ -645,8 +619,6 @@ export default function App() {
             onBack={() => dispatch({ type: 'SET_SCREEN', screen: 'connection-selection' })}
             playerName={playerName}
             setPlayerName={setPlayerName}
-            serverIp={serverIp}
-            setServerIp={setServerIp}
             isConnecting={isConnecting}
             errorMsg={errorMsg}
             handleConnect={handleConnect}

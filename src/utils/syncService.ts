@@ -1,4 +1,6 @@
-// Serviço de Sincronização em Tempo Real via WebSockets
+import { Peer, type DataConnection } from 'peerjs';
+
+// Serviço de Sincronização em Tempo Real via WebRTC Peer-to-Peer (PeerJS)
 export type ConnectedPlayer = {
   id: string;
   name: string;
@@ -15,192 +17,305 @@ type SyncCallbackMap = {
 };
 
 class SyncService {
-  private socket: WebSocket | null = null;
+  private peer: Peer | null = null;
+  private connections: Map<string, DataConnection> = new Map(); // clientId -> DataConnection
   private callbacks: SyncCallbackMap = {};
   public currentRoomCode: string | null = null;
   public currentPlayerId: string | null = null;
   public isHost: boolean = false;
-  private serverUrl: string = 'ws://localhost:3000'; // Default fallback
+  private hostConn: DataConnection | null = null; // Para clientes, conexão direta com o host
+  private connectedPlayers: ConnectedPlayer[] = [];
+  private gameState: any = null;
 
-  // Configura a URL do servidor (importante para dispositivos móveis conectando via IP local)
-  public setServerUrl(ipOrUrl: string) {
-    let target = ipOrUrl.trim();
-    if (!target.startsWith('ws://') && !target.startsWith('wss://')) {
-      target = `ws://${target}`;
-    }
-    // Adiciona porta padrão se não contiver
-    if (!target.includes(':', 6)) { // 6 ignora o ws:// ou wss://
-      target = `${target}:3000`;
-    }
-    this.serverUrl = target;
-    console.log(`URL do servidor configurada para: ${this.serverUrl}`);
+  // Método legado mantido para compatibilidade estrutural
+  public setServerUrl(_ipOrUrl: string) {
+    console.log('PeerJS utiliza nuvem de sinalização gratuita e automática. IP ignorado.');
   }
 
+  // Método legado mantido para compatibilidade estrutural
   public getServerUrl(): string {
-    return this.serverUrl;
+    return 'PeerJS Cloud (P2P)';
   }
 
-  // Conecta ao servidor WebSocket
+  // Conecta e registra os callbacks
   public connect(callbacks: SyncCallbackMap): Promise<void> {
     this.callbacks = { ...this.callbacks, ...callbacks };
-
-    return new Promise((resolve, reject) => {
-      // Se já está conectado, resolve imediatamente
-      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-        resolve();
-        return;
-      }
-
-      try {
-        console.log(`Conectando em: ${this.serverUrl}...`);
-        this.socket = new WebSocket(this.serverUrl);
-
-        this.socket.onopen = () => {
-          console.log('Conexão WebSocket estabelecida com sucesso!');
-          resolve();
-        };
-
-        this.socket.onerror = (err) => {
-          console.error('Erro na conexão WebSocket:', err);
-          if (this.callbacks.onError) {
-            this.callbacks.onError('Falha ao conectar com o servidor multiplayer.');
-          }
-          reject(err);
-        };
-
-        this.socket.onclose = () => {
-          console.log('Conexão WebSocket encerrada.');
-        };
-
-        this.socket.onmessage = (event) => {
-          this.handleMessage(event.data);
-        };
-      } catch (err) {
-        reject(err);
-      }
-    });
+    return Promise.resolve(); // Resolução imediata, o peer é instanciado na criação/entrada da sala
   }
 
-  // Desconecta do servidor
+  // Desconecta e limpa todos os canais P2P
   public disconnect() {
-    if (this.socket) {
-      this.socket.close();
-      this.socket = null;
+    console.log('Desconectando e encerrando sessões P2P...');
+    if (this.peer) {
+      this.peer.destroy();
+      this.peer = null;
     }
+    this.connections.clear();
+    this.hostConn = null;
     this.currentRoomCode = null;
     this.currentPlayerId = null;
     this.isHost = false;
+    this.connectedPlayers = [];
+    this.gameState = null;
   }
 
-  // Envia mensagem em formato JSON
-  private send(data: any) {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(data));
-    } else {
-      console.error('WebSocket não está conectado. Mensagem ignorada:', data);
+  // Envia dados para um DataConnection específico
+  private sendJson(conn: DataConnection, data: any) {
+    if (conn && conn.open) {
+      conn.send(data);
     }
   }
 
-  // Ações de Sala
+  // Cria a sala WebRTC P2P atuando como Host (Autoritativo)
   public createRoom(hostName: string) {
     this.isHost = true;
-    this.send({
-      type: 'CREATE_ROOM',
-      hostName
+    this.playerName = hostName;
+    this.connectedPlayers = [];
+    this.connections.clear();
+
+    const generateCode = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let code = '';
+      for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    };
+
+    const roomCode = generateCode();
+    this.currentRoomCode = roomCode;
+
+    // Conecta à nuvem do PeerJS registrando um ID amigável com prefixo exclusivo
+    const hostId = `itogame-${roomCode}`;
+    this.peer = new Peer(hostId);
+
+    this.peer.on('open', (id) => {
+      console.log(`Sala P2P aberta com sucesso! ID do Host: ${id}`);
+      this.currentPlayerId = id;
+      
+      // O Host é o primeiro integrante da lista de jogadores
+      this.connectedPlayers = [{ id, name: hostName }];
+
+      if (this.callbacks.onRoomCreated) {
+        this.callbacks.onRoomCreated(roomCode, id, this.connectedPlayers);
+      }
+    });
+
+    this.peer.on('connection', (conn) => {
+      console.log(`Novo dispositivo tentando conectar na rede local: ${conn.peer}`);
+
+      conn.on('open', () => {
+        // Conexão de dados WebRTC aberta, aguarda mensagem de identificação 'JOIN' do cliente
+      });
+
+      conn.on('data', (data: any) => {
+        try {
+          const msg = typeof data === 'string' ? JSON.parse(data) : data;
+          
+          if (msg.type === 'JOIN') {
+            const newPlayer: ConnectedPlayer = { id: conn.peer, name: msg.playerName };
+            
+            // Adiciona o jogador se já não estiver na lista
+            if (!this.connectedPlayers.some(p => p.id === conn.peer)) {
+              this.connectedPlayers.push(newPlayer);
+              this.connections.set(conn.peer, conn);
+            }
+
+            console.log(`Jogador P2P ${msg.playerName} entrou na sala.`);
+
+            // Notifica o Host localmente
+            if (this.callbacks.onPlayerJoined) {
+              this.callbacks.onPlayerJoined(this.connectedPlayers);
+            }
+
+            // Confirma a entrada do jogador enviando a lista atualizada e o estado atual do jogo
+            this.sendJson(conn, {
+              type: 'ROOM_JOINED',
+              roomCode,
+              players: this.connectedPlayers,
+              gameState: this.gameState || { phase: 'lobby' }
+            });
+
+            // Envia a nova lista de jogadores para todos os outros participantes da sala
+            this.broadcast({
+              type: 'PLAYER_JOINED',
+              players: this.connectedPlayers
+            }, conn.peer);
+          }
+
+          if (msg.type === 'CLIENT_STATE_UPDATE') {
+            // Um cliente requisitou alteração de estado (ex: clicou em 'acertou' ou revelou card)
+            this.gameState = { ...this.gameState, ...msg.gameState };
+            
+            if (this.callbacks.onStateUpdated) {
+              this.callbacks.onStateUpdated(this.gameState);
+            }
+
+            // Distribui a alteração para todos
+            this.broadcast({
+              type: 'STATE_UPDATED',
+              gameState: this.gameState
+            });
+          }
+        } catch (err) {
+          console.error('Erro ao ler dados recebidos via P2P:', err);
+        }
+      });
+
+      conn.on('close', () => {
+        console.log(`Jogador desconectou do canal P2P: ${conn.peer}`);
+        this.handlePlayerDisconnect(conn.peer);
+      });
+
+      conn.on('error', (err) => {
+        console.error(`Erro no canal P2P com ${conn.peer}:`, err);
+        this.handlePlayerDisconnect(conn.peer);
+      });
+    });
+
+    this.peer.on('error', (err: any) => {
+      console.error('Erro no PeerJS Host:', err);
+      if (err.type === 'unavailable-id') {
+        // Se houver uma colisão rara de ID na nuvem, gera um novo código
+        this.createRoom(hostName);
+      } else if (this.callbacks.onError) {
+        this.callbacks.onError('Falha ao conectar com o serviço de sinalização P2P. Verifique sua Internet.');
+      }
     });
   }
 
+  // Gerencia a saída de um jogador
+  private handlePlayerDisconnect(peerId: string) {
+    this.connections.delete(peerId);
+    this.connectedPlayers = this.connectedPlayers.filter(p => p.id !== peerId);
+
+    if (this.callbacks.onPlayerLeft) {
+      this.callbacks.onPlayerLeft(this.connectedPlayers);
+    }
+
+    this.broadcast({
+      type: 'PLAYER_LEFT',
+      players: this.connectedPlayers
+    });
+  }
+
+  // Permite a entrada de um cliente buscando o Host
   public joinRoom(roomCode: string, playerName: string) {
     this.isHost = false;
-    this.send({
-      type: 'JOIN_ROOM',
-      roomCode,
-      playerName
+    this.playerName = playerName;
+    this.currentRoomCode = roomCode.toUpperCase().trim();
+
+    // Cria um peer com ID aleatório gerado pela nuvem
+    this.peer = new Peer();
+
+    this.peer.on('open', (id) => {
+      this.currentPlayerId = id;
+      console.log(`Cliente P2P pronto! Conectando com itogame-${this.currentRoomCode}...`);
+      
+      const hostId = `itogame-${this.currentRoomCode}`;
+      this.hostConn = this.peer!.connect(hostId);
+
+      this.hostConn.on('open', () => {
+        console.log('Conexão P2P de sinalização aberta com o Host! Enviando registro...');
+        this.sendJson(this.hostConn!, {
+          type: 'JOIN',
+          playerName
+        });
+      });
+
+      this.hostConn.on('data', (data: any) => {
+        try {
+          const msg = typeof data === 'string' ? JSON.parse(data) : data;
+          
+          if (msg.type === 'ROOM_JOINED') {
+            this.connectedPlayers = msg.players;
+            this.gameState = msg.gameState;
+
+            if (this.callbacks.onRoomJoined) {
+              this.callbacks.onRoomJoined(this.currentRoomCode!, id, msg.players, msg.gameState);
+            }
+          }
+
+          if (msg.type === 'PLAYER_JOINED') {
+            this.connectedPlayers = msg.players;
+            if (this.callbacks.onPlayerJoined) {
+              this.callbacks.onPlayerJoined(this.connectedPlayers);
+            }
+          }
+
+          if (msg.type === 'PLAYER_LEFT') {
+            this.connectedPlayers = msg.players;
+            if (this.callbacks.onPlayerLeft) {
+              this.callbacks.onPlayerLeft(this.connectedPlayers);
+            }
+          }
+
+          if (msg.type === 'STATE_UPDATED') {
+            this.gameState = msg.gameState;
+            if (this.callbacks.onStateUpdated) {
+              this.callbacks.onStateUpdated(msg.gameState);
+            }
+          }
+        } catch (err) {
+          console.error('Erro ao ler mensagens do Host via P2P:', err);
+        }
+      });
+
+      this.hostConn.on('close', () => {
+        console.log('A conexão P2P foi fechada pelo Host.');
+        if (this.callbacks.onError) {
+          this.callbacks.onError('A sala foi encerrada pelo Host.');
+        }
+      });
+
+      this.hostConn.on('error', (err) => {
+        console.error('Erro no canal P2P do Host:', err);
+        if (this.callbacks.onError) {
+          this.callbacks.onError('Perda de sinal ou erro ao se comunicar com a sala.');
+        }
+      });
     });
-  }
 
-  // Sincronização de Estado
-  public syncState(gameState: any) {
-    if (!this.currentRoomCode) return;
-    this.send({
-      type: 'SYNC_STATE',
-      roomCode: this.currentRoomCode,
-      gameState
-    });
-  }
-
-  // Processa mensagens recebidas do servidor
-  private handleMessage(messageStr: string) {
-    try {
-      const data = JSON.parse(messageStr);
-      const { type } = data;
-
-      switch (type) {
-        case 'ROOM_CREATED': {
-          const { roomCode, playerId, players } = data;
-          this.currentRoomCode = roomCode;
-          this.currentPlayerId = playerId;
-          this.isHost = true;
-          if (this.callbacks.onRoomCreated) {
-            this.callbacks.onRoomCreated(roomCode, playerId, players);
-          }
-          break;
-        }
-
-        case 'ROOM_JOINED': {
-          const { roomCode, playerId, players, gameState } = data;
-          this.currentRoomCode = roomCode;
-          this.currentPlayerId = playerId;
-          this.isHost = false;
-          if (this.callbacks.onRoomJoined) {
-            this.callbacks.onRoomJoined(roomCode, playerId, players, gameState);
-          }
-          break;
-        }
-
-        case 'PLAYER_JOINED': {
-          const { players } = data;
-          if (this.callbacks.onPlayerJoined) {
-            this.callbacks.onPlayerJoined(players);
-          }
-          break;
-        }
-
-        case 'PLAYER_LEFT': {
-          const { players } = data;
-          if (this.callbacks.onPlayerLeft) {
-            this.callbacks.onPlayerLeft(players);
-          }
-          break;
-        }
-
-        case 'STATE_UPDATED': {
-          const { gameState } = data;
-          if (this.callbacks.onStateUpdated) {
-            this.callbacks.onStateUpdated(gameState);
-          }
-          break;
-        }
-
-        case 'MAKE_HOST': {
-          this.isHost = true;
-          if (this.callbacks.onBecomeHost) {
-            this.callbacks.onBecomeHost();
-          }
-          break;
-        }
-
-        case 'ERROR': {
-          const { message } = data;
-          if (this.callbacks.onError) {
-            this.callbacks.onError(message);
-          }
-          break;
+    this.peer.on('error', (err: any) => {
+      console.error('Erro no PeerJS Cliente:', err);
+      if (this.callbacks.onError) {
+        if (err.type === 'peer-unavailable') {
+          this.callbacks.onError('Sala não encontrada! Confirme o código de 4 letras digitado.');
+        } else {
+          this.callbacks.onError('Falha ao sinalizar com o serviço P2P. Verifique sua rede.');
         }
       }
-    } catch (err) {
-      console.error('Erro ao decodificar mensagem de sincronização:', err);
+    });
+  }
+
+  // Sincroniza o estado do jogo entre todos os peers
+  public syncState(gameState: any) {
+    this.gameState = { ...this.gameState, ...gameState };
+    
+    if (this.isHost) {
+      // Host transmite diretamente para todos os conectados
+      this.broadcast({
+        type: 'STATE_UPDATED',
+        gameState: this.gameState
+      });
+    } else {
+      // Cliente envia requisição de alteração de estado para o Host atualizar e redistribuir
+      if (this.hostConn && this.hostConn.open) {
+        this.sendJson(this.hostConn, {
+          type: 'CLIENT_STATE_UPDATE',
+          gameState: this.gameState
+        });
+      }
     }
+  }
+
+  // Faz o broadcast das mensagens P2P
+  private broadcast(data: any, excludeClientId: string | null = null) {
+    this.connections.forEach((conn, clientId) => {
+      if (clientId !== excludeClientId && conn.open) {
+        this.sendJson(conn, data);
+      }
+    });
   }
 }
 
