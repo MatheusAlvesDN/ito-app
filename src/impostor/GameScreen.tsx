@@ -10,7 +10,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { type Theme, IMPOSTOR_SCENARIOS, type ImpostorScenario } from './data';
-import { syncService } from '../utils/syncService';
+import { syncService, triggerVibration } from '../utils/syncService';
 
 type GameStep = 'distribution' | 'discussion' | 'reveal';
 
@@ -53,13 +53,54 @@ export default function GameScreenImpostor({
   const impostorPlayerId = isMultiplayer ? (syncGameState?.impostorPlayerId || '') : '';
   const viewedPlayers = isMultiplayer ? (syncGameState?.viewedPlayers || []) : [];
 
+  // --- TIMER STATE & EFFECTS ---
+  const [timeLeft, setTimeLeft] = useState(120);
+  const [timerActive, setTimerActive] = useState(true);
+
+  useEffect(() => {
+    if (step === 'discussion') {
+      setTimeLeft(120);
+      setTimerActive(true);
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (step !== 'discussion' || !timerActive || timeLeft <= 0) return;
+    const interval = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          triggerVibration([200, 100, 200, 100, 400]); // Alarme vibratório!
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [step, timerActive, timeLeft]);
+
+  const formatTime = (secs: number) => {
+    const mins = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   // --- LÓGICA DE INICIALIZAÇÃO ---
 
   const getScenarios = () => {
     let pool: ImpostorScenario[] = [...IMPOSTOR_SCENARIOS['default']];
     
     themes.forEach((t) => {
-      if (IMPOSTOR_SCENARIOS[t.id]) {
+      if (t.id.startsWith('custom_theme_')) {
+        try {
+          const saved = localStorage.getItem('impostor_custom_scenarios_' + t.id);
+          if (saved) {
+            pool = [...pool, ...JSON.parse(saved)];
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      } else if (IMPOSTOR_SCENARIOS[t.id]) {
         pool = [...pool, ...IMPOSTOR_SCENARIOS[t.id]];
       }
     });
@@ -185,6 +226,14 @@ export default function GameScreenImpostor({
 
     const handleRevealCard = () => {
       setIsCardRevealed(true);
+      
+      // Haptic Feedback: batimento cardíaco duplo se for Impostor, vibração simples se for honesto
+      if (isImpostor) {
+        triggerVibration([100, 80, 100, 300]);
+      } else {
+        triggerVibration(100);
+      }
+
       if (isMultiplayer) {
         const currentViewed = syncGameState?.viewedPlayers || [];
         if (!currentViewed.includes(playerId)) {
@@ -323,6 +372,39 @@ export default function GameScreenImpostor({
 
         {/* Área Central */}
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center overflow-y-auto">
+          {/* Cronômetro Premium */}
+          <div className="mb-6 flex flex-col items-center gap-2 bg-slate-900/60 border border-white/5 px-6 py-4 rounded-3xl shadow-xl backdrop-blur-md animate-fade-in w-full max-w-sm">
+            <div className="flex items-center gap-1.5 opacity-60 text-xs text-purple-300 font-black uppercase tracking-wider font-outfit">
+              <span className={`w-2 h-2 rounded-full ${timerActive && timeLeft > 0 ? 'bg-purple-500 animate-ping' : 'bg-slate-500'}`} />
+              Tempo de Debate
+            </div>
+            
+            <div className={`text-4xl font-black font-outfit tracking-wider select-none ${timeLeft <= 10 && timeLeft > 0 ? 'text-red-400 animate-pulse' : 'text-white'}`}>
+              {formatTime(timeLeft)}
+            </div>
+
+            <div className="flex items-center gap-2.5 mt-2">
+              <button 
+                onClick={() => { setTimerActive(!timerActive); triggerVibration(50); }}
+                className="py-1.5 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-all active:scale-90 text-xs font-bold font-outfit"
+              >
+                {timerActive && timeLeft > 0 ? "Pausar" : "Retomar"}
+              </button>
+              <button 
+                onClick={() => { setTimeLeft(prev => prev + 30); triggerVibration(50); }}
+                className="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-all active:scale-90 text-xs font-bold font-outfit"
+              >
+                +30s
+              </button>
+              <button 
+                onClick={() => { setTimeLeft(120); setTimerActive(false); triggerVibration(50); }}
+                className="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-all active:scale-90 text-xs font-bold font-outfit"
+              >
+                Resetar
+              </button>
+            </div>
+          </div>
+
           <div className="relative mb-6">
             <div className="absolute inset-0 bg-purple-500/10 blur-3xl rounded-full" />
             <div className="bg-slate-900 border border-white/5 p-8 rounded-full shadow-2xl relative z-10 animate-bounce" style={{ animationDuration: '4s' }}>

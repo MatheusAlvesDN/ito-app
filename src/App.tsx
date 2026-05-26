@@ -85,7 +85,7 @@ function reducer(state: State, action: Action): State {
       return { 
         ...state, 
         gameMode: 'classic', 
-        screen: 'register-classic' 
+        screen: 'connection-selection' 
       };
 
     case 'SELECT_MODE_IMPOSTOR':
@@ -146,6 +146,7 @@ const ConnectionSelectionScreen = ({
 }) => {
   const getThemeColor = () => {
     if (gameMode === 'impostor') return 'text-purple-400 border-purple-500/20 hover:border-purple-400/85 hover:bg-purple-500/[0.02]';
+    if (gameMode === 'classic') return 'text-yellow-450 border-yellow-500/20 hover:border-yellow-400/85 hover:bg-yellow-500/[0.02]';
     return 'text-emerald-400 border-emerald-500/20 hover:border-emerald-400/85 hover:bg-emerald-500/[0.02]';
   };
 
@@ -225,8 +226,16 @@ const LobbySetupScreen = ({
   gameMode: GameMode;
 }) => {
   const [roomToJoin, setRoomToJoin] = useState('');
-  const activeColorClass = gameMode === 'impostor' ? 'from-purple-600 to-indigo-650 hover:from-purple-500 hover:to-indigo-600' : 'from-emerald-500 to-teal-650 hover:from-emerald-450 hover:to-teal-600';
-  const ringColorClass = gameMode === 'impostor' ? 'focus:border-purple-550 focus:ring-purple-900/30' : 'focus:border-emerald-550 focus:ring-emerald-900/30';
+  const activeColorClass = gameMode === 'impostor' 
+    ? 'from-purple-600 to-indigo-650 hover:from-purple-500 hover:to-indigo-600' 
+    : gameMode === 'classic'
+      ? 'from-yellow-400 to-amber-500 hover:from-yellow-350 hover:to-amber-450 text-black font-black'
+      : 'from-emerald-500 to-teal-650 hover:from-emerald-450 hover:to-teal-600';
+  const ringColorClass = gameMode === 'impostor' 
+    ? 'focus:border-purple-550 focus:ring-purple-900/30' 
+    : gameMode === 'classic'
+      ? 'focus:border-yellow-550 focus:ring-yellow-900/30'
+      : 'focus:border-emerald-550 focus:ring-emerald-900/30';
 
   return (
     <div className="flex-1 flex flex-col bg-slate-950 relative h-full overflow-hidden text-slate-100">
@@ -337,11 +346,13 @@ const MultiplayerLobbyScreen = ({
 
   const getThemeColorClass = () => {
     if (gameMode === 'impostor') return 'text-purple-400 bg-purple-500/10 border-purple-500/20';
+    if (gameMode === 'classic') return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
     return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
   };
 
   const getStartButtonClass = () => {
     if (gameMode === 'impostor') return 'bg-purple-600 hover:bg-purple-550';
+    if (gameMode === 'classic') return 'bg-yellow-400 hover:bg-yellow-350 text-black';
     return 'bg-emerald-500 hover:bg-emerald-450';
   };
 
@@ -349,17 +360,17 @@ const MultiplayerLobbyScreen = ({
     <div className="flex-1 flex flex-col bg-slate-955 text-slate-100 relative h-full overflow-hidden font-sans">
       {/* Background Blobs */}
       <div className={`absolute top-0 right-0 w-80 h-80 rounded-full blur-[100px] pointer-events-none ${
-        gameMode === 'impostor' ? 'bg-purple-600/10' : 'bg-emerald-500/10'
+        gameMode === 'impostor' ? 'bg-purple-600/10' : gameMode === 'classic' ? 'bg-yellow-550/10' : 'bg-emerald-500/10'
       }`} />
 
       {/* Header Fixo */}
       <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-        <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-350 transition-colors">
+        <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-355 transition-colors">
           <ChevronLeft size={24} />
         </button>
         <span className="font-black text-xl text-white font-outfit">Lobby Multiplayer</span>
         <div className={`text-xs font-black px-3 py-1.5 rounded-full font-outfit uppercase tracking-wider ${getThemeColorClass()}`}>
-          {gameMode === 'impostor' ? 'Impostor' : 'Quem Sou Eu'}
+          {gameMode === 'impostor' ? 'Impostor' : gameMode === 'classic' ? 'ITO Clássico' : 'Quem Sou Eu'}
         </div>
       </div>
 
@@ -434,14 +445,14 @@ const MultiplayerLobbyScreen = ({
           ) : (
             <div className="p-4 bg-slate-900/50 rounded-2xl border border-white/5 flex items-center justify-center gap-3 animate-pulse">
               <span className="w-2 h-2 rounded-full bg-yellow-400 animate-ping" />
-              <p className="text-slate-450 text-xs font-bold uppercase tracking-wider font-outfit text-center">
+              <p className="text-slate-455 text-xs font-bold uppercase tracking-wider font-outfit text-center">
                 Aguardando o Líder iniciar...
               </p>
             </div>
           )}
           {isHost && connectedPlayers.length < (gameMode === 'impostor' ? 3 : 2) && (
             <p className="text-center text-red-400 text-[11px] font-black mt-2 font-outfit uppercase tracking-wider animate-pulse">
-              {gameMode === 'impostor' ? 'Mínimo de 3 jogadores para o Impostor' : 'Mínimo de 2 jogadores para o Quem Sou Eu'}
+              {gameMode === 'impostor' ? 'Mínimo de 3 jogadores para o Impostor' : 'Mínimo de 2 jogadores para iniciar'}
             </p>
           )}
         </div>
@@ -601,8 +612,10 @@ export default function App() {
               setConnectionType('local');
               if (state.gameMode === 'impostor') {
                 dispatch({ type: 'SET_SCREEN', screen: 'register-impostor' });
-              } else {
+              } else if (state.gameMode === 'whoami') {
                 dispatch({ type: 'SET_SCREEN', screen: 'register-whoami' });
+              } else {
+                dispatch({ type: 'SET_SCREEN', screen: 'register-classic' });
               }
             }}
             onSelectMultiplayer={() => {
@@ -639,6 +652,8 @@ export default function App() {
             onStartGame={() => {
               if (state.gameMode === 'impostor') {
                 dispatch({ type: 'SET_SCREEN', screen: 'theme-impostor' });
+              } else if (state.gameMode === 'classic') {
+                dispatch({ type: 'SET_SCREEN', screen: 'theme-classic' });
               } else {
                 dispatch({ type: 'SET_SCREEN', screen: 'theme-whoami' });
               }
@@ -651,23 +666,69 @@ export default function App() {
       case 'register-classic':
         return (
           <RegisterScreenClassic
-            onBack={() => dispatch({ type: 'GO_MODE_SELECTION' })}
+            onBack={() => dispatch({ type: 'SET_SCREEN', screen: 'connection-selection' })}
             onNext={(players) => dispatch({ type: 'PLAYERS_CONFIRMED', players })}
           />
         );
       case 'theme-classic':
+        if (connectionType === 'multiplayer' && !isHost) {
+          return (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-955 text-center text-slate-100 font-sans relative overflow-hidden h-full">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-600/10 rounded-full blur-[120px] pointer-events-none" />
+              <div className="mb-6 relative">
+                <div className="absolute inset-0 bg-yellow-500/10 blur-xl rounded-full" />
+                <div className="bg-slate-900 border border-white/5 p-6 rounded-full shadow-2xl relative z-10 animate-spin" style={{ animationDuration: '3s' }}>
+                  <RefreshCw size={48} className="text-yellow-400" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-black text-white mb-2 font-outfit">Sincronizando Temas...</h2>
+              <p className="text-slate-400 max-w-xs text-sm font-medium leading-relaxed animate-pulse">
+                O líder da sala está escolhendo os temas do jogo. Prepare-se!
+              </p>
+            </div>
+          );
+        }
         return (
           <ThemeSelectionClassic
-            onBack={() => dispatch({ type: 'SELECT_MODE_CLASSIC' })} // Volta para registro
-            onStart={(themes) => dispatch({ type: 'THEMES_CONFIRMED', themes })}
+            onBack={() => {
+              if (connectionType === 'multiplayer') {
+                handleDisconnect();
+                dispatch({ type: 'GO_MODE_SELECTION' });
+              } else {
+                dispatch({ type: 'SELECT_MODE_CLASSIC' });
+              }
+            }}
+            onStart={(themes) => {
+              if (connectionType === 'multiplayer') {
+                syncService.syncState({
+                  screen: 'game-classic',
+                  themes: themes.map(t => ({ id: t.id, name: t.name })),
+                  phase: 'init',
+                  roundKey: Date.now()
+                });
+                dispatch({ type: 'THEMES_CONFIRMED', themes });
+              } else {
+                dispatch({ type: 'THEMES_CONFIRMED', themes });
+              }
+            }}
           />
         );
       case 'game-classic':
         return (
           <GameScreenIto
-            onBack={() => dispatch({ type: 'GO_HOME' })}
-            players={state.players}
-            themes={state.themes}
+            onBack={() => {
+              if (connectionType === 'multiplayer') {
+                handleDisconnect();
+              }
+              dispatch({ type: 'GO_HOME' });
+            }}
+            players={connectionType === 'multiplayer' ? connectedPlayers.map(p => p.name) : state.players}
+            themes={connectionType === 'multiplayer' ? (syncGameState?.themes || []) : state.themes}
+            isMultiplayer={connectionType === 'multiplayer'}
+            isHost={isHost}
+            syncGameState={syncGameState}
+            playerId={playerId}
+            connectedPlayers={connectedPlayers}
           />
         );
 

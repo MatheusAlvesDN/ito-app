@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, CheckCircle2, Circle, Eye, EyeOff, RotateCcw, Trophy, Home, UserSearch, ArrowRight } from 'lucide-react';
 import { type WhoAmITheme } from './data';
-import { syncService } from '../utils/syncService';
+import { syncService, triggerVibration } from '../utils/syncService';
 
 type Props = {
   onBack: () => void;
@@ -44,10 +44,54 @@ export default function GameScreenWhoAmI({
   const phase = isMultiplayer ? (syncGameState?.phase || 'playing') : localPhase;
   const playerData = isMultiplayer ? (syncGameState?.playerData || []) : localPlayerData;
 
+  // --- TIMER STATE & EFFECTS ---
+  const [timeLeft, setTimeLeft] = useState(120);
+  const [timerActive, setTimerActive] = useState(false);
+
+  useEffect(() => {
+    if (phase !== 'ended') {
+      setTimeLeft(120);
+      setTimerActive(false);
+    }
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase === 'ended' || !timerActive || timeLeft <= 0) return;
+    const interval = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          triggerVibration([200, 100, 200, 100, 400]); // Alarme vibratório!
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [phase, timerActive, timeLeft]);
+
+  const formatTime = (secs: number) => {
+    const mins = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const getThemePersonalities = (t: WhoAmITheme) => {
+    if (t.id.startsWith('custom_theme_')) {
+      try {
+        const saved = localStorage.getItem('whoami_custom_personalities_' + t.id);
+        return saved ? JSON.parse(saved) : (t.personalities || []);
+      } catch {
+        return t.personalities || [];
+      }
+    }
+    return t.personalities || [];
+  };
+
   // Initialize game
   const startGame = () => {
     // Gather personalities from chosen themes
-    let allPersonalities = themes.flatMap(t => t.personalities);
+    let allPersonalities = themes.flatMap(t => getThemePersonalities(t));
     
     // Shuffle
     allPersonalities = [...allPersonalities].sort(() => 0.5 - Math.random());
@@ -75,7 +119,7 @@ export default function GameScreenWhoAmI({
     if (!connectedPlayers || connectedPlayers.length < 2) return;
 
     // Gather personalities
-    let allPersonalities = themes.flatMap(t => t.personalities);
+    let allPersonalities = themes.flatMap(t => getThemePersonalities(t));
     allPersonalities = [...allPersonalities].sort(() => 0.5 - Math.random());
 
     let selected: string[] = [];
@@ -113,7 +157,10 @@ export default function GameScreenWhoAmI({
     }
   }, [isHost, isMultiplayer, syncGameState?.phase, syncGameState?.roundKey]);
 
-  const handleReveal = () => setRevealStep('showing');
+  const handleReveal = () => {
+    setRevealStep('showing');
+    triggerVibration(100);
+  };
 
   const handleNextReveal = () => {
     if (currentIndex < players.length - 1) {
@@ -125,6 +172,7 @@ export default function GameScreenWhoAmI({
   };
 
   const toggleGuess = (index: number) => {
+    triggerVibration(60);
     if (isMultiplayer) {
       const copy = [...playerData];
       copy[index].guessedCorrectly = !copy[index].guessedCorrectly;
@@ -322,6 +370,33 @@ export default function GameScreenWhoAmI({
         </p>
       </div>
 
+      {/* Cronômetro Premium */}
+      <div className="mx-4 mt-4 flex items-center justify-between bg-slate-900/60 border border-white/5 px-5 py-3 rounded-2xl shadow-md backdrop-blur-md animate-fade-in shrink-0">
+        <div className="flex items-center gap-1.5 opacity-60 text-[10px] text-emerald-300 font-black uppercase tracking-wider font-outfit">
+          <span className={`w-2 h-2 rounded-full ${timerActive && timeLeft > 0 ? 'bg-emerald-500 animate-ping' : 'bg-slate-500'}`} />
+          Cronômetro
+        </div>
+        
+        <div className={`text-2xl font-black font-outfit tracking-wider select-none ${timeLeft <= 10 && timeLeft > 0 ? 'text-red-400 animate-pulse' : 'text-white'}`}>
+          {formatTime(timeLeft)}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => { setTimerActive(!timerActive); triggerVibration(50); }}
+            className="py-1 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-all active:scale-90 text-[10px] font-bold font-outfit uppercase"
+          >
+            {timerActive && timeLeft > 0 ? "Pausar" : "Iniciar"}
+          </button>
+          <button 
+            onClick={() => { setTimeLeft(prev => prev + 30); triggerVibration(50); }}
+            className="py-1 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-all active:scale-90 text-[10px] font-bold font-outfit"
+          >
+            +30s
+          </button>
+        </div>
+      </div>
+
       {/* Players List Rolável */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
         {playerData.map((p: PlayerData, index: number) => {
@@ -346,7 +421,7 @@ export default function GameScreenWhoAmI({
               <div className="flex items-center gap-2 self-end sm:self-auto">
                 {isMe && !revealedMyOwn && (
                   <button
-                    onClick={() => setRevealedMyOwn(true)}
+                    onClick={() => { setRevealedMyOwn(true); triggerVibration(100); }}
                     className="px-3.5 py-2 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 font-bold text-xs hover:bg-red-500/20 transition-all font-outfit uppercase tracking-wider"
                   >
                     Olhar

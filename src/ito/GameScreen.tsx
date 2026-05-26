@@ -3,6 +3,7 @@ import { ChevronLeft, Dices, Check, Unlock, Star, Cloud, RefreshCw, Lock, GripVe
 import { QUESTIONS_DB } from './data';
 import type { Theme } from '../data';
 import type { DragEndEvent } from '@dnd-kit/core';
+import { syncService, triggerVibration } from '../utils/syncService';
 
 // Importações do DND Kit para Drag and Drop
 import {
@@ -58,9 +59,10 @@ interface SortableItemProps {
   index: number;
   phase: string;
   isWrong: boolean;
+  disabled?: boolean;
 }
 
-const SortablePlayerItem = ({ id, player, number, index, phase, isWrong }: SortableItemProps) => {
+const SortablePlayerItem = ({ id, player, number, index, phase, isWrong, disabled = false }: SortableItemProps) => {
   // Hook do DND Kit para tornar o item arrastável
   const {
     attributes,
@@ -69,7 +71,7 @@ const SortablePlayerItem = ({ id, player, number, index, phase, isWrong }: Sorta
     transform,
     transition,
     isDragging
-  } = useSortable({ id: id, disabled: phase === 'result' });
+  } = useSortable({ id: id, disabled: phase === 'result' || disabled });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -115,18 +117,59 @@ const SortablePlayerItem = ({ id, player, number, index, phase, isWrong }: Sorta
   );
 };
 
+type Props = {
+  onBack: () => void;
+  players: string[];
+  themes: Theme[];
+  isMultiplayer?: boolean;
+  isHost?: boolean;
+  syncGameState?: any;
+  playerId?: string;
+  connectedPlayers?: { id: string; name: string }[];
+};
+
 // --- Componente Principal ---
-const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: string[], themes: Theme[] }) => {
-  const [phase, setPhase] = useState<'init' | 'rolling' | 'numbers' | 'ordering' | 'result'>('init');
-  const [playerNumbers, setPlayerNumbers] = useState<Record<string, number>>({});
-  const [currentQuestion, setCurrentQuestion] = useState<string>('');
-  const [currentThemeColor, setCurrentThemeColor] = useState<string>('');
-  const [round, setRound] = useState(1);
-  const [orderedPlayers, setOrderedPlayers] = useState<string[]>([]);
-  const [isVictory, setIsVictory] = useState(false);
+const GameScreen = ({
+  onBack,
+  players,
+  themes,
+  isMultiplayer = false,
+  isHost = false,
+  syncGameState = null,
+  playerId = '',
+  connectedPlayers = [],
+}: Props) => {
+  const [localPhase, setLocalPhase] = useState<'init' | 'rolling' | 'numbers' | 'ordering' | 'result'>('init');
+  const [localPlayerNumbers, setLocalPlayerNumbers] = useState<Record<string, number>>({});
+  const [localCurrentQuestion, setLocalCurrentQuestion] = useState<string>('');
+  const [localCurrentThemeColor, setLocalCurrentThemeColor] = useState<string>('');
+  const [localRound, setLocalRound] = useState(1);
+  const [localOrderedPlayers, setLocalOrderedPlayers] = useState<string[]>([]);
+  const [localIsVictory, setLocalIsVictory] = useState(false);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
-  const [lives, setLives] = useState(3);
+  const [localLives, setLocalLives] = useState(3);
+  
+  // --- LOCAL MULTIPLAYER STATE ---
+  const [revealedMyOwn, setRevealedMyOwn] = useState(false);
+
+  // --- ESTADOS DERIVADOS MULTIPLAYER ---
+  const phase = isMultiplayer ? (syncGameState?.phase || 'init') : localPhase;
+  const playerNumbers = isMultiplayer ? (syncGameState?.playerNumbers || {}) : localPlayerNumbers;
+  const currentQuestion = isMultiplayer ? (syncGameState?.currentQuestion || '') : localCurrentQuestion;
+  const currentThemeColor = isMultiplayer ? (syncGameState?.currentThemeColor || '') : localCurrentThemeColor;
+  const round = isMultiplayer ? (syncGameState?.round || 1) : localRound;
+  const orderedPlayers = (isMultiplayer ? (syncGameState?.orderedPlayers || []) : localOrderedPlayers) as string[];
+  const isVictory = isMultiplayer ? (syncGameState?.isVictory || false) : localIsVictory;
+  const lives = isMultiplayer ? (syncGameState?.lives || 3) : localLives;
+  const viewedPlayers = (isMultiplayer ? (syncGameState?.viewedPlayers || []) : []) as string[];
+
+  // Reset visual de revelação própria ao mudar de fase
+  useEffect(() => {
+    if (phase === 'numbers') {
+      setRevealedMyOwn(false);
+    }
+  }, [phase]);
 
   // Configuração dos sensores para Mobile e Desktop
   const sensors = useSensors(
@@ -142,44 +185,103 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
 
   useEffect(() => {
     if (phase === 'rolling') {
-      const timeout = setTimeout(() => {
-        const finalNumbers: Record<string, number> = {};
-        const usedNumbers = new Set<number>();
-        players.forEach(p => {
-          let num;
-          do { num = Math.floor(Math.random() * 100) + 1; } while (usedNumbers.has(num));
-          usedNumbers.add(num);
-          finalNumbers[p] = num;
-        });
-        setPlayerNumbers(finalNumbers);
-        setPhase('numbers');
-      }, 2500);
-      return () => clearTimeout(timeout);
+      if (isMultiplayer) {
+        if (isHost) {
+          const timeout = setTimeout(() => {
+            const finalNumbers: Record<string, number> = {};
+            const usedNumbers = new Set<number>();
+            connectedPlayers.forEach(p => {
+              let num;
+              do { num = Math.floor(Math.random() * 100) + 1; } while (usedNumbers.has(num));
+              usedNumbers.add(num);
+              finalNumbers[p.name] = num;
+            });
+            syncService.syncState({
+              phase: 'numbers',
+              playerNumbers: finalNumbers,
+              viewedPlayers: []
+            });
+          }, 2500);
+          return () => clearTimeout(timeout);
+        }
+      } else {
+        const timeout = setTimeout(() => {
+          const finalNumbers: Record<string, number> = {};
+          const usedNumbers = new Set<number>();
+          players.forEach(p => {
+            let num;
+            do { num = Math.floor(Math.random() * 100) + 1; } while (usedNumbers.has(num));
+            usedNumbers.add(num);
+            finalNumbers[p] = num;
+          });
+          setLocalPlayerNumbers(finalNumbers);
+          setLocalPhase('numbers');
+        }, 2500);
+        return () => clearTimeout(timeout);
+      }
     }
-  }, [phase, players]);
+  }, [phase, players, isMultiplayer, isHost, connectedPlayers]);
 
   const startRound = () => {
-    setPhase('rolling');
-    setCurrentPlayerIndex(0);
-    setIsRevealed(false);
-    setOrderedPlayers([...players]);
+    if (isMultiplayer) {
+      if (isHost) {
+        syncService.syncState({
+          phase: 'rolling',
+          viewedPlayers: [],
+          orderedPlayers: connectedPlayers.map(p => p.name)
+        });
+      }
+    } else {
+      setLocalPhase('rolling');
+      setCurrentPlayerIndex(0);
+      setIsRevealed(false);
+      setLocalOrderedPlayers([...players]);
+    }
   };
 
   const startOrdering = () => {
+    let question = '';
+    let color = '';
+
+    const getThemeQuestions = (t: Theme) => {
+      if (t.id.startsWith('custom_theme_')) {
+        try {
+          const saved = localStorage.getItem('ito_custom_questions_' + t.id);
+          return saved ? JSON.parse(saved) : [];
+        } catch {
+          return [];
+        }
+      }
+      return QUESTIONS_DB[t.id] || [];
+    };
+
     const isFreeMode = themes.some(t => t.id === 'free');
     if (isFreeMode) {
-      setCurrentQuestion("MODO LIVRE: Inventem um desafio!");
-      setCurrentThemeColor('bg-slate-200');
+      question = "MODO LIVRE: Inventem um desafio!";
+      color = 'bg-slate-200';
     } else if (themes.length > 0) {
-      const allQuestions = themes.flatMap(t => QUESTIONS_DB[t.id] || []);
+      const allQuestions = themes.flatMap(t => getThemeQuestions(t));
       if (allQuestions.length > 0) {
         const q = allQuestions[Math.floor(Math.random() * allQuestions.length)];
-        setCurrentQuestion(q);
-        const t = themes.find(t => (QUESTIONS_DB[t.id] || []).includes(q)) || themes[0];
-        setCurrentThemeColor(t.color);
+        question = q;
+        const t = themes.find(t => getThemeQuestions(t).includes(q)) || themes[0];
+        color = t.color;
       }
     }
-    setPhase('ordering');
+
+    if (isMultiplayer) {
+      if (isHost) {
+        syncService.syncState({
+          phase: 'ordering',
+          currentQuestion: question,
+          currentThemeColor: color
+        });
+      }
+    } else {
+      setLocalCurrentQuestion(question);
+      setLocalCurrentThemeColor(color);
+      setLocalPhase('ordering');
+    }
   };
 
   // Função chamada quando o arrasto termina
@@ -187,11 +289,17 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
     const { active, over } = event;
     
     if (over && active.id !== over.id) {
-      setOrderedPlayers((items) => {
-        const oldIndex = items.indexOf(active.id as string);
-        const newIndex = items.indexOf(over.id as string);
-        return arrayMove(items, oldIndex, newIndex);
-      });
+      const oldIndex = orderedPlayers.indexOf(active.id as string);
+      const newIndex = orderedPlayers.indexOf(over.id as string);
+      const nextOrdered = arrayMove(orderedPlayers, oldIndex, newIndex);
+
+      if (isMultiplayer) {
+        if (isHost) {
+          syncService.syncState({ orderedPlayers: nextOrdered });
+        }
+      } else {
+        setLocalOrderedPlayers(nextOrdered);
+      }
     }
   };
 
@@ -204,17 +312,41 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
       }
     }
     
-    if (!correct) {
-      setLives(prev => Math.max(0, prev - 1));
+    // Háptico: vibração rápida de comemoração ou erro
+    triggerVibration(correct ? [100, 50, 100] : [300, 100, 300]);
+
+    if (isMultiplayer) {
+      if (isHost) {
+        const nextLives = correct ? lives : Math.max(0, lives - 1);
+        syncService.syncState({
+          phase: 'result',
+          isVictory: correct,
+          lives: nextLives
+        });
+      }
+    } else {
+      if (!correct) {
+        setLocalLives(prev => Math.max(0, prev - 1));
+      }
+      setLocalIsVictory(correct);
+      setLocalPhase('result');
     }
-    
-    setIsVictory(correct);
-    setPhase('result');
   };
 
   const nextRound = () => {
-    setRound(r => r + 1);
-    setPhase('init');
+    if (isMultiplayer) {
+      if (isHost) {
+        syncService.syncState({
+          phase: 'init',
+          round: round + 1,
+          viewedPlayers: [],
+          playerNumbers: {}
+        });
+      }
+    } else {
+      setLocalRound(r => r + 1);
+      setLocalPhase('init');
+    }
   };
 
   // Remover a lógica antiga de renderização sobreposta
@@ -277,47 +409,102 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
 
         {phase === 'numbers' && (
           <div className="flex-1 flex flex-col items-center justify-center animate-fade-in py-4">
-            <h2 className="text-2xl font-black text-white mb-1 font-outfit">Vez de {players[currentPlayerIndex]}</h2>
-            <p className="text-slate-400 mb-6 uppercase tracking-widest text-[10px] font-bold">Entregue o celular para ele(a)!</p>
-            
-            <div className="w-full max-w-[280px] aspect-[3/4.2] relative perspective-1000">
-              <div className={`w-full h-full relative transition-all duration-500 transform-style-3d bg-slate-900 rounded-3xl border-2 shadow-2xl ${
-                  isRevealed ? 'border-yellow-400 shadow-yellow-500/10' : 'border-white/5'
-                }`}>
-                {!isRevealed ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                    <div className="bg-slate-800/40 border border-white/5 p-5 rounded-full mb-6 animate-pulse">
-                      <Lock size={48} className="text-slate-400" />
-                    </div>
-                    <h3 className="text-xl font-black text-white mb-2 font-outfit">Toque para ver</h3>
-                    <p className="text-xs text-slate-450 leading-relaxed font-medium">Nenhum outro jogador pode olhar.</p>
-                    <button onClick={() => setIsRevealed(true)} className="absolute inset-0 w-full h-full z-10" />
+            {isMultiplayer ? (
+              <>
+                <h2 className="text-2xl font-black text-white mb-1 font-outfit">Sua Carta Secreta</h2>
+                <p className="text-slate-400 mb-6 uppercase tracking-widest text-[10px] font-bold">Olá, {connectedPlayers.find(p => p.id === playerId)?.name}</p>
+                
+                <div className="w-full max-w-[280px] aspect-[3/4.2] relative perspective-1000">
+                  <div className={`w-full h-full relative transition-all duration-500 transform-style-3d bg-slate-900 rounded-3xl border-2 shadow-2xl ${
+                      revealedMyOwn ? 'border-yellow-400 shadow-yellow-500/10' : 'border-white/5'
+                    }`}>
+                    {!revealedMyOwn ? (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                        <div className="bg-slate-800/40 border border-white/5 p-5 rounded-full mb-6 animate-pulse">
+                          <Lock size={48} className="text-slate-400" />
+                        </div>
+                        <h3 className="text-xl font-black text-white mb-2 font-outfit">Toque para ver</h3>
+                        <p className="text-xs text-slate-450 leading-relaxed font-medium">Garanta que ninguém está espiando.</p>
+                        <button onClick={() => { setRevealedMyOwn(true); triggerVibration(100); const currentViewed = syncGameState?.viewedPlayers || []; if (!currentViewed.includes(playerId)) { syncService.syncState({ viewedPlayers: [...currentViewed, playerId] }); } }} className="absolute inset-0 w-full h-full z-10" />
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-slate-900 rounded-3xl overflow-hidden">
+                        <span className="text-slate-455 font-bold mb-3 uppercase tracking-widest text-[10px] font-outfit">Seu número secreto é</span>
+                        <span className="text-8xl font-black text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)] font-outfit select-none">
+                          {playerNumbers[connectedPlayers.find(p => p.id === playerId)?.name || ''] || 0}
+                        </span>
+                        <button onClick={() => setRevealedMyOwn(false)} className="absolute bottom-5 left-5 right-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-350 font-bold rounded-2xl transition-all text-xs font-outfit uppercase">
+                          Esconder
+                        </button>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-slate-900 rounded-3xl overflow-hidden">
-                    <span className="text-slate-450 font-bold mb-3 uppercase tracking-widest text-[10px] font-outfit">Seu número secreto é</span>
-                    <span className="text-8xl font-black text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)] font-outfit select-none">{playerNumbers[players[currentPlayerIndex]]}</span>
-                    <button onClick={() => {
-                        setIsRevealed(false);
-                        if (currentPlayerIndex < players.length - 1) {
-                          setCurrentPlayerIndex(prev => prev + 1);
-                        } else {
-                          startOrdering();
-                        }
-                      }} 
-                      className="absolute bottom-5 left-5 right-5 py-3.5 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-base rounded-2xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 flex-col leading-tight font-outfit"
+                </div>
+
+                <div className="mt-6 flex flex-col items-center gap-3">
+                  <div className="bg-slate-900/60 px-5 py-1.5 rounded-full border border-white/5 font-bold text-xs text-slate-400 font-outfit">
+                    {viewedPlayers.length} de {connectedPlayers.length} Visualizaram
+                  </div>
+                  
+                  {isHost ? (
+                    <button
+                      onClick={startOrdering}
+                      className="py-3 px-6 bg-yellow-400 hover:bg-yellow-350 text-black font-black text-sm rounded-2xl shadow-md transition-all active:scale-95 font-outfit uppercase"
                     >
-                      <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest text-black">Entendido?</span>
-                      {currentPlayerIndex < players.length - 1 ? "PRÓXIMO JOGADOR" : "IR PARA O JOGO"}
+                      AVANÇAR PARA SITUAÇÃO
                     </button>
+                  ) : (
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider font-outfit animate-pulse">
+                      Aguardando líder iniciar situação...
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-black text-white mb-1 font-outfit">Vez de {players[currentPlayerIndex]}</h2>
+                <p className="text-slate-400 mb-6 uppercase tracking-widest text-[10px] font-bold">Entregue o celular para ele(a)!</p>
+                
+                <div className="w-full max-w-[280px] aspect-[3/4.2] relative perspective-1000">
+                  <div className={`w-full h-full relative transition-all duration-500 transform-style-3d bg-slate-900 rounded-3xl border-2 shadow-2xl ${
+                      isRevealed ? 'border-yellow-400 shadow-yellow-500/10' : 'border-white/5'
+                    }`}>
+                    {!isRevealed ? (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                        <div className="bg-slate-800/40 border border-white/5 p-5 rounded-full mb-6 animate-pulse">
+                          <Lock size={48} className="text-slate-400" />
+                        </div>
+                        <h3 className="text-xl font-black text-white mb-2 font-outfit">Toque para ver</h3>
+                        <p className="text-xs text-slate-455 leading-relaxed font-medium">Nenhum outro jogador pode olhar.</p>
+                        <button onClick={() => { setIsRevealed(true); triggerVibration(100); }} className="absolute inset-0 w-full h-full z-10" />
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-slate-900 rounded-3xl overflow-hidden">
+                        <span className="text-slate-455 font-bold mb-3 uppercase tracking-widest text-[10px] font-outfit">Seu número secreto é</span>
+                        <span className="text-8xl font-black text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)] font-outfit select-none">{playerNumbers[players[currentPlayerIndex]]}</span>
+                        <button onClick={() => {
+                            setIsRevealed(false);
+                            if (currentPlayerIndex < players.length - 1) {
+                              setCurrentPlayerIndex(prev => prev + 1);
+                            } else {
+                              startOrdering();
+                            }
+                          }} 
+                          className="absolute bottom-5 left-5 right-5 py-3.5 bg-yellow-400 hover:bg-yellow-350 text-black font-black text-base rounded-2xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 flex-col leading-tight font-outfit"
+                        >
+                          <span className="text-[9px] font-bold opacity-80 uppercase tracking-widest text-black">Entendido?</span>
+                          {currentPlayerIndex < players.length - 1 ? "PRÓXIMO JOGADOR" : "IR PARA O JOGO"}
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-            
-            <div className="mt-6 bg-slate-900/60 px-5 py-1.5 rounded-full border border-white/5 font-bold text-xs text-slate-400 font-outfit">
-              Jogador {currentPlayerIndex + 1} de {players.length}
-            </div>
+                </div>
+                
+                <div className="mt-6 bg-slate-900/60 px-5 py-1.5 rounded-full border border-white/5 font-bold text-xs text-slate-400 font-outfit">
+                  Jogador {currentPlayerIndex + 1} de {players.length}
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -339,11 +526,11 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
                 <div className="text-[9px] font-bold text-slate-450 uppercase tracking-wider mb-8 text-center font-outfit">
                   Linha do Tempo dos Números (1 a 100)
                 </div>
-                <div className="relative h-2 flex items-center bg-slate-950 rounded-full border border-white/5 px-4 mx-2">
+                <div className="relative h-2 flex items-center bg-slate-955 rounded-full border border-white/5 px-4 mx-2">
                   <div className="absolute left-2 right-2 h-1 bg-gradient-to-r from-blue-500 via-yellow-400 to-red-500 rounded-full opacity-60" />
                   
                   {Object.entries(playerNumbers).map(([player, num]) => {
-                    const leftPercent = 5 + (num - 1) * 0.9;
+                    const leftPercent = 5 + ((num as number) - 1) * 0.9;
                     return (
                       <div 
                         key={player}
@@ -352,11 +539,11 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
                       >
                         <div className="absolute bottom-4 bg-slate-900 border border-white/10 text-[9px] font-black text-white px-2 py-0.5 rounded shadow-lg whitespace-nowrap opacity-90 group-hover:opacity-100 transition-opacity z-10 flex items-center gap-1 font-outfit">
                           <span className="max-w-[40px] truncate">{player}</span>
-                          <span className="text-yellow-400 font-bold">{num}</span>
+                          <span className="text-yellow-400 font-bold">{(num as number)}</span>
                         </div>
                         
-                        <div className="w-3.5 h-3.5 rounded-full bg-yellow-400 border-2 border-slate-950 shadow-md group-hover:scale-125 transition-transform flex items-center justify-center z-20">
-                          <div className="w-1.5 h-1.5 bg-slate-950 rounded-full" />
+                        <div className="w-3.5 h-3.5 rounded-full bg-yellow-400 border-2 border-slate-955 shadow-md group-hover:scale-125 transition-transform flex items-center justify-center z-20">
+                          <div className="w-1.5 h-1.5 bg-slate-955 rounded-full" />
                         </div>
                       </div>
                     );
@@ -399,6 +586,7 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
                         index={index}
                         phase={phase}
                         isWrong={isWrong}
+                        disabled={phase === 'result' || (isMultiplayer && !isHost)}
                       />
                     );
                   })}
@@ -412,14 +600,28 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
       {/* Rodapé Fixo Flex (Nunca posicionado de forma absoluta) */}
       <div className="p-6 bg-slate-900 border-t border-white/5 z-40 shrink-0 safe-bottom shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
         {phase === 'init' && (
-          <button onClick={startRound} className={`w-full ${mainThemeColor} text-black font-black text-lg py-4 rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 font-outfit`} style={{ animationDelay: '0.1s' }}>
-            <Dices size={22} /> <span>SORTEAR CARTAS</span>
-          </button>
+          (!isMultiplayer || isHost) ? (
+            <button onClick={startRound} className={`w-full ${mainThemeColor} text-black font-black text-lg py-4 rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 font-outfit`} style={{ animationDelay: '0.1s' }}>
+              <Dices size={22} /> <span>SORTEAR CARTAS</span>
+            </button>
+          ) : (
+            <div className="w-full bg-slate-950/50 p-4 rounded-2xl border border-white/5 text-center flex items-center justify-center gap-3 animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-yellow-400 animate-ping" />
+              <span className="text-xs text-slate-400 font-black uppercase tracking-wider font-outfit">Aguardando líder sortear cartas...</span>
+            </div>
+          )
         )}
         {phase === 'ordering' && (
-          <button onClick={checkResult} className="w-full bg-green-500 hover:bg-green-400 text-white font-black text-lg py-4 rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 font-outfit">
-            <Check size={24} /> <span>REVELAR ORDEM</span>
-          </button>
+          (!isMultiplayer || isHost) ? (
+            <button onClick={checkResult} className="w-full bg-green-500 hover:bg-green-400 text-white font-black text-lg py-4 rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 font-outfit">
+              <Check size={24} /> <span>REVELAR ORDEM</span>
+            </button>
+          ) : (
+            <div className="w-full bg-slate-955/50 p-4 rounded-2xl border border-white/5 text-center flex items-center justify-center gap-3 animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-yellow-450 animate-ping" />
+              <span className="text-xs text-slate-400 font-black uppercase tracking-wider font-outfit">Líder organizando e revelando ordem...</span>
+            </div>
+          )
         )}
         {phase === 'result' && (
           <div className="flex flex-col gap-3 w-full">
@@ -428,25 +630,48 @@ const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: 
                 <div className="bg-red-650 text-white font-black text-lg py-4 rounded-2xl text-center animate-pulse font-outfit">
                   FIM DE JOGO (SEM VIDAS!)
                 </div>
-                <button 
-                  onClick={() => {
-                    setLives(3);
-                    setRound(1);
-                    setPhase('init');
-                  }} 
-                  className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-black text-lg py-4 rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2 font-outfit"
-                >
-                  <RefreshCw size={20} /> <span>RECOMEÇAR</span>
-                </button>
+                {(!isMultiplayer || isHost) ? (
+                  <button 
+                    onClick={() => {
+                      if (isMultiplayer) {
+                        syncService.syncState({
+                          phase: 'init',
+                          lives: 3,
+                          round: 1,
+                          viewedPlayers: [],
+                          playerNumbers: {}
+                        });
+                      } else {
+                        setLocalLives(3);
+                        setLocalRound(1);
+                        setLocalPhase('init');
+                      }
+                    }} 
+                    className="w-full bg-yellow-400 hover:bg-yellow-350 text-black font-black text-lg py-4 rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2 font-outfit"
+                  >
+                    <RefreshCw size={20} /> <span>RECOMEÇAR</span>
+                  </button>
+                ) : (
+                  <div className="w-full bg-slate-955/50 p-4 rounded-2xl border border-white/5 text-center flex items-center justify-center gap-3 animate-pulse">
+                    <span className="w-2 h-2 rounded-full bg-red-400 animate-ping" />
+                    <span className="text-xs text-slate-400 font-black uppercase tracking-wider font-outfit">Aguardando líder reiniciar...</span>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex gap-3 w-full animate-fade-in">
                 <div className={`flex-1 rounded-2xl flex items-center justify-center font-black text-lg py-4 font-outfit shadow-md ${isVictory ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
                   {isVictory ? 'SUCESSO!' : 'FALHA!'}
                 </div>
-                <button onClick={nextRound} className="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-2xl shadow-md active:scale-95 transition-colors shrink-0">
-                  <RefreshCw size={22} />
-                </button>
+                {(!isMultiplayer || isHost) ? (
+                  <button onClick={nextRound} className="bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-2xl shadow-md active:scale-95 transition-colors shrink-0">
+                    <RefreshCw size={22} />
+                  </button>
+                ) : (
+                  <div className="bg-slate-955/50 px-4 rounded-2xl border border-white/5 text-center flex items-center justify-center gap-3 animate-pulse">
+                    <span className="w-2.5 h-2.5 rounded-full bg-yellow-450 animate-ping" />
+                  </div>
+                )}
               </div>
             )}
           </div>

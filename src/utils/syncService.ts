@@ -1,5 +1,16 @@
 import { Peer, type DataConnection } from 'peerjs';
 
+// Utilitário para vibração física (Haptic Feedback) no mobile/navegador
+export const triggerVibration = (pattern: number | number[]) => {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate(pattern);
+    } catch (err) {
+      console.warn('Vibration API not supported or failed:', err);
+    }
+  }
+};
+
 // Serviço de Sincronização em Tempo Real via WebRTC Peer-to-Peer (PeerJS)
 export type ConnectedPlayer = {
   id: string;
@@ -23,9 +34,16 @@ class SyncService {
   public currentRoomCode: string | null = null;
   public currentPlayerId: string | null = null;
   public isHost: boolean = false;
+  public playerName: string | null = null;
   private hostConn: DataConnection | null = null; // Para clientes, conexão direta com o host
   private connectedPlayers: ConnectedPlayer[] = [];
   private gameState: any = null;
+
+  // Controle de Reconexão Automática
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectTimeout: any = null;
+  public isReconnecting = false;
 
   // Método legado mantido para compatibilidade estrutural
   public setServerUrl(_ipOrUrl: string) {
@@ -46,8 +64,15 @@ class SyncService {
   // Desconecta e limpa todos os canais P2P
   public disconnect() {
     console.log('Desconectando e encerrando sessões P2P...');
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    this.isReconnecting = false;
+    this.reconnectAttempts = 0;
+
     if (this.peer) {
-      this.peer.destroy();
+      try { this.peer.destroy(); } catch {}
       this.peer = null;
     }
     this.connections.clear();
@@ -204,6 +229,8 @@ class SyncService {
     this.isHost = false;
     this.playerName = playerName;
     this.currentRoomCode = roomCode.toUpperCase().trim();
+    this.isReconnecting = false;
+    this.reconnectAttempts = 0;
 
     // Cria um peer com ID aleatório gerado pela nuvem
     this.peer = new Peer();
@@ -223,61 +250,12 @@ class SyncService {
         });
       });
 
-      this.hostConn.on('data', (data: any) => {
-        try {
-          const msg = typeof data === 'string' ? JSON.parse(data) : data;
-          
-          if (msg.type === 'ROOM_JOINED') {
-            this.connectedPlayers = msg.players;
-            this.gameState = msg.gameState;
-
-            if (this.callbacks.onRoomJoined) {
-              this.callbacks.onRoomJoined(this.currentRoomCode!, id, msg.players, msg.gameState);
-            }
-          }
-
-          if (msg.type === 'PLAYER_JOINED') {
-            this.connectedPlayers = msg.players;
-            if (this.callbacks.onPlayerJoined) {
-              this.callbacks.onPlayerJoined(this.connectedPlayers);
-            }
-          }
-
-          if (msg.type === 'PLAYER_LEFT') {
-            this.connectedPlayers = msg.players;
-            if (this.callbacks.onPlayerLeft) {
-              this.callbacks.onPlayerLeft(this.connectedPlayers);
-            }
-          }
-
-          if (msg.type === 'STATE_UPDATED') {
-            this.gameState = msg.gameState;
-            if (this.callbacks.onStateUpdated) {
-              this.callbacks.onStateUpdated(msg.gameState);
-            }
-          }
-        } catch (err) {
-          console.error('Erro ao ler mensagens do Host via P2P:', err);
-        }
-      });
-
-      this.hostConn.on('close', () => {
-        console.log('A conexão P2P foi fechada pelo Host.');
-        if (this.callbacks.onError) {
-          this.callbacks.onError('A sala foi encerrada pelo Host.');
-        }
-      });
-
-      this.hostConn.on('error', (err) => {
-        console.error('Erro no canal P2P do Host:', err);
-        if (this.callbacks.onError) {
-          this.callbacks.onError('Perda de sinal ou erro ao se comunicar com a sala.');
-        }
-      });
+      this.registerClientConnectionEvents();
     });
 
     this.peer.on('error', (err: any) => {
       console.error('Erro no PeerJS Cliente:', err);
+      if (this.isReconnecting) return;
       if (this.callbacks.onError) {
         if (err.type === 'peer-unavailable') {
           this.callbacks.onError('Sala não encontrada! Confirme o código de 4 letras digitado.');
@@ -286,6 +264,162 @@ class SyncService {
         }
       }
     });
+  }
+
+  // Registra eventos e mensagens recebidos do Host no canal P2P
+  private registerClientConnectionEvents() {
+    if (!this.hostConn) return;
+
+    this.hostConn.on('data', (data: any) => {
+      try {
+        const msg = typeof data === 'string' ? JSON.parse(data) : data;
+        
+        if (msg.type === 'ROOM_JOINED') {
+          this.connectedPlayers = msg.players;
+          this.gameState = msg.gameState;
+
+          if (this.callbacks.onRoomJoined) {
+            this.callbacks.onRoomJoined(this.currentRoomCode!, this.currentPlayerId || '', msg.players, msg.gameState);
+          }
+        }
+
+        if (msg.type === 'PLAYER_JOINED') {
+          this.connectedPlayers = msg.players;
+          if (this.callbacks.onPlayerJoined) {
+            this.callbacks.onPlayerJoined(this.connectedPlayers);
+          }
+        }
+
+        if (msg.type === 'PLAYER_LEFT') {
+          this.connectedPlayers = msg.players;
+          if (this.callbacks.onPlayerLeft) {
+            this.callbacks.onPlayerLeft(this.connectedPlayers);
+          }
+        }
+
+        if (msg.type === 'STATE_UPDATED') {
+          this.gameState = msg.gameState;
+          if (this.callbacks.onStateUpdated) {
+            this.callbacks.onStateUpdated(msg.gameState);
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao ler mensagens do Host via P2P:', err);
+      }
+    });
+
+    this.hostConn.on('close', () => {
+      console.log('A conexão P2P foi fechada pelo Host.');
+      if (this.currentRoomCode && !this.isHost && !this.isReconnecting) {
+        this.attemptReconnect();
+      } else if (this.callbacks.onError) {
+        this.callbacks.onError('A sala foi encerrada pelo Host.');
+      }
+    });
+
+    this.hostConn.on('error', (err) => {
+      console.error('Erro no canal P2P do Host:', err);
+      if (this.currentRoomCode && !this.isHost && !this.isReconnecting) {
+        this.attemptReconnect();
+      } else if (this.callbacks.onError) {
+        this.callbacks.onError('Perda de sinal ou erro ao se comunicar com a sala.');
+      }
+    });
+  }
+
+  // Tenta restabelecer conexão com o Host de forma resiliente
+  private attemptReconnect() {
+    if (this.isReconnecting || !this.currentRoomCode) return;
+    this.isReconnecting = true;
+    this.reconnectAttempts = 0;
+    
+    const tryConnect = () => {
+      if (!this.currentRoomCode || this.isHost) {
+        this.isReconnecting = false;
+        return;
+      }
+      this.reconnectAttempts++;
+      console.log(`Tentativa de reconexão ${this.reconnectAttempts} de ${this.maxReconnectAttempts}...`);
+      
+      if (this.callbacks.onError) {
+        this.callbacks.onError(`Conexão perdida! Tentando reconectar (Tentativa ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+      }
+
+      // Limpa conexão antiga
+      if (this.hostConn) {
+        try { this.hostConn.close(); } catch {}
+        this.hostConn = null;
+      }
+
+      // Se o peer local estiver desconectado ou destruído, recria
+      if (!this.peer || this.peer.destroyed || this.peer.disconnected) {
+        if (this.peer && !this.peer.destroyed) {
+          try { this.peer.destroy(); } catch {}
+        }
+        this.peer = new Peer();
+        this.peer.on('open', () => {
+          this.establishHostConnection(tryConnect);
+        });
+        this.peer.on('error', (err) => {
+          console.error('Erro no peer durante reconexão:', err);
+          this.scheduleNextAttempt(tryConnect);
+        });
+      } else {
+        this.establishHostConnection(tryConnect);
+      }
+    };
+
+    tryConnect();
+  }
+
+  // Estabelece a conexão física de dados com o Host
+  private establishHostConnection(tryConnectCallback: () => void) {
+    const hostId = `itogame-${this.currentRoomCode}`;
+    console.log(`Conectando ao host em reconexão: ${hostId}`);
+    this.hostConn = this.peer!.connect(hostId);
+
+    // Timeout de 4s
+    const connTimeout = setTimeout(() => {
+      if (this.hostConn && !this.hostConn.open) {
+        console.warn('Timeout de conexão excedido na reconexão.');
+        this.scheduleNextAttempt(tryConnectCallback);
+      }
+    }, 4000);
+
+    this.hostConn.on('open', () => {
+      clearTimeout(connTimeout);
+      console.log('Reconectado com sucesso ao Host!');
+      this.isReconnecting = false;
+      this.reconnectAttempts = 0;
+      
+      this.registerClientConnectionEvents();
+      
+      // Envia o JOIN para sinalizar ao Host que estamos de volta e receber o estado atualizado
+      this.sendJson(this.hostConn!, {
+        type: 'JOIN',
+        playerName: this.playerName
+      });
+    });
+
+    this.hostConn.on('error', (err) => {
+      clearTimeout(connTimeout);
+      console.error('Erro na conexão com host durante reconexão:', err);
+      this.scheduleNextAttempt(tryConnectCallback);
+    });
+  }
+
+  // Agenda próxima tentativa de reconexão
+  private scheduleNextAttempt(tryConnectCallback: () => void) {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectTimeout = setTimeout(tryConnectCallback, 3000);
+    } else {
+      console.error('Número máximo de tentativas de reconexão atingido.');
+      this.isReconnecting = false;
+      this.disconnect();
+      if (this.callbacks.onError) {
+        this.callbacks.onError('Falha na reconexão. A sala não está acessível no momento.');
+      }
+    }
   }
 
   // Sincroniza o estado do jogo entre todos os peers
