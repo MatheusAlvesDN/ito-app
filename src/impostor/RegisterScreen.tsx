@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ChevronLeft, Plus, Trash2, Ghost } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronLeft, Plus, Trash2, Ghost, X } from 'lucide-react';
 
 type Props = {
   onBack: () => void;
@@ -9,10 +9,22 @@ type Props = {
 export default function RegisterScreenImpostor({ onBack, onNext }: Props) {
   const [inputValue, setInputValue] = useState('');
   const [localPlayers, setLocalPlayers] = useState<string[]>([]);
+  const [savedHistory, setSavedHistory] = useState<string[]>([]);
+
+  // Carrega jogadores do localStorage ao montar o componente
+  useEffect(() => {
+    const saved = localStorage.getItem('ito_saved_players');
+    if (saved) {
+      try {
+        setSavedHistory(JSON.parse(saved));
+      } catch {}
+    }
+  }, []);
 
   const addPlayer = () => {
     const v = inputValue.trim();
     if (!v) return;
+    if (localPlayers.includes(v)) return; // Evita duplicar no jogo atual
     setLocalPlayers((prev) => [...prev, v]);
     setInputValue('');
   };
@@ -21,8 +33,29 @@ export default function RegisterScreenImpostor({ onBack, onNext }: Props) {
     setLocalPlayers((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const togglePlayerFromHistory = (player: string) => {
+    if (localPlayers.includes(player)) {
+      setLocalPlayers((prev) => prev.filter((p) => p !== player));
+    } else {
+      setLocalPlayers((prev) => [...prev, player]);
+    }
+  };
+
+  const deleteFromHistory = (player: string) => {
+    const updatedHistory = savedHistory.filter((p) => p !== player);
+    setSavedHistory(updatedHistory);
+    localStorage.setItem('ito_saved_players', JSON.stringify(updatedHistory));
+  };
+
+  const handleNext = () => {
+    // Salva no histórico de forma cumulativa
+    const newHistory = Array.from(new Set([...savedHistory, ...localPlayers]));
+    localStorage.setItem('ito_saved_players', JSON.stringify(newHistory));
+    onNext(localPlayers);
+  };
+
   return (
-    <div className="flex-1 flex flex-col bg-slate-950 relative h-full overflow-hidden text-slate-100 font-sans">
+    <div className="flex-1 flex flex-col bg-slate-955 relative h-full overflow-hidden text-slate-100 font-sans">
       {/* Header Fixo */}
       <div className="p-4 flex items-center bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
         <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-purple-400 transition-colors">
@@ -54,6 +87,43 @@ export default function RegisterScreenImpostor({ onBack, onNext }: Props) {
           </div>
         </div>
 
+        {/* Jogadores Salvos / Histórico */}
+        {savedHistory.length > 0 && (
+          <div className="mb-6 shrink-0 animate-fade-in">
+            <span className="block text-purple-400 font-bold mb-2 ml-1 text-[11px] uppercase tracking-wider font-outfit">Rápida Seleção / Histórico</span>
+            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-1 pb-1">
+              {savedHistory.map((player) => {
+                const isSelected = localPlayers.includes(player);
+                return (
+                  <div
+                    key={`history-${player}`}
+                    onClick={() => togglePlayerFromHistory(player)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border text-xs font-bold transition-all duration-200 cursor-pointer select-none active:scale-95 ${
+                      isSelected
+                        ? 'bg-purple-600 border-purple-500 text-white shadow-md shadow-purple-500/10'
+                        : 'bg-slate-900/40 border border-white/5 text-slate-300 hover:border-purple-500/30'
+                    }`}
+                  >
+                    <span>{player}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteFromHistory(player);
+                      }}
+                      className={`p-0.5 rounded-full transition-colors ${
+                        isSelected ? 'hover:bg-purple-750 text-purple-200' : 'hover:bg-slate-800 text-slate-500'
+                      }`}
+                      title="Remover do histórico"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* List Area com Scroll */}
         <div className="flex-1 overflow-y-auto space-y-3 pb-4 pr-1">
           {localPlayers.length === 0 ? (
@@ -62,7 +132,7 @@ export default function RegisterScreenImpostor({ onBack, onNext }: Props) {
                 <Ghost size={32} className="text-purple-400 opacity-60 animate-pulse" />
               </div>
               <p className="font-bold text-slate-400 text-sm">Adicione pelo menos 3 jogadores</p>
-              <p className="text-xs text-slate-500/80 mt-1">Este modo requer mais pessoas para dedução!</p>
+              <p className="text-xs text-slate-550 mt-1">Este modo requer mais pessoas para dedução!</p>
             </div>
           ) : (
             localPlayers.map((player, index) => (
@@ -83,11 +153,11 @@ export default function RegisterScreenImpostor({ onBack, onNext }: Props) {
       </div>
 
       {/* Rodapé Fixo */}
-      <div className="p-6 bg-slate-950 border-t border-white/5 shrink-0 safe-bottom shadow-[0_-8px_24px_rgba(0,0,0,0.2)]">
+      <div className="p-6 bg-slate-955 border-t border-white/5 shrink-0 safe-bottom shadow-[0_-8px_24px_rgba(0,0,0,0.2)]">
         <button
-          onClick={() => onNext(localPlayers)}
+          onClick={handleNext}
           disabled={localPlayers.length < 3}
-          className="w-full bg-white hover:bg-slate-200 disabled:bg-slate-900 disabled:text-slate-600 text-slate-950 font-black text-lg py-4 rounded-2xl shadow-lg transition-all duration-150 active:scale-95 disabled:active:scale-100 flex items-center justify-center gap-2 font-outfit"
+          className="w-full bg-white hover:bg-slate-200 disabled:bg-slate-900 disabled:text-slate-600 text-slate-955 font-black text-lg py-4 rounded-2xl shadow-lg transition-all duration-150 active:scale-95 disabled:active:scale-100 flex items-center justify-center gap-2 font-outfit"
         >
           <span>AVANÇAR</span> <ChevronLeft className="rotate-180" size={24} />
         </button>

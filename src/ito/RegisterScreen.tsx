@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ChevronLeft, Plus, Trash2, Users } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronLeft, Plus, Trash2, Users, X } from 'lucide-react';
 
 type Props = {
   onBack: () => void;
@@ -9,16 +9,49 @@ type Props = {
 export default function RegisterScreenClassic({ onBack, onNext }: Props) {
   const [inputValue, setInputValue] = useState('');
   const [localPlayers, setLocalPlayers] = useState<string[]>([]);
+  const [savedHistory, setSavedHistory] = useState<string[]>([]);
+
+  // Carrega jogadores do localStorage ao montar o componente
+  useEffect(() => {
+    const saved = localStorage.getItem('ito_saved_players');
+    if (saved) {
+      try {
+        setSavedHistory(JSON.parse(saved));
+      } catch {}
+    }
+  }, []);
 
   const addPlayer = () => {
     const v = inputValue.trim();
     if (!v) return;
+    if (localPlayers.includes(v)) return; // Evita duplicar no jogo atual
     setLocalPlayers((prev) => [...prev, v]);
     setInputValue('');
   };
 
   const removePlayer = (index: number) => {
     setLocalPlayers((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const togglePlayerFromHistory = (player: string) => {
+    if (localPlayers.includes(player)) {
+      setLocalPlayers((prev) => prev.filter((p) => p !== player));
+    } else {
+      setLocalPlayers((prev) => [...prev, player]);
+    }
+  };
+
+  const deleteFromHistory = (player: string) => {
+    const updatedHistory = savedHistory.filter((p) => p !== player);
+    setSavedHistory(updatedHistory);
+    localStorage.setItem('ito_saved_players', JSON.stringify(updatedHistory));
+  };
+
+  const handleNext = () => {
+    // Salva no histórico de forma cumulativa
+    const newHistory = Array.from(new Set([...savedHistory, ...localPlayers]));
+    localStorage.setItem('ito_saved_players', JSON.stringify(newHistory));
+    onNext(localPlayers);
   };
 
   return (
@@ -47,12 +80,49 @@ export default function RegisterScreenClassic({ onBack, onNext }: Props) {
             <button 
               onClick={addPlayer} 
               disabled={!inputValue.trim()} 
-              className="bg-yellow-400 hover:bg-yellow-300 disabled:bg-slate-100 disabled:text-slate-300 text-slate-950 rounded-2xl p-3.5 shadow-md active:scale-95 disabled:scale-100 transition-all duration-150"
+              className="bg-yellow-400 hover:bg-yellow-300 disabled:bg-slate-100 disabled:text-slate-300 text-slate-955 rounded-2xl p-3.5 shadow-md active:scale-95 disabled:scale-100 transition-all duration-150"
             >
               <Plus size={24} />
             </button>
           </div>
         </div>
+
+        {/* Jogadores Salvos / Histórico */}
+        {savedHistory.length > 0 && (
+          <div className="mb-6 shrink-0 animate-fade-in">
+            <span className="block text-slate-400 font-bold mb-2 ml-1 text-[11px] uppercase tracking-wider font-outfit">Rápida Seleção / Histórico</span>
+            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-1 pb-1">
+              {savedHistory.map((player) => {
+                const isSelected = localPlayers.includes(player);
+                return (
+                  <div
+                    key={`history-${player}`}
+                    onClick={() => togglePlayerFromHistory(player)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border text-xs font-bold transition-all duration-200 cursor-pointer select-none active:scale-95 ${
+                      isSelected
+                        ? 'bg-yellow-400 border-yellow-400 text-slate-950 shadow-md shadow-yellow-400/10'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    <span>{player}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteFromHistory(player);
+                      }}
+                      className={`p-0.5 rounded-full transition-colors ${
+                        isSelected ? 'hover:bg-yellow-500 text-slate-900' : 'hover:bg-slate-100 text-slate-400'
+                      }`}
+                      title="Remover do histórico"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* List Area (Única com Scroll Vertical) */}
         <div className="flex-1 overflow-y-auto space-y-3 pb-4 pr-1">
@@ -85,7 +155,7 @@ export default function RegisterScreenClassic({ onBack, onNext }: Props) {
       {/* Rodapé Fixo Flex (Nunca posicionado de forma absoluta) */}
       <div className="p-6 bg-white border-t border-slate-100 shrink-0 safe-bottom shadow-[0_-8px_24px_rgba(0,0,0,0.02)]">
         <button
-          onClick={() => onNext(localPlayers)}
+          onClick={handleNext}
           disabled={localPlayers.length < 2}
           className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-100 disabled:text-slate-400 text-white font-black text-lg py-4 rounded-2xl shadow-lg hover:shadow-xl disabled:shadow-none transition-all duration-150 active:scale-95 disabled:active:scale-100 flex items-center justify-center gap-2 font-outfit"
         >
