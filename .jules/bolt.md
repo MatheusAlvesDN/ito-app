@@ -1,0 +1,3 @@
+## 2025-02-25 - Prevent Recalculation in Render Body
+**Learning:** Initializing values with `Math.random()` directly in the body of a React component will cause those values to be recalculated on every single render, potentially causing layout shifts, visual glitches, and degraded performance (e.g., `Confetti` particles shifting or resetting).
+**Action:** Use `useMemo` to memoize the generation of arrays/objects that rely on random values, and wrap pure presentation components in `React.memo()` to prevent unnecessary re-renders.
