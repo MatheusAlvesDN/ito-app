@@ -1,0 +1,4 @@
+## 2024-05-27 - Infinite Loop DoS & Memory Exhaustion via Random Number Generation
+**Vulnerability:** Unbounded loop (`do { ... } while (usedNumbers.has(num))`) in `GameScreen.tsx` logic. An attacker could add 100+ players, causing an infinite loop. This leads to browser freeze, memory exhaustion, and potential DoS.
+**Learning:** `GameScreen.tsx` assigns unique random numbers to players. It uses a `do-while` loop generating numbers 1-100 until it finds an unused one. If there are >= 100 players, the loop never terminates.
+**Prevention:** Always enforce realistic bounds (e.g., maximum players = 20) on user inputs (`localPlayers` in `App.tsx`) before processing them in algorithms with finite domains (like choosing 100 random numbers). Also enforce input length validation on UI elements (`maxLength`).
