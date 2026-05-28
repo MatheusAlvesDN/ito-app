@@ -1,0 +1,4 @@
+## 2024-05-28 - Infinite Loop DoS from Unbounded Collections
+**Vulnerability:** The application allowed an unlimited number of players to be added, but the `GameScreen.tsx` uses a `do...while` loop bound by 100 choices to assign random numbers. Adding >100 players would cause an infinite loop, freezing the application (DoS) and exhausting memory. Names also had no maximum length, worsening the impact.
+**Learning:** Even simple client-side mechanics like adding users to a list can result in Denial of Service if downstream processing (like random assignment bounded by a fixed pool) assumes a small, bounded collection. Input bounds must match processing constraints.
+**Prevention:** Always enforce strict maximum lengths (e.g., `maxLength={30}`) on text inputs and strict maximum sizes (e.g., `if (localPlayers.length < 20)`) on arrays that undergo complex or bounded processing.
