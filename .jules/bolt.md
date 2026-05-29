@@ -1,0 +1,3 @@
+## 2024-05-29 - Memoization of direct inline random calculations
+**Learning:** Found an anti-pattern in the `Confetti` component where `Math.random()` was called directly inside the render cycle (e.g. for `animationDuration`) inside an array mapped over 50 items. This violated React purity rules and caused expensive layout trashing whenever the parent component re-rendered.
+**Action:** When finding random generation or expensive array derivations used solely for UI elements (like particles or charts) that don't need to change between renders, extract them into `useMemo` hooks with empty dependency arrays, and wrap the display component in `memo` to block unnecessary prop-less re-renders.
