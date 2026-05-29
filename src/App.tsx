@@ -111,9 +111,12 @@ const HomeScreen = ({ onPlay }: { onPlay: () => void }) => {
 const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (players: string[]) => void }) => {
   const [inputValue, setInputValue] = useState('');
   const [localPlayers, setLocalPlayers] = useState<string[]>([]);
+  // SECURE: Limit maximum players to prevent DoS via infinite loop in GameScreen
+  const MAX_PLAYERS = 20;
 
   const addPlayer = () => {
-    if (inputValue.trim()) {
+    // SECURE: Validate input length and maximum players
+    if (inputValue.trim() && localPlayers.length < MAX_PLAYERS) {
       setLocalPlayers([...localPlayers, inputValue.trim()]);
       setInputValue('');
     }
@@ -135,9 +138,11 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
               placeholder="Nome do participante"
-              className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
+              maxLength={30}
+              disabled={localPlayers.length >= MAX_PLAYERS}
+              className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-yellow-400 outline-none transition-all disabled:opacity-50"
             />
-            <button onClick={addPlayer} disabled={!inputValue.trim()} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
+            <button onClick={addPlayer} disabled={!inputValue.trim() || localPlayers.length >= MAX_PLAYERS} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
               <Plus size={24} />
             </button>
           </div>
