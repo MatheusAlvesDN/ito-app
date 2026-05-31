@@ -1,0 +1,4 @@
+## 2024-05-31 - [Infinite Loop DoS via Unbounded Input]
+**Vulnerability:** The application was vulnerable to an infinite loop Denial of Service (DoS) and memory exhaustion due to an unbounded number of players feeding into a `do...while` loop during random number assignment in `GameScreen.tsx`.
+**Learning:** Even internal random generation mechanics can cause system crashes if their inputs (like player names/counts) are unbounded. The loop checked for unique numbers from 1 to 100, which would infinitely loop if players > 100.
+**Prevention:** Always bound input limits, especially when those inputs directly affect loop conditions or array sizes. Implemented a maximum of 20 players and max length 30 characters on inputs.
