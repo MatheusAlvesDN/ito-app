@@ -1,0 +1,4 @@
+## 2024-06-01 - Missing Player Limits leading to DoS
+**Vulnerability:** The random number generation logic in GameScreen uses a `do...while` loop bound by 100 choices. Because there is no limit on the number of players or their name lengths in the App component, an attacker or standard user could add >100 players, leading to an infinite loop DoS and potential memory exhaustion.
+**Learning:** Client-side limits are crucial for array allocations and loops that depend on total distinct user inputs, particularly when those inputs iterate over a strictly constrained bounds space (like numbers 1 to 100).
+**Prevention:** Always enforce logical maximums on unbounded state arrays that drive computationally bounded loops and input length boundaries.
