@@ -1,0 +1,3 @@
+## 2024-05-24 - Lazy Initialization for Expensive Calculations in Render
+**Learning:** Calculating random numbers or building arrays on every render in functional components (like `Confetti`) not only triggers React hooks purity warnings but also performs redundant computations during re-renders.
+**Action:** Use lazy initialization with `useState(() => ...)` to ensure the expensive calculation is only performed once when the component mounts.
