@@ -50,13 +50,16 @@ const QUESTIONS_DB: Record<string, string[]> = {
 };
 
 const Confetti = () => {
-  // Cria 50 partículas com posições e cores aleatórias
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
+  // ⚡ Bolt: Encapsulate particle generation in lazy initialization (useState).
+  // This prevents recalculating 50 objects with Math.random() on every re-render,
+  // fixing purity rule violations and avoiding unnecessary layout recalculations.
+  const [particles] = useState(() => Array.from({ length: 50 }).map((_, i) => ({
     id: i,
     x: Math.random() * 100,
     delay: Math.random() * 2,
+    duration: `${2 + Math.random() * 3}s`,
     color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+  })));
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -68,7 +71,7 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDuration: p.duration,
             animationDelay: `${p.delay}s`
           }}
         />
