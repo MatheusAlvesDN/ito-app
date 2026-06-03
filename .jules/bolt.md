@@ -1,0 +1,3 @@
+## 2025-06-03 - Lazy Initialization for Random Generation in React
+**Learning:** `Math.random()` calls inside the render body are considered impure and violate `react-hooks/purity` ESLint rules. Even inside variables that don't depend on state, generating large arrays with random properties during every render creates unnecessary performance overhead and instability in child components like `Confetti`.
+**Action:** Use lazy initialization with `useState(() => ...)` to compute the array containing random properties only once during the initial component mount, avoiding repeated calculations and satisfying React hook purity requirements.
