@@ -113,7 +113,8 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
   const [localPlayers, setLocalPlayers] = useState<string[]>([]);
 
   const addPlayer = () => {
-    if (inputValue.trim()) {
+    // SECURE: Enforce maximum player limit to prevent infinite loop DoS in unique random generation (max 100 choices)
+    if (inputValue.trim() && localPlayers.length < 20) {
       setLocalPlayers([...localPlayers, inputValue.trim()]);
       setInputValue('');
     }
@@ -135,12 +136,18 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
               placeholder="Nome do participante"
+              // SECURE: Limit string length to prevent memory exhaustion and UI breaking
+              maxLength={30}
+              disabled={localPlayers.length >= 20}
               className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
             />
-            <button onClick={addPlayer} disabled={!inputValue.trim()} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
+            <button onClick={addPlayer} disabled={!inputValue.trim() || localPlayers.length >= 20} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
               <Plus size={24} />
             </button>
           </div>
+          {localPlayers.length >= 20 && (
+             <p className="text-xs text-red-500 mt-2 font-medium">Limite máximo de 20 jogadores atingido.</p>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-3 pb-4">

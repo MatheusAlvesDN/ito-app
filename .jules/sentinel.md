@@ -1,0 +1,4 @@
+## 2024-06-03 - Infinite Loop DoS from Unbounded Input
+**Vulnerability:** The application allowed an unlimited number of players and overly long names, which could lead to an infinite loop DoS and memory exhaustion due to the random number generation logic in `GameScreen.tsx` that tries to assign unique numbers within a limited bounds (1-100).
+**Learning:** Even simple logic like `do-while` loops for finding unique random numbers can become a DoS vector if the pool of available unique values is finite but the requested number of items is unbounded.
+**Prevention:** Always enforce constraints on array sizes or loop iterations when mapping to a finite set of unique values. Limit the number of inputs (e.g., maximum players) and input lengths (e.g., name lengths) to prevent memory and processing exhaustion.
