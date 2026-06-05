@@ -1,0 +1,4 @@
+## 2024-05-15 - Infinite Loop DoS in Random Generation
+**Vulnerability:** GameScreen random number generation uses a do...while loop over a fixed 100 range without validating the player count, leading to an infinite loop if more than 100 players are added. Unbounded input length also allowed memory exhaustion.
+**Learning:** Hardcoded constants in generation loops must always have corresponding validation in input forms to prevent edge cases and DoS vectors. Unbounded inputs are dangerous.
+**Prevention:** Always enforce upper bounds on application limits (like max 20 players) and maximum lengths on user inputs (maxLength=30).

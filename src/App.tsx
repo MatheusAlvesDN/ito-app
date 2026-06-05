@@ -113,7 +113,8 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
   const [localPlayers, setLocalPlayers] = useState<string[]>([]);
 
   const addPlayer = () => {
-    if (inputValue.trim()) {
+    // SECURE: Limit maximum players to 20 to prevent infinite loop DoS in GameScreen random number generation (max 100 choices)
+    if (inputValue.trim() && localPlayers.length < 20) {
       setLocalPlayers([...localPlayers, inputValue.trim()]);
       setInputValue('');
     }
@@ -130,7 +131,9 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
         <div className="bg-white p-4 rounded-3xl shadow-lg mb-6 border border-slate-100 shrink-0">
           <label className="block text-slate-500 font-bold mb-2 ml-1 text-xs uppercase tracking-wider">Adicionar Jogador</label>
           <div className="flex gap-2">
+            {/* SECURE: Enforce maxLength="30" to prevent memory exhaustion from excessively long inputs */}
             <input
+              maxLength={30}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
