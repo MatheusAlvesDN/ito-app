@@ -51,12 +51,14 @@ const QUESTIONS_DB: Record<string, string[]> = {
 
 const Confetti = () => {
   // Cria 50 partículas com posições e cores aleatórias
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
+  // BOLT OPTIMIZATION: Use lazy initialization to calculate particles only once on mount,
+  // preventing expensive recalculations and re-renders while fixing React purity warnings.
+  const [particles] = useState(() => Array.from({ length: 50 }).map((_, i) => ({
     id: i,
     x: Math.random() * 100,
     delay: Math.random() * 2,
     color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+  })));
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -68,7 +70,9 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            // BOLT OPTIMIZATION: Avoid inline Math.random() which triggers React purity warnings during render.
+            // Using a seeded pseudo-random approach based on particle ID for deterministic rendering.
+            animationDuration: `${2 + (p.id % 3)}s`,
             animationDelay: `${p.delay}s`
           }}
         />
