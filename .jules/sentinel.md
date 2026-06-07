@@ -1,0 +1,4 @@
+## 2024-06-07 - Prevention of Infinite Loop DoS
+**Vulnerability:** Unbounded array limits for players caused a `do-while` random assignment loop in GameScreen.tsx to loop infinitely if players > 100, risking a Denial of Service (DoS) and memory exhaustion.
+**Learning:** Hardcoded random number selection logic bounds (e.g. 100 choices) must always have a corresponding application-level constraint (e.g. maximum players < 100) to prevent infinite rejection sampling.
+**Prevention:** Always enforce strict maximum length limits on dynamic arrays and maximum length limits on user text inputs before they are passed into core application logic.
