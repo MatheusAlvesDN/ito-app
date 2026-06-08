@@ -113,7 +113,8 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
   const [localPlayers, setLocalPlayers] = useState<string[]>([]);
 
   const addPlayer = () => {
-    if (inputValue.trim()) {
+    // SECURE: Limit maximum players to 20
+    if (inputValue.trim() && localPlayers.length < 20) {
       setLocalPlayers([...localPlayers, inputValue.trim()]);
       setInputValue('');
     }
@@ -135,9 +136,10 @@ const RegisterScreen = ({ onBack, onNext }: { onBack: () => void, onNext: (playe
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
               placeholder="Nome do participante"
+              maxLength={30}
               className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
             />
-            <button onClick={addPlayer} disabled={!inputValue.trim()} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
+            <button onClick={addPlayer} disabled={!inputValue.trim() || localPlayers.length >= 20} className="bg-sky-500 hover:bg-sky-400 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl p-3 shadow-md transition-all active:scale-95">
               <Plus size={24} />
             </button>
           </div>
