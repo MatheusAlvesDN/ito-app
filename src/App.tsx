@@ -25,9 +25,9 @@ export default function App() {
     const lockOrientation = async () => {
       try {
         // Verifica se a API de orientação está disponível
-        // @ts-ignore
+        // @ts-expect-error: API de orientacao pode nao existir em todos os browsers
         if (window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
-          // @ts-ignore
+          // @ts-expect-error: lock pode nao suportar o parametro nativamente
           await window.screen.orientation.lock('portrait');
           console.log('Orientation locked to portrait');
         }
