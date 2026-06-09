@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { ChevronLeft, Dices, Check, Eye, Unlock, Star, Cloud, ArrowUp, ArrowDown, RefreshCw, ArrowRight, Lock } from 'lucide-react';
 import type { Theme } from './data';
 //import { getSecureRandomInt } from './utils/secureRandom';
@@ -49,14 +49,15 @@ const QUESTIONS_DB: Record<string, string[]> = {
     ]
 };
 
-const Confetti = () => {
-  // Cria 50 partículas com posições e cores aleatórias
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
+const Confetti = memo(() => {
+  // Cria 50 partículas com posições e cores aleatórias, calculadas apenas uma vez
+  const [particles] = useState(() => Array.from({ length: 50 }).map((_, i) => ({
     id: i,
     x: Math.random() * 100,
     delay: Math.random() * 2,
+    duration: 2 + Math.random() * 3,
     color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+  })));
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -68,14 +69,14 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDuration: `${p.duration}s`,
             animationDelay: `${p.delay}s`
           }}
         />
       ))}
     </div>
   );
-};
+});
 
 const GameScreen = ({ onBack, players, themes }: { onBack: () => void, players: string[], themes: Theme[] }) => {
   const [phase, setPhase] = useState<'init' | 'rolling' | 'numbers' | 'ordering' | 'result'>('init');
