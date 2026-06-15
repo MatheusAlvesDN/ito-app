@@ -85,7 +85,6 @@ export const WHOAMI_THEMES: WhoAmITheme[] = [
       'Madre Teresa de Calcutá',
       'Mahatma Gandhi',
       'Malala Yousafzai',
-      'Mahamtma Ghandi',
       'Profeta Muhammad (S.A.A.S)',
       'Marco Polo',
       'Marcus Aurelius',

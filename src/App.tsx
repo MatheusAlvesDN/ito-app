@@ -1,18 +1,29 @@
-import { useEffect, useReducer, useState } from 'react';
-import { Play, Cloud, ChevronLeft, Zap, Ghost, UserSearch, Wifi, Users, RefreshCw, Smartphone, Copy, Plus, LogIn, Crown, ArrowRight } from 'lucide-react';
+import React, { Suspense, useEffect, useReducer } from 'react';
+import { Play, Cloud, ChevronLeft, Zap, Ghost, UserSearch, RefreshCw } from 'lucide-react';
 import { THEMES } from './data';
 import { syncService } from './utils/syncService';
+import { Toaster } from 'sonner';
 
 // --- IMPORTS DOS COMPONENTES ---
 import RegisterScreenClassic from './ito/RegisterScreen';
 import ThemeSelectionClassic from './ito/ThemeSelection';
-import GameScreenIto from './ito/GameScreen';
 import RegisterScreenImpostor from './impostor/RegisterScreen';
 import ThemeSelectionImpostor from './impostor/ThemeSelection';
-import GameScreenImpostor from './impostor/GameScreen';
 import RegisterScreenWhoAmI from './whoami/RegisterScreen';
 import ThemeSelectionWhoAmI from './whoami/ThemeSelection';
-import GameScreenWhoAmI from './whoami/GameScreen';
+
+// Lazy load para as telas de jogos
+const GameScreenIto = React.lazy(() => import('./ito/GameScreen'));
+const GameScreenImpostor = React.lazy(() => import('./impostor/GameScreen'));
+const GameScreenWhoAmI = React.lazy(() => import('./whoami/GameScreen'));
+
+// --- LOBBY COMPONENTS ---
+import { ConnectionSelectionScreen } from './components/lobby/ConnectionSelectionScreen';
+import { LobbySetupScreen } from './components/lobby/LobbySetupScreen';
+import { MultiplayerLobbyScreen } from './components/lobby/MultiplayerLobbyScreen';
+
+// --- HOOKS ---
+import { useMultiplayerSync } from './hooks/useMultiplayerSync';
 
 // --- TIPOS ---
 export type GameMode = 'classic' | 'impostor' | 'whoami';
@@ -21,9 +32,9 @@ export type GameMode = 'classic' | 'impostor' | 'whoami';
 type Screen = 
   | 'home' 
   | 'mode-selection' 
-  | 'connection-selection' // Nova tela
-  | 'lobby-setup'          // Nova tela
-  | 'multiplayer-lobby'    // Nova tela
+  | 'connection-selection'
+  | 'lobby-setup'
+  | 'multiplayer-lobby'
   | 'register-classic'
   | 'register-impostor'
   | 'theme-classic'
@@ -44,7 +55,7 @@ type State = {
 type Action =
   | { type: 'GO_HOME' }
   | { type: 'GO_MODE_SELECTION' }
-  | { type: 'SET_SCREEN'; screen: Screen } // Nova ação
+  | { type: 'SET_SCREEN'; screen: Screen }
   | { type: 'SELECT_MODE_CLASSIC' }
   | { type: 'SELECT_MODE_IMPOSTOR' }
   | { type: 'SELECT_MODE_WHOAMI' }
@@ -52,7 +63,7 @@ type Action =
   | { type: 'THEMES_CONFIRMED'; themes: any[] }
   | { type: 'RESET' };
 
-const STORAGE_KEY = 'ito_app_state_v4'; // Versão 4
+const STORAGE_KEY = 'ito_app_state_v4';
 
 type PersistedState = {
   screen: Screen;
@@ -92,18 +103,17 @@ function reducer(state: State, action: Action): State {
       return { 
         ...state, 
         gameMode: 'impostor', 
-        screen: 'connection-selection' // Nova rota intermediária
+        screen: 'connection-selection'
       };
 
     case 'SELECT_MODE_WHOAMI':
       return { 
         ...state, 
         gameMode: 'whoami', 
-        screen: 'connection-selection' // Nova rota intermediária
+        screen: 'connection-selection'
       };
 
     case 'PLAYERS_CONFIRMED':
-      // Decide qual tela de tema mostrar baseado no modo atual
       if (state.gameMode === 'impostor') {
         return { ...state, players: action.players, screen: 'theme-impostor' };
       }
@@ -113,7 +123,6 @@ function reducer(state: State, action: Action): State {
       return { ...state, players: action.players, screen: 'theme-classic' };
 
     case 'THEMES_CONFIRMED':
-      // Decide qual tela de jogo mostrar
       if (state.gameMode === 'impostor') {
         return { ...state, themes: action.themes, screen: 'game-impostor' };
       }
@@ -130,336 +139,6 @@ function reducer(state: State, action: Action): State {
       return state;
   }
 }
-
-// --- HELPER SCREENS FOR MULTIPLAYER ---
-
-const ConnectionSelectionScreen = ({
-  onBack,
-  onSelectLocal,
-  onSelectMultiplayer,
-  gameMode,
-}: {
-  onBack: () => void;
-  onSelectLocal: () => void;
-  onSelectMultiplayer: () => void;
-  gameMode: GameMode;
-}) => {
-  const getThemeColor = () => {
-    if (gameMode === 'impostor') return 'text-purple-400 border-purple-500/20 hover:border-purple-400/85 hover:bg-purple-500/[0.02]';
-    if (gameMode === 'classic') return 'text-yellow-450 border-yellow-500/20 hover:border-yellow-400/85 hover:bg-yellow-500/[0.02]';
-    return 'text-emerald-400 border-emerald-500/20 hover:border-emerald-400/85 hover:bg-emerald-500/[0.02]';
-  };
-
-  return (
-    <div className="flex-1 flex flex-col bg-slate-950 relative h-full overflow-hidden text-slate-100">
-      <div className="absolute -top-24 -left-24 w-96 h-96 bg-slate-800/10 rounded-full blur-[120px] pointer-events-none" />
-      
-      {/* Header Fixo */}
-      <div className="p-4 flex items-center bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-        <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-slate-200 transition-colors">
-          <ChevronLeft size={24} />
-        </button>
-        <span className="ml-4 font-black text-xl text-white font-outfit">Escolha a Conexão</span>
-      </div>
-
-      <div className="flex-1 p-6 flex flex-col justify-center gap-6 max-w-md mx-auto w-full">
-        <div className="text-center mb-4">
-          <h2 className="text-3xl font-black text-white font-outfit tracking-tight">Como querem jogar?</h2>
-          <p className="text-slate-400 mt-2 text-sm font-medium">Escolha jogar passando o aparelho ou com múltiplos dispositivos.</p>
-        </div>
-
-        {/* Local: Passa e Joga */}
-        <button
-          onClick={onSelectLocal}
-          className="group relative w-full bg-slate-900/40 p-6 rounded-3xl border-2 border-slate-850 hover:border-slate-700 hover:bg-slate-900/60 transition-all duration-300 transform hover:scale-[1.02] active:scale-95 text-left overflow-hidden shadow-lg"
-        >
-          <div className="flex items-start gap-4">
-            <div className="p-4 bg-slate-850 border border-slate-750 rounded-2xl text-slate-350 shrink-0">
-              <Smartphone size={28} />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-white font-outfit flex items-center gap-2">
-                1 Celular <span className="bg-slate-800 text-slate-350 text-[10px] px-2.5 py-0.5 rounded-full font-bold">Pass & Play</span>
-              </h3>
-              <p className="text-slate-400 text-xs sm:text-sm mt-1 leading-relaxed font-medium">Todos jogam na mesma tela, passando o celular a cada rodada. Ideal para qualquer momento.</p>
-            </div>
-          </div>
-        </button>
-
-        {/* Multiplayer: Vários Celulares */}
-        <button
-          onClick={onSelectMultiplayer}
-          className={`group relative w-full bg-slate-900/40 p-6 rounded-3xl border-2 ${getThemeColor()} transition-all duration-300 transform hover:scale-[1.02] active:scale-95 text-left overflow-hidden shadow-lg`}
-        >
-          <div className="flex items-start gap-4">
-            <div className="p-4 bg-slate-850 border border-slate-750 rounded-2xl text-slate-350 shrink-0">
-              <Wifi size={28} />
-            </div>
-            <div>
-              <h3 className="text-xl font-black text-white font-outfit flex items-center gap-2">
-                Vários Celulares <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-550/30 text-[10px] px-2.5 py-0.5 rounded-full font-bold">Sem Fio</span>
-              </h3>
-              <p className="text-slate-400 text-xs sm:text-sm mt-1 leading-relaxed font-medium">Cada jogador usa seu próprio aparelho conectado na mesma rede local/Wi-Fi. Muito mais prático!</p>
-            </div>
-          </div>
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const LobbySetupScreen = ({
-  onBack,
-  playerName,
-  setPlayerName,
-  isConnecting,
-  errorMsg,
-  handleConnect,
-  gameMode,
-}: {
-  onBack: () => void;
-  playerName: string;
-  setPlayerName: (val: string) => void;
-  isConnecting: boolean;
-  errorMsg: string;
-  handleConnect: (customIp: string, actionType: 'create' | 'join', joinCode?: string) => void;
-  gameMode: GameMode;
-}) => {
-  const [roomToJoin, setRoomToJoin] = useState('');
-  const activeColorClass = gameMode === 'impostor' 
-    ? 'from-purple-600 to-indigo-650 hover:from-purple-500 hover:to-indigo-600' 
-    : gameMode === 'classic'
-      ? 'from-yellow-400 to-amber-500 hover:from-yellow-350 hover:to-amber-450 text-black font-black'
-      : 'from-emerald-500 to-teal-650 hover:from-emerald-450 hover:to-teal-600';
-  const ringColorClass = gameMode === 'impostor' 
-    ? 'focus:border-purple-550 focus:ring-purple-900/30' 
-    : gameMode === 'classic'
-      ? 'focus:border-yellow-550 focus:ring-yellow-900/30'
-      : 'focus:border-emerald-550 focus:ring-emerald-900/30';
-
-  return (
-    <div className="flex-1 flex flex-col bg-slate-950 relative h-full overflow-hidden text-slate-100">
-      {/* Header Fixo */}
-      <div className="p-4 flex items-center bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-        <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-slate-200 transition-colors">
-          <ChevronLeft size={24} />
-        </button>
-        <span className="ml-4 font-black text-xl text-white font-outfit">Configurar Sala</span>
-      </div>
-
-      <div className="flex-1 p-6 flex flex-col justify-center max-w-sm mx-auto w-full overflow-y-auto pb-12 gap-5">
-        <div className="text-center mb-2">
-          <div className="inline-flex p-3.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-400 mb-3 animate-pulse">
-            <Wifi size={32} />
-          </div>
-          <h2 className="text-2xl font-black text-white font-outfit tracking-tight">Multiplayer P2P</h2>
-          <p className="text-slate-450 text-xs mt-1 font-medium">Jogue direto pelo seu celular sem fio via rede local.</p>
-        </div>
-
-        {errorMsg && (
-          <div className="p-3.5 bg-red-950/20 border-2 border-red-500/20 text-red-400 rounded-2xl text-xs font-bold font-sans text-center animate-fade-in-scale">
-            {errorMsg}
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-[11px] font-black uppercase tracking-wider text-slate-400 mb-1.5 font-outfit">Seu Nome / Apelido</label>
-            <input
-              type="text"
-              placeholder="Ex: Matheus"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value.slice(0, 12))}
-              className={`w-full bg-slate-900 border-2 border-white/5 px-4 py-3 rounded-2xl text-white font-bold placeholder:text-slate-650 outline-none transition-all ${ringColorClass}`}
-            />
-          </div>
-
-          <div className="h-px bg-white/5 my-2" />
-
-          {/* Opção 1: Criar Sala */}
-          <button
-            onClick={() => handleConnect('', 'create')}
-            disabled={!playerName.trim() || isConnecting}
-            className={`w-full py-4 bg-gradient-to-r ${activeColorClass} disabled:from-slate-900 disabled:to-slate-900 disabled:text-slate-600 disabled:border-2 disabled:border-white/5 text-white font-black text-base rounded-2xl shadow-md transition-all active:scale-[0.98] disabled:active:scale-100 flex items-center justify-center gap-2 font-outfit`}
-          >
-            {isConnecting ? (
-              <RefreshCw size={18} className="animate-spin" />
-            ) : (
-              <Plus size={18} />
-            )}
-            <span>CRIAR NOVA SALA</span>
-          </button>
-
-          {/* Opção 2: Entrar em Sala Existente */}
-          <div className="bg-slate-900/30 p-4 rounded-3xl border border-white/5 space-y-3 mt-2">
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-450 mb-1.5 font-outfit">Código da Sala</label>
-              <input
-                type="text"
-                placeholder="Ex: ABCD"
-                value={roomToJoin}
-                onChange={(e) => setRoomToJoin(e.target.value.toUpperCase().slice(0, 4))}
-                className={`w-full bg-slate-955 border-2 border-white/5 px-4 py-2.5 rounded-xl text-center text-xl font-black tracking-widest text-yellow-450 placeholder:text-slate-700 outline-none transition-all ${ringColorClass}`}
-              />
-            </div>
-            <button
-              onClick={() => handleConnect('', 'join', roomToJoin)}
-              disabled={!playerName.trim() || roomToJoin.trim().length !== 4 || isConnecting}
-              className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 disabled:bg-slate-900 disabled:text-slate-600 disabled:border-slate-850 text-white font-bold text-sm rounded-xl transition-all active:scale-[0.98] disabled:active:scale-100 flex items-center justify-center gap-2 border border-white/5 font-outfit"
-            >
-              {isConnecting ? (
-                <RefreshCw size={16} className="animate-spin" />
-              ) : (
-                <LogIn size={16} />
-              )}
-              <span>ENTRAR NA SALA</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const MultiplayerLobbyScreen = ({
-  onBack,
-  roomCode,
-  isHost,
-  connectedPlayers,
-  onStartGame,
-  gameMode,
-}: {
-  onBack: () => void;
-  roomCode: string;
-  isHost: boolean;
-  connectedPlayers: { id: string; name: string }[];
-  onStartGame: () => void;
-  gameMode: GameMode;
-}) => {
-  const [copied, setCopied] = useState(false);
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(roomCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const getThemeColorClass = () => {
-    if (gameMode === 'impostor') return 'text-purple-400 bg-purple-500/10 border-purple-500/20';
-    if (gameMode === 'classic') return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
-    return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-  };
-
-  const getStartButtonClass = () => {
-    if (gameMode === 'impostor') return 'bg-purple-600 hover:bg-purple-550';
-    if (gameMode === 'classic') return 'bg-yellow-400 hover:bg-yellow-350 text-black';
-    return 'bg-emerald-500 hover:bg-emerald-450';
-  };
-
-  return (
-    <div className="flex-1 flex flex-col bg-slate-955 text-slate-100 relative h-full overflow-hidden font-sans">
-      {/* Background Blobs */}
-      <div className={`absolute top-0 right-0 w-80 h-80 rounded-full blur-[100px] pointer-events-none ${
-        gameMode === 'impostor' ? 'bg-purple-600/10' : gameMode === 'classic' ? 'bg-yellow-550/10' : 'bg-emerald-500/10'
-      }`} />
-
-      {/* Header Fixo */}
-      <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-        <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-355 transition-colors">
-          <ChevronLeft size={24} />
-        </button>
-        <span className="font-black text-xl text-white font-outfit">Lobby Multiplayer</span>
-        <div className={`text-xs font-black px-3 py-1.5 rounded-full font-outfit uppercase tracking-wider ${getThemeColorClass()}`}>
-          {gameMode === 'impostor' ? 'Impostor' : gameMode === 'classic' ? 'ITO Clássico' : 'Quem Sou Eu'}
-        </div>
-      </div>
-
-      {/* Conteúdo Central */}
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 max-w-sm mx-auto w-full justify-center">
-        {/* Código Card */}
-        <div className="bg-slate-900/60 p-6 rounded-3xl border border-white/5 text-center shadow-xl relative overflow-hidden backdrop-blur-sm">
-          <p className="text-[10px] font-black text-slate-450 uppercase tracking-[0.2em] mb-1 font-outfit">Código da Sala</p>
-          <div className="flex items-center justify-center gap-3">
-            <h1 className="text-5xl font-black text-yellow-450 font-outfit tracking-wider select-all">{roomCode}</h1>
-            <button
-              onClick={copyToClipboard}
-              className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all active:scale-90"
-              title="Copiar código"
-            >
-              {copied ? (
-                <span className="text-[10px] font-black text-emerald-400 font-outfit">COPIADO</span>
-              ) : (
-                <Copy size={18} />
-              )}
-            </button>
-          </div>
-          <p className="text-[11px] text-slate-450 mt-2 font-medium">Compartilhe esse código com os seus amigos na mesma rede local.</p>
-        </div>
-
-        {/* Jogadores Conectados */}
-        <div className="flex-1 flex flex-col bg-slate-900/20 rounded-3xl border border-white/5 overflow-hidden min-h-[180px]">
-          <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-slate-900/40">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-350 font-outfit flex items-center gap-1.5">
-              <Users size={14} /> Jogadores ({connectedPlayers.length})
-            </span>
-            {isHost && (
-              <span className="text-[9px] font-bold text-yellow-400 border border-yellow-500/25 bg-yellow-500/5 px-2 py-0.5 rounded-full font-outfit uppercase">Você é o Líder</span>
-            )}
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {connectedPlayers.map((player, index) => (
-              <div
-                key={player.id}
-                className="flex items-center justify-between p-3 rounded-2xl bg-slate-900/40 border border-white/5 animate-fade-in"
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-slate-800 border border-white/5 flex items-center justify-center text-xs font-black text-white font-outfit">
-                    {index + 1}
-                  </div>
-                  <span className="font-bold text-sm text-slate-200">{player.name}</span>
-                </div>
-                {index === 0 ? (
-                  <span className="text-[9px] font-black text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 px-2.5 py-1 rounded-lg flex items-center gap-1 font-outfit tracking-wide uppercase">
-                    <Crown size={10} className="fill-yellow-400/20" /> Líder
-                  </span>
-                ) : (
-                  <span className="text-[9px] font-bold text-slate-450 bg-slate-850 px-2 py-1 rounded-lg font-outfit uppercase">Pronto</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Rodapé Interno com Ações */}
-        <div className="mt-auto pt-2 shrink-0">
-          {isHost ? (
-            <button
-              onClick={onStartGame}
-              disabled={connectedPlayers.length < (gameMode === 'impostor' ? 3 : 2)}
-              className={`w-full py-4.5 text-white font-black text-lg rounded-2xl shadow-lg transition-all active:scale-[0.98] disabled:scale-100 disabled:bg-slate-900 disabled:text-slate-600 disabled:shadow-none flex items-center justify-center gap-2 font-outfit ${getStartButtonClass()}`}
-            >
-              <span>AVANÇAR PARA TEMAS</span> <ArrowRight size={20} />
-            </button>
-          ) : (
-            <div className="p-4 bg-slate-900/50 rounded-2xl border border-white/5 flex items-center justify-center gap-3 animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-yellow-400 animate-ping" />
-              <p className="text-slate-455 text-xs font-bold uppercase tracking-wider font-outfit text-center">
-                Aguardando o Líder iniciar...
-              </p>
-            </div>
-          )}
-          {isHost && connectedPlayers.length < (gameMode === 'impostor' ? 3 : 2) && (
-            <p className="text-center text-red-400 text-[11px] font-black mt-2 font-outfit uppercase tracking-wider animate-pulse">
-              {gameMode === 'impostor' ? 'Mínimo de 3 jogadores para o Impostor' : 'Mínimo de 2 jogadores para iniciar'}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // --- APP ---
 
@@ -478,100 +157,22 @@ export default function App() {
     return initialState;
   });
 
-  // --- ESTADOS DE MULTIPLAYER ---
-  const [connectionType, setConnectionType] = useState<'local' | 'multiplayer'>('local');
-  const [roomCode, setRoomCode] = useState('');
-  const [isHost, setIsHost] = useState(false);
-  const [connectedPlayers, setConnectedPlayers] = useState<{ id: string; name: string }[]>([]);
-  const [syncGameState, setSyncGameState] = useState<any>(null);
-  const [playerName, setPlayerName] = useState('');
-  const [playerId, setPlayerId] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-  const [isConnecting, setIsConnecting] = useState(false);
+  const onScreenChange = (screen: any) => dispatch({ type: 'SET_SCREEN', screen });
 
-  // Carregar configurações iniciais salvas
-  useEffect(() => {
-    const savedName = localStorage.getItem('ito_player_name');
-    if (savedName) {
-      setPlayerName(savedName);
-    }
-  }, []);
-
-  // Limpa conexão ao desmontar
-  useEffect(() => {
-    return () => {
-      syncService.disconnect();
-    };
-  }, []);
-
-  const handleConnect = async (customIp: string, actionType: 'create' | 'join', joinCode?: string) => {
-    setIsConnecting(true);
-    setErrorMsg('');
-    try {
-      syncService.setServerUrl(customIp);
-      await syncService.connect({
-        onRoomCreated: (code, pId, playersList) => {
-          setRoomCode(code);
-          setPlayerId(pId);
-          setIsHost(true);
-          setConnectedPlayers(playersList);
-          dispatch({ type: 'SET_SCREEN', screen: 'multiplayer-lobby' });
-          setIsConnecting(false);
-        },
-        onRoomJoined: (code, pId, playersList, initialGameState) => {
-          setRoomCode(code);
-          setPlayerId(pId);
-          setIsHost(false);
-          setConnectedPlayers(playersList);
-          setSyncGameState(initialGameState);
-          dispatch({ type: 'SET_SCREEN', screen: 'multiplayer-lobby' });
-          setIsConnecting(false);
-        },
-        onPlayerJoined: (playersList) => {
-          setConnectedPlayers(playersList);
-        },
-        onPlayerLeft: (playersList) => {
-          setConnectedPlayers(playersList);
-        },
-        onStateUpdated: (newGameState) => {
-          setSyncGameState(newGameState);
-          if (newGameState.screen) {
-            dispatch({ type: 'SET_SCREEN', screen: newGameState.screen });
-          }
-        },
-        onBecomeHost: () => {
-          setIsHost(true);
-        },
-        onError: (msg) => {
-          setErrorMsg(msg);
-          setIsConnecting(false);
-        }
-      });
-
-      // Salva no localStorage para conveniência
-      localStorage.setItem('ito_multiplayer_ip', customIp);
-      localStorage.setItem('ito_player_name', playerName);
-
-      if (actionType === 'create') {
-        syncService.createRoom(playerName);
-      } else if (actionType === 'join' && joinCode) {
-        syncService.joinRoom(joinCode, playerName);
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg('Não foi possível conectar ao servidor.');
-      setIsConnecting(false);
-    }
-  };
-
-  const handleDisconnect = () => {
-    syncService.disconnect();
-    setRoomCode('');
-    setConnectedPlayers([]);
-    setSyncGameState(null);
-    setIsHost(false);
-    setConnectionType('local');
-  };
+  const {
+    connectionType,
+    setConnectionType,
+    roomCode,
+    isHost,
+    connectedPlayers,
+    syncGameState,
+    playerName,
+    setPlayerName,
+    playerId,
+    isConnecting,
+    handleConnect,
+    handleDisconnect,
+  } = useMultiplayerSync(onScreenChange);
 
   // Persistência
   useEffect(() => {
@@ -583,11 +184,6 @@ export default function App() {
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   }, [state]);
-
-  // Lock Orientation
-  useEffect(() => {
-     // ...
-  }, []);
 
   const renderScreen = () => {
     switch (state.screen) {
@@ -633,8 +229,7 @@ export default function App() {
             playerName={playerName}
             setPlayerName={setPlayerName}
             isConnecting={isConnecting}
-            errorMsg={errorMsg}
-            handleConnect={handleConnect}
+            handleConnect={(ip, action, code) => handleConnect(ip, action, code, () => dispatch({ type: 'SET_SCREEN', screen: 'multiplayer-lobby' }))}
             gameMode={state.gameMode}
           />
         );
@@ -715,21 +310,23 @@ export default function App() {
         );
       case 'game-classic':
         return (
-          <GameScreenIto
-            onBack={() => {
-              if (connectionType === 'multiplayer') {
-                handleDisconnect();
-              }
-              dispatch({ type: 'GO_HOME' });
-            }}
-            players={connectionType === 'multiplayer' ? connectedPlayers.map(p => p.name) : state.players}
-            themes={connectionType === 'multiplayer' ? (syncGameState?.themes || []) : state.themes}
-            isMultiplayer={connectionType === 'multiplayer'}
-            isHost={isHost}
-            syncGameState={syncGameState}
-            playerId={playerId}
-            connectedPlayers={connectedPlayers}
-          />
+          <Suspense fallback={<LoadingFallback mode="classic" />}>
+            <GameScreenIto
+              onBack={() => {
+                if (connectionType === 'multiplayer') {
+                  handleDisconnect();
+                }
+                dispatch({ type: 'GO_HOME' });
+              }}
+              players={connectionType === 'multiplayer' ? connectedPlayers.map(p => p.name) : state.players}
+              themes={connectionType === 'multiplayer' ? (syncGameState?.themes || []) : state.themes}
+              isMultiplayer={connectionType === 'multiplayer'}
+              isHost={isHost}
+              syncGameState={syncGameState}
+              playerId={playerId}
+              connectedPlayers={connectedPlayers}
+            />
+          </Suspense>
         );
 
       // --- FLUXO IMPOSTOR ---
@@ -785,19 +382,21 @@ export default function App() {
         );
       case 'game-impostor':
         return (
-          <GameScreenImpostor
-            onBack={() => {
-              handleDisconnect();
-              dispatch({ type: 'GO_HOME' });
-            }}
-            players={connectionType === 'multiplayer' ? connectedPlayers.map(p => p.name) : state.players}
-            themes={connectionType === 'multiplayer' ? (syncGameState?.themes || []) : state.themes}
-            isMultiplayer={connectionType === 'multiplayer'}
-            isHost={isHost}
-            syncGameState={syncGameState}
-            playerId={playerId}
-            connectedPlayers={connectedPlayers}
-          />
+          <Suspense fallback={<LoadingFallback mode="impostor" />}>
+            <GameScreenImpostor
+              onBack={() => {
+                handleDisconnect();
+                dispatch({ type: 'GO_HOME' });
+              }}
+              players={connectionType === 'multiplayer' ? connectedPlayers.map(p => p.name) : state.players}
+              themes={connectionType === 'multiplayer' ? (syncGameState?.themes || []) : state.themes}
+              isMultiplayer={connectionType === 'multiplayer'}
+              isHost={isHost}
+              syncGameState={syncGameState}
+              playerId={playerId}
+              connectedPlayers={connectedPlayers}
+            />
+          </Suspense>
         );
 
       // --- FLUXO QUEM SOU EU ---
@@ -853,19 +452,21 @@ export default function App() {
         );
       case 'game-whoami':
         return (
-          <GameScreenWhoAmI
-            onBack={() => {
-              handleDisconnect();
-              dispatch({ type: 'GO_HOME' });
-            }}
-            players={connectionType === 'multiplayer' ? connectedPlayers.map(p => p.name) : state.players}
-            themes={connectionType === 'multiplayer' ? (syncGameState?.themes || []) : state.themes}
-            isMultiplayer={connectionType === 'multiplayer'}
-            isHost={isHost}
-            syncGameState={syncGameState}
-            playerId={playerId}
-            connectedPlayers={connectedPlayers}
-          />
+          <Suspense fallback={<LoadingFallback mode="whoami" />}>
+            <GameScreenWhoAmI
+              onBack={() => {
+                handleDisconnect();
+                dispatch({ type: 'GO_HOME' });
+              }}
+              players={connectionType === 'multiplayer' ? connectedPlayers.map(p => p.name) : state.players}
+              themes={connectionType === 'multiplayer' ? (syncGameState?.themes || []) : state.themes}
+              isMultiplayer={connectionType === 'multiplayer'}
+              isHost={isHost}
+              syncGameState={syncGameState}
+              playerId={playerId}
+              connectedPlayers={connectedPlayers}
+            />
+          </Suspense>
         );
 
       default:
@@ -875,9 +476,27 @@ export default function App() {
 
   return (
     <div className="w-full h-full min-h-[100dvh] bg-slate-950 text-slate-100 font-sans overflow-hidden flex flex-col selection:bg-yellow-200 relative">
+      <Toaster position="top-center" theme="dark" richColors />
       {/* Container principal livre de barras de rolagem globais */}
       <div className="flex-1 flex flex-col w-full h-full overflow-hidden">
         {renderScreen()}
+      </div>
+    </div>
+  );
+}
+
+// --- AUXILIARY COMPONENTS ---
+
+const LoadingFallback = ({ mode }: { mode: GameMode }) => {
+  const getColors = () => {
+    if (mode === 'impostor') return 'text-purple-400 bg-purple-500/10';
+    if (mode === 'classic') return 'text-yellow-400 bg-yellow-500/10';
+    return 'text-emerald-400 bg-emerald-500/10';
+  };
+  return (
+    <div className="flex-1 flex items-center justify-center bg-slate-950 h-full w-full">
+      <div className={`p-6 rounded-full animate-spin ${getColors()}`}>
+        <RefreshCw size={48} />
       </div>
     </div>
   );
