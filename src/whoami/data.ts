@@ -10,6 +10,8 @@ export type WhoAmITheme = {
   personalities: string[];
 };
 
+//teste commit
+
 export const WHOAMI_THEMES: WhoAmITheme[] = [
   {
     id: 'historico',
