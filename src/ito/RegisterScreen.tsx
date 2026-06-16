@@ -58,7 +58,7 @@ export default function RegisterScreenClassic({ onBack, onNext }: Props) {
     <div className="flex-1 flex flex-col bg-slate-50 relative h-full overflow-hidden text-slate-800 font-sans">
       {/* Header Fixo */}
       <div className="p-4 flex items-center bg-white border-b border-slate-100 shadow-sm sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-        <button onClick={onBack} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-600 transition-colors">
+        <button onClick={onBack} aria-label="Voltar" className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-600 transition-colors">
           <ChevronLeft size={24} />
         </button>
         <span className="ml-4 font-black text-xl text-slate-800 font-outfit">Jogadores (Clássico)</span>
@@ -79,7 +79,8 @@ export default function RegisterScreenClassic({ onBack, onNext }: Props) {
             />
             <button 
               onClick={addPlayer} 
-              disabled={!inputValue.trim()} 
+              disabled={!inputValue.trim()}
+              aria-label="Adicionar jogador"
               className="bg-yellow-400 hover:bg-yellow-300 disabled:bg-slate-100 disabled:text-slate-300 text-slate-955 rounded-2xl p-3.5 shadow-md active:scale-95 disabled:scale-100 transition-all duration-150"
             >
               <Plus size={24} />
@@ -110,6 +111,7 @@ export default function RegisterScreenClassic({ onBack, onNext }: Props) {
                         e.stopPropagation();
                         deleteFromHistory(player);
                       }}
+                      aria-label="Remover do histórico"
                       className={`p-0.5 rounded-full transition-colors ${
                         isSelected ? 'hover:bg-yellow-500 text-slate-900' : 'hover:bg-slate-100 text-slate-400'
                       }`}
@@ -143,7 +145,7 @@ export default function RegisterScreenClassic({ onBack, onNext }: Props) {
                   </div>
                   <span className="font-bold text-slate-700 text-base">{player}</span>
                 </div>
-                <button onClick={() => removePlayer(index)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-150">
+                <button onClick={() => removePlayer(index)} aria-label="Remover jogador" className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-150">
                   <Trash2 size={20} />
                 </button>
               </div>
