@@ -24,13 +24,17 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 // --- Componente de Confetti (Mantido igual) ---
+// ⚡ Bolt: Prevent Unnecessary Re-Renders
+// Utiliza lazy initialization com useState para evitar que Math.random()
+// seja recalculado (causando jank e re-renders inúteis) a cada atualização do componente.
 const Confetti = () => {
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
+  const [particles] = useState(() => Array.from({ length: 50 }).map((_, i) => ({
     id: i,
     x: Math.random() * 100,
     delay: Math.random() * 2,
-    color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+    color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)],
+    animationDuration: `${2 + Math.random() * 3}s`
+  })));
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -42,7 +46,7 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDuration: p.animationDuration,
             animationDelay: `${p.delay}s`
           }}
         />
