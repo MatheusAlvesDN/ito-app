@@ -114,13 +114,15 @@ function reducer(state: State, action: Action): State {
       };
 
     case 'PLAYERS_CONFIRMED':
+      // SECURE: Limit maximum players to 20 to prevent infinite loop DoS in random pool
+      const safePlayers = action.players.slice(0, 20);
       if (state.gameMode === 'impostor') {
-        return { ...state, players: action.players, screen: 'theme-impostor' };
+        return { ...state, players: safePlayers, screen: 'theme-impostor' };
       }
       if (state.gameMode === 'whoami') {
-        return { ...state, players: action.players, screen: 'theme-whoami' };
+        return { ...state, players: safePlayers, screen: 'theme-whoami' };
       }
-      return { ...state, players: action.players, screen: 'theme-classic' };
+      return { ...state, players: safePlayers, screen: 'theme-classic' };
 
     case 'THEMES_CONFIRMED':
       if (state.gameMode === 'impostor') {

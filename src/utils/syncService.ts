@@ -138,6 +138,11 @@ class SyncService {
           const msg = typeof data === 'string' ? JSON.parse(data) : data;
           
           if (msg.type === 'JOIN') {
+            // SECURE: Limit maximum players to 20 to prevent infinite loop DoS in random pool
+            if (this.connectedPlayers.length >= 20) {
+              this.sendJson(conn, { type: 'ERROR', message: 'Sala cheia (máximo 20 jogadores).' });
+              return;
+            }
             const newPlayer: ConnectedPlayer = { id: conn.peer, name: msg.playerName };
             
             // Adiciona o jogador se já não estiver na lista
