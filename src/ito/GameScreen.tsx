@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { ChevronLeft, Dices, Check, Unlock, Star, Cloud, RefreshCw, Lock, GripVertical, Heart } from 'lucide-react';
 import { QUESTIONS_DB } from './data';
 import type { Theme } from '../data';
@@ -24,13 +24,17 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 // --- Componente de Confetti (Mantido igual) ---
-const Confetti = () => {
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
+const Confetti = memo(() => {
+  // ⚡ Bolt: Use lazy state initialization to prevent expensive recalculations and re-renders
+  // of the particles array (including multiple Math.random calls) when the parent component re-renders.
+  // This also resolves react-hooks/purity ESLint warnings caused by inline random calls.
+  const [particles] = useState(() => Array.from({ length: 50 }).map((_, i) => ({
     id: i,
     x: Math.random() * 100,
     delay: Math.random() * 2,
-    color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+    color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)],
+    duration: 2 + Math.random() * 3
+  })));
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -42,14 +46,14 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDuration: `${p.duration}s`,
             animationDelay: `${p.delay}s`
           }}
         />
       ))}
     </div>
   );
-};
+});
 
 // --- Novo Componente: Item da Lista Arrastável ---
 interface SortableItemProps {
