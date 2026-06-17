@@ -66,6 +66,7 @@ export const MultiplayerLobbyScreen = ({
               onClick={copyToClipboard}
               className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all active:scale-90"
               title="Copiar código"
+              aria-label="Copiar código"
             >
               {copied ? (
                 <span className="text-[10px] font-black text-emerald-400 font-outfit">COPIADO</span>
