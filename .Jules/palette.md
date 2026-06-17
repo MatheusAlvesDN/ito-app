@@ -1,0 +1,3 @@
+## 2024-05-14 - Missing ARIA Labels on Icon-only "Voltar" Buttons
+**Learning:** Many views in this application utilize icon-only buttons for navigation (e.g., the "Voltar" button with `<ChevronLeft size={24} />`). While some components (like `src/ito/RegisterScreen.tsx`) have `aria-label="Voltar"`, many others (like `src/components/lobby/ConnectionSelectionScreen.tsx` and `src/components/lobby/MultiplayerLobbyScreen.tsx`) are missing this essential accessibility attribute. This creates an inconsistent and frustrating experience for screen reader users, who won't know the function of these buttons.
+**Action:** Always ensure that icon-only buttons have an `aria-label` attribute in Portuguese that clearly describes their action (e.g., `aria-label="Voltar"`).
