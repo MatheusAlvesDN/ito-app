@@ -25,12 +25,19 @@ import { CSS } from '@dnd-kit/utilities';
 
 // --- Componente de Confetti (Mantido igual) ---
 const Confetti = () => {
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    delay: Math.random() * 2,
-    color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+  // ⚡ Bolt: Performance optimization
+  // Wrap random particle generation in useState to compute them only once on mount.
+  // This prevents react-hooks/purity ESLint warnings and stops unnecessary recalculations
+  // on every re-render of the parent component, saving CPU cycles.
+  const [particles] = useState(() =>
+    Array.from({ length: 50 }).map((_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      delay: Math.random() * 2,
+      color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)],
+      duration: `${2 + Math.random() * 3}s`
+    }))
+  );
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -42,7 +49,7 @@ const Confetti = () => {
             left: `${p.x}%`,
             top: '-5%',
             backgroundColor: p.color,
-            animationDuration: `${2 + Math.random() * 3}s`,
+            animationDuration: p.duration,
             animationDelay: `${p.delay}s`
           }}
         />

@@ -1,0 +1,3 @@
+## 2024-05-18 - Math.random() in Render Anti-Pattern
+**Learning:** Found multiple instances of `Math.random()` being called directly within React component render bodies (e.g., to generate styling values like animation delays or particle coordinates). This causes the `react-hooks/purity` ESLint warning and leads to unpredictable UI re-renders, as these values change on every update.
+**Action:** Always encapsulate random calculations that only need to run once per mount using lazy initialization with `useState(() => ...)` or move them entirely outside the render cycle. Do not use `useMemo` for this, as it still runs during the render phase and triggers the same impurity warning.
