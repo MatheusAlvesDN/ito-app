@@ -1,0 +1,3 @@
+## 2024-05-18 - Confetti purity and math.random optimization
+**Learning:** Found multiple instances of `Math.random()` inside the component's body causing `react-hooks/purity` errors in the `ito/GameScreen.tsx`. Instead of making micro-optimizations, I should move `Math.random` generation inside a `useState(() => ...)` or standard variables that won't trigger re-renders unneccessarily. Wait, since it's `Array.from(...).map()`, it creates an array during the render cycle instead of keeping it in memory.
+**Action:** Use `useState` to instantiate the array only once to avoid re-calculating `Math.random()` and allocating the array on every render!
