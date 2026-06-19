@@ -1,0 +1,3 @@
+## 2024-06-19 - Missing ARIA Labels in Duplicated Game Mode Components
+**Learning:** The application uses duplicated components (`RegisterScreen`, `ThemeSelection`) across different game modes (`ito`, `impostor`, `whoami`). While ARIA labels were present in the `ito` mode's `RegisterScreen`, they were missing in the corresponding components for `impostor` and `whoami`. This indicates a pattern where a11y improvements might be applied inconsistently across duplicated structures.
+**Action:** When fixing UX or a11y issues in one game mode, always cross-check the equivalent components in other game modes to ensure the improvement is applied globally across the application's duplicated architectures.
