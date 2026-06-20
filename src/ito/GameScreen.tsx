@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Dices, Check, Unlock, Star, Cloud, RefreshCw, Lock, GripVertical, Heart } from 'lucide-react';
 import { QUESTIONS_DB } from './data';
 import type { Theme } from '../data';
@@ -24,13 +24,15 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 // --- Componente de Confetti (Mantido igual) ---
-const Confetti = () => {
-  const particles = Array.from({ length: 50 }).map((_, i) => ({
+const Confetti = React.memo(() => {
+  // BOLT OPTIMIZATION: Encapsulate random particle generation in lazy useState initialization
+  // to prevent re-calculating random positions and colors on every render and avoid react-hooks/purity warnings.
+  const [particles] = useState(() => Array.from({ length: 50 }).map((_, i) => ({
     id: i,
     x: Math.random() * 100,
     delay: Math.random() * 2,
     color: ['#FACC15', '#4ADE80', '#60A5FA', '#F472B6'][Math.floor(Math.random() * 4)]
-  }));
+  })));
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
@@ -49,7 +51,7 @@ const Confetti = () => {
       ))}
     </div>
   );
-};
+});
 
 // --- Novo Componente: Item da Lista Arrastável ---
 interface SortableItemProps {
@@ -62,7 +64,10 @@ interface SortableItemProps {
   disabled?: boolean;
 }
 
-const SortablePlayerItem = ({ id, player, number, index, phase, isWrong, disabled = false }: SortableItemProps) => {
+const SortablePlayerItem = React.memo(({ id, player, number, index, phase, isWrong, disabled = false }: SortableItemProps) => {
+  // BOLT OPTIMIZATION: Added React.memo to SortablePlayerItem to prevent expensive re-renders
+  // of the entire list during drag-and-drop interactions. Only items that actually change
+  // state (like index or isDragging) will re-render, significantly improving drag performance.
   // Hook do DND Kit para tornar o item arrastável
   const {
     attributes,
@@ -115,7 +120,7 @@ const SortablePlayerItem = ({ id, player, number, index, phase, isWrong, disable
       )}
     </div>
   );
-};
+});
 
 type Props = {
   onBack: () => void;
