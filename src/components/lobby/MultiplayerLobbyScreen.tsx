@@ -46,7 +46,7 @@ export const MultiplayerLobbyScreen = ({
 
       {/* Header Fixo */}
       <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-        <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-355 transition-colors">
+        <button onClick={onBack} aria-label="Voltar" className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-355 transition-colors">
           <ChevronLeft size={24} />
         </button>
         <span className="font-black text-xl text-white font-outfit">Lobby Multiplayer</span>
