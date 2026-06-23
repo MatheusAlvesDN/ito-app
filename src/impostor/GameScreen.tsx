@@ -207,7 +207,7 @@ export default function GameScreenImpostor({
         </div>
         <h2 className="text-2xl font-black text-white mb-2 font-outfit">Jogadores Insuficientes</h2>
         <p className="text-slate-400 mb-6 text-sm font-medium">O modo Impostor precisa de no mínimo 3 pessoas.</p>
-        <button onClick={onBack} className="bg-slate-900 border border-white/5 text-white px-6 py-3 rounded-2xl font-bold font-outfit active:scale-95 transition-all">Voltar</button>
+        <button onClick={onBack} aria-label="Voltar" className="bg-slate-900 border border-white/5 text-white px-6 py-3 rounded-2xl font-bold font-outfit active:scale-95 transition-all">Voltar</button>
       </div>
     );
   }
@@ -248,7 +248,7 @@ export default function GameScreenImpostor({
       <div className="flex-1 flex flex-col bg-slate-955 text-slate-100 relative h-full overflow-hidden font-sans">
         {/* Header Fixo */}
         <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-          <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+          <button onClick={onBack} aria-label="Voltar" className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
             <ChevronLeft size={24} />
           </button>
           <div className="flex flex-col items-end">
@@ -364,7 +364,7 @@ export default function GameScreenImpostor({
       <div className="flex-1 flex flex-col bg-slate-955 text-white relative h-full overflow-hidden font-sans">
         {/* Header Fixo */}
         <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-          <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+          <button onClick={onBack} aria-label="Voltar" className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
             <ChevronLeft size={24} />
           </button>
           <span className="font-black text-xl text-white font-outfit">Discussão</span>
@@ -468,7 +468,7 @@ export default function GameScreenImpostor({
       <div className="flex-1 flex flex-col bg-slate-955 text-white relative overflow-hidden font-sans h-full">
         {/* Header Fixo */}
         <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-          <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+          <button onClick={onBack} aria-label="Voltar" className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
             <ChevronLeft size={24} />
           </button>
           <span className="font-black text-xl text-white font-outfit">Revelação</span>
