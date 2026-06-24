@@ -1,0 +1,3 @@
+## 2024-06-24 - Draggable List Re-renders
+**Learning:** In the `GameScreen.tsx` for the "ito" game mode, using `@dnd-kit/sortable` causes re-renders of the entire list of draggable items (players) whenever one is moved or dragged. This is a common performance bottleneck in React when implementing drag-and-drop lists without memoization.
+**Action:** Always wrap individual draggable item components (like `SortablePlayerItem`) in `React.memo()` when using `@dnd-kit` or similar libraries to prevent expensive, cascading re-renders of the entire list during drag interactions. Don't forget to append `displayName` to the memoized component to prevent ESLint warnings and aid debugging.
