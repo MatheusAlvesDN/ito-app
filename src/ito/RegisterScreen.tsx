@@ -68,9 +68,10 @@ export default function RegisterScreenClassic({ onBack, onNext }: Props) {
       <div className="flex-1 p-6 flex flex-col max-w-full overflow-hidden">
         {/* Input Area (Fixada no Topo da Área Central) */}
         <div className="bg-white p-5 rounded-3xl shadow-md mb-6 border border-slate-100/80 shrink-0 animate-fade-in-scale">
-          <label className="block text-slate-400 font-bold mb-2 ml-1 text-xs uppercase tracking-wider font-outfit">Novo Participante</label>
+          <label htmlFor="newParticipant" className="block text-slate-400 font-bold mb-2 ml-1 text-xs uppercase tracking-wider font-outfit">Novo Participante</label>
           <div className="flex gap-2">
             <input
+              id="newParticipant"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
