@@ -11,6 +11,7 @@ import RegisterScreenImpostor from './impostor/RegisterScreen';
 import ThemeSelectionImpostor from './impostor/ThemeSelection';
 import RegisterScreenWhoAmI from './whoami/RegisterScreen';
 import ThemeSelectionWhoAmI from './whoami/ThemeSelection';
+import TranslatorScreen from './translator/TranslatorScreen';
 
 // Lazy load para as telas de jogos
 const GameScreenIto = React.lazy(() => import('./ito/GameScreen'));
@@ -43,7 +44,8 @@ type Screen =
   | 'game-impostor'
   | 'register-whoami'
   | 'theme-whoami'
-  | 'game-whoami';
+  | 'game-whoami'
+  | 'translator-chain';
 
 type State = {
   screen: Screen;
@@ -197,6 +199,7 @@ export default function App() {
             onSelectClassic={() => dispatch({ type: 'SELECT_MODE_CLASSIC' })}
             onSelectImpostor={() => dispatch({ type: 'SELECT_MODE_IMPOSTOR' })}
             onSelectWhoAmI={() => dispatch({ type: 'SELECT_MODE_WHOAMI' })}
+            onSelectTranslator={() => dispatch({ type: 'SET_SCREEN', screen: 'translator-chain' })}
           />
         );
 
@@ -469,6 +472,13 @@ export default function App() {
           </Suspense>
         );
 
+      case 'translator-chain':
+        return (
+          <TranslatorScreen
+            onBack={() => dispatch({ type: 'GO_MODE_SELECTION' })}
+          />
+        );
+
       default:
         return <HomeScreen onPlay={() => dispatch({ type: 'GO_MODE_SELECTION' })} />;
     }
@@ -552,14 +562,16 @@ const ModeSelectionScreen = ({
   onSelectClassic,
   onSelectImpostor,
   onSelectWhoAmI,
+  onSelectTranslator,
 }: {
   onBack: () => void;
   onSelectClassic: () => void;
   onSelectImpostor: () => void;
   onSelectWhoAmI: () => void;
+  onSelectTranslator: () => void;
 }) => {
   return (
-    <div className="flex-1 flex flex-col bg-slate-950 relative h-full overflow-hidden text-slate-100">
+    <div className="flex-1 flex flex-col bg-slate-950 relative h-full overflow-y-auto text-slate-100">
       {/* Header Fixo */}
       <div className="p-4 flex items-center bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
         <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-slate-200 transition-colors">
@@ -568,8 +580,8 @@ const ModeSelectionScreen = ({
         <span className="ml-4 font-black text-xl text-white font-outfit">Escolha o Modo</span>
       </div>
 
-      {/* Área Rolável sem duplicidade de scroll */}
-      <div className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto pb-12">
+      {/* Área de conteúdo rolável */}
+      <div className="p-6 flex flex-col gap-6 pb-12">
         {/* ITO Clássico */}
         <button
           onClick={onSelectClassic}
@@ -635,6 +647,27 @@ const ModeSelectionScreen = ({
              <div className="inline-block w-fit bg-emerald-950/40 border border-emerald-500/20 px-3 py-1 rounded-xl text-[11px] text-emerald-200 mt-2 font-bold font-outfit">
                Mínimo 2 Jogadores
              </div>
+           </div>
+        </button>
+
+        {/* Tradutor em Cadeia */}
+        <button
+          onClick={onSelectTranslator}
+          className="group relative w-full bg-slate-900/40 p-8 rounded-3xl shadow-xl border-2 border-indigo-500/20 hover:border-indigo-400/80 hover:bg-indigo-500/[0.02] transition-all duration-300 transform hover:scale-[1.02] active:scale-95 text-left overflow-hidden animate-fade-in"
+          style={{ animationDelay: '0.3s' }}
+        >
+           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+              <RefreshCw size={120} className="text-indigo-400 fill-indigo-400/10" />
+           </div>
+           <div className="relative z-10 flex flex-col gap-2">
+             <div className="w-12 h-12 bg-indigo-400/10 border border-indigo-400/20 rounded-2xl flex items-center justify-center text-indigo-400 mb-2">
+                <RefreshCw size={24} />
+             </div>
+             <div className="flex items-center justify-between">
+               <h3 className="text-2xl font-black text-white font-outfit">Lab de Tradução</h3>
+               <span className="bg-indigo-400/10 border border-indigo-400/30 text-indigo-300 font-bold px-2.5 py-0.5 rounded-full text-xs font-outfit">Lab</span>
+             </div>
+             <p className="text-slate-400 font-medium text-sm leading-relaxed">Experimento de telefone sem fio linguístico. Traduza um texto em inglês por vários idiomas e veja o resultado final em português!</p>
            </div>
         </button>
       </div>
