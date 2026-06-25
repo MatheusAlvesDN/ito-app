@@ -113,14 +113,17 @@ function reducer(state: State, action: Action): State {
         screen: 'connection-selection'
       };
 
-    case 'PLAYERS_CONFIRMED':
+    case 'PLAYERS_CONFIRMED': {
+      // SECURE: Limit maximum players to 20
+      const limitedPlayers = action.players.slice(0, 20);
       if (state.gameMode === 'impostor') {
-        return { ...state, players: action.players, screen: 'theme-impostor' };
+        return { ...state, players: limitedPlayers, screen: 'theme-impostor' };
       }
       if (state.gameMode === 'whoami') {
-        return { ...state, players: action.players, screen: 'theme-whoami' };
+        return { ...state, players: limitedPlayers, screen: 'theme-whoami' };
       }
-      return { ...state, players: action.players, screen: 'theme-classic' };
+      return { ...state, players: limitedPlayers, screen: 'theme-classic' };
+    }
 
     case 'THEMES_CONFIRMED':
       if (state.gameMode === 'impostor') {
