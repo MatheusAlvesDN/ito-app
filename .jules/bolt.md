@@ -1,0 +1,3 @@
+## 2025-02-18 - Optimize Drag and Drop Lists with React.memo
+**Learning:** When using @dnd-kit/sortable to create draggable lists, if the items are complex, React will re-render all of them whenever the parent state (like the order array) changes. This causes noticeable performance degradation during dragging interactions.
+**Action:** Always wrap individual draggable list item components (like `SortablePlayerItem`) in `React.memo` to prevent expensive re-renders of the entire list when only a subset of items or the parent state changes. Ensure to add a `displayName` when using anonymous functions.
