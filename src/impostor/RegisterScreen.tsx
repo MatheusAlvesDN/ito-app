@@ -58,7 +58,7 @@ export default function RegisterScreenImpostor({ onBack, onNext }: Props) {
     <div className="flex-1 flex flex-col bg-slate-955 relative h-full overflow-hidden text-slate-100 font-sans">
       {/* Header Fixo */}
       <div className="p-4 flex items-center bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-        <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-purple-400 transition-colors">
+        <button onClick={onBack} aria-label="Voltar" className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-purple-400 transition-colors">
           <ChevronLeft size={24} />
         </button>
         <span className="ml-4 font-black text-xl text-white font-outfit">Jogadores (Impostor)</span>
@@ -80,6 +80,7 @@ export default function RegisterScreenImpostor({ onBack, onNext }: Props) {
             <button 
               onClick={addPlayer} 
               disabled={!inputValue.trim()} 
+              aria-label="Adicionar jogador"
               className="bg-purple-600 hover:bg-purple-500 disabled:bg-slate-900 disabled:text-slate-600 text-white rounded-2xl p-3.5 shadow-md active:scale-95 disabled:scale-100 transition-all duration-150"
             >
               <Plus size={24} />
