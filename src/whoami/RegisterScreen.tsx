@@ -68,9 +68,10 @@ export default function RegisterScreenWhoAmI({ onBack, onNext }: Props) {
       <div className="flex-1 p-6 flex flex-col max-w-full overflow-hidden">
         {/* Input Area (Fixada) */}
         <div className="bg-slate-900/40 p-5 rounded-3xl border border-white/5 shadow-xl mb-6 shrink-0 animate-fade-in-scale">
-          <label className="block text-emerald-400 font-bold mb-2 ml-1 text-xs uppercase tracking-wider font-outfit">Novo Participante</label>
+          <label htmlFor="newPlayerInput" className="block text-emerald-400 font-bold mb-2 ml-1 text-xs uppercase tracking-wider font-outfit">Novo Participante</label>
           <div className="flex gap-2">
             <input
+              id="newPlayerInput"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
