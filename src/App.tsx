@@ -574,7 +574,7 @@ const ModeSelectionScreen = ({
     <div className="flex-1 flex flex-col bg-slate-950 relative h-full overflow-y-auto text-slate-100">
       {/* Header Fixo */}
       <div className="p-4 flex items-center bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-        <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-slate-200 transition-colors">
+        <button onClick={onBack} aria-label="Voltar" className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-slate-200 transition-colors">
           <ChevronLeft size={24} />
         </button>
         <span className="ml-4 font-black text-xl text-white font-outfit">Escolha o Modo</span>
