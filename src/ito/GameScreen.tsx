@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { ChevronLeft, Dices, Check, Unlock, Star, Cloud, RefreshCw, Lock, GripVertical, Heart } from 'lucide-react';
 import { QUESTIONS_DB } from './data';
 import type { Theme } from '../data';
@@ -62,7 +62,10 @@ interface SortableItemProps {
   disabled?: boolean;
 }
 
-const SortablePlayerItem = ({ id, player, number, index, phase, isWrong, disabled = false }: SortableItemProps) => {
+// ⚡ Bolt: Wrapped SortablePlayerItem in React.memo()
+// 🎯 Why: This component is rendered within a sortable list (@dnd-kit). During drag operations, the parent re-renders frequently.
+// 📊 Impact: Prevents expensive re-renders of the entire list of players when dragging, improving FPS and smoothness on mobile.
+const SortablePlayerItem = memo(({ id, player, number, index, phase, isWrong, disabled = false }: SortableItemProps) => {
   // Hook do DND Kit para tornar o item arrastável
   const {
     attributes,
@@ -115,7 +118,8 @@ const SortablePlayerItem = ({ id, player, number, index, phase, isWrong, disable
       )}
     </div>
   );
-};
+});
+SortablePlayerItem.displayName = 'SortablePlayerItem';
 
 type Props = {
   onBack: () => void;
