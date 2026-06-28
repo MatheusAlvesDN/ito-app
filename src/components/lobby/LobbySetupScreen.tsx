@@ -33,7 +33,7 @@ export const LobbySetupScreen = ({
     <div className="flex-1 flex flex-col bg-slate-950 relative h-full overflow-hidden text-slate-100">
       {/* Header Fixo */}
       <div className="p-4 flex items-center bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-        <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-slate-200 transition-colors">
+        <button aria-label="Voltar" onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-slate-200 transition-colors">
           <ChevronLeft size={24} />
         </button>
         <span className="ml-4 font-black text-xl text-white font-outfit">Configurar Sala</span>
@@ -50,8 +50,9 @@ export const LobbySetupScreen = ({
 
         <div className="space-y-4">
           <div>
-            <label className="block text-[11px] font-black uppercase tracking-wider text-slate-400 mb-1.5 font-outfit">Seu Nome / Apelido</label>
+            <label htmlFor="playerName" className="block text-[11px] font-black uppercase tracking-wider text-slate-400 mb-1.5 font-outfit">Seu Nome / Apelido</label>
             <input
+              id="playerName"
               type="text"
               placeholder="Ex: Matheus"
               value={playerName}
@@ -79,8 +80,9 @@ export const LobbySetupScreen = ({
           {/* Opção 2: Entrar em Sala Existente */}
           <div className="bg-slate-900/30 p-4 rounded-3xl border border-white/5 space-y-3 mt-2">
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-450 mb-1.5 font-outfit">Código da Sala</label>
+              <label htmlFor="roomCode" className="block text-[10px] font-black uppercase tracking-wider text-slate-450 mb-1.5 font-outfit">Código da Sala</label>
               <input
+                id="roomCode"
                 type="text"
                 placeholder="Ex: ABCD"
                 value={roomToJoin}
