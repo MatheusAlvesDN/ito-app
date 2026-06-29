@@ -22,6 +22,8 @@ export default function RegisterScreenClassic({ onBack, onNext }: Props) {
   }, []);
 
   const addPlayer = () => {
+    // SECURE: Enforce maximum player limit locally
+    if (localPlayers.length >= 20) return;
     const v = inputValue.trim();
     if (!v) return;
     if (localPlayers.includes(v)) return; // Evita duplicar no jogo atual
@@ -37,6 +39,8 @@ export default function RegisterScreenClassic({ onBack, onNext }: Props) {
     if (localPlayers.includes(player)) {
       setLocalPlayers((prev) => prev.filter((p) => p !== player));
     } else {
+      // SECURE: Enforce maximum player limit locally
+      if (localPlayers.length >= 20) return;
       setLocalPlayers((prev) => [...prev, player]);
     }
   };
