@@ -50,9 +50,11 @@ export const LobbySetupScreen = ({
 
         <div className="space-y-4">
           <div>
-            <label className="block text-[11px] font-black uppercase tracking-wider text-slate-400 mb-1.5 font-outfit">Seu Nome / Apelido</label>
+            <label htmlFor="player-name" className="block text-[11px] font-black uppercase tracking-wider text-slate-400 mb-1.5 font-outfit">Seu Nome / Apelido</label>
             <input
+              id="player-name"
               type="text"
+              maxLength={12}
               placeholder="Ex: Matheus"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value.slice(0, 12))}
@@ -79,9 +81,11 @@ export const LobbySetupScreen = ({
           {/* Opção 2: Entrar em Sala Existente */}
           <div className="bg-slate-900/30 p-4 rounded-3xl border border-white/5 space-y-3 mt-2">
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-450 mb-1.5 font-outfit">Código da Sala</label>
+              <label htmlFor="room-code" className="block text-[10px] font-black uppercase tracking-wider text-slate-450 mb-1.5 font-outfit">Código da Sala</label>
               <input
+                id="room-code"
                 type="text"
+                maxLength={4}
                 placeholder="Ex: ABCD"
                 value={roomToJoin}
                 onChange={(e) => setRoomToJoin(e.target.value.toUpperCase().slice(0, 4))}
