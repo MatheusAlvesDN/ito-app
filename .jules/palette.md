@@ -1,0 +1,3 @@
+## 2024-05-18 - ARIA Labels on Icon Buttons Consistency
+**Learning:** The application uses duplicated component structures (`RegisterScreen.tsx`) across its multiple game modes (`impostor`, `ito`, `whoami`). While classic (`ito`) had accessible aria-labels for its icon-only buttons (like add/remove players, navigate back), `impostor` and `whoami` did not.
+**Action:** Always check parallel component structures in different game mode folders when updating or verifying basic UI accessibility. When fixing missing ARIA attributes in one mode, ensure the corresponding components in other modes are also updated to maintain a consistent accessibility standard.
