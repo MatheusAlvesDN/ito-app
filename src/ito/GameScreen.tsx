@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { ChevronLeft, Dices, Check, Unlock, Star, Cloud, RefreshCw, Lock, GripVertical, Heart } from 'lucide-react';
 import { QUESTIONS_DB } from './data';
 import type { Theme } from '../data';
@@ -62,7 +62,8 @@ interface SortableItemProps {
   disabled?: boolean;
 }
 
-const SortablePlayerItem = ({ id, player, number, index, phase, isWrong, disabled = false }: SortableItemProps) => {
+// BOLT: Added memo to prevent re-renders in draggable list
+const SortablePlayerItem = memo(({ id, player, number, index, phase, isWrong, disabled = false }: SortableItemProps) => {
   // Hook do DND Kit para tornar o item arrastável
   const {
     attributes,
@@ -78,7 +79,7 @@ const SortablePlayerItem = ({ id, player, number, index, phase, isWrong, disable
     transition,
     zIndex: isDragging ? 50 : 'auto', // Traz o item para frente enquanto arrasta
     opacity: isDragging ? 0.8 : 1,
-    position: 'relative' as 'relative',
+    position: 'relative' as const,
     touchAction: 'none' // Importante para evitar scroll enquanto arrasta no mobile
   };
 
@@ -115,7 +116,9 @@ const SortablePlayerItem = ({ id, player, number, index, phase, isWrong, disable
       )}
     </div>
   );
-};
+});
+
+SortablePlayerItem.displayName = 'SortablePlayerItem';
 
 type Props = {
   onBack: () => void;
