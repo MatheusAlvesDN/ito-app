@@ -138,6 +138,13 @@ class SyncService {
           const msg = typeof data === 'string' ? JSON.parse(data) : data;
           
           if (msg.type === 'JOIN') {
+            // SECURE: Enforce a strict limit on the player array length to prevent DoS via memory exhaustion or infinite loops
+            if (this.connectedPlayers.length >= 20) {
+              console.warn('Sala cheia! Não é possível adicionar mais jogadores.');
+              this.sendJson(conn, { type: 'ERROR', message: 'A sala já está cheia (máx 20 jogadores).' });
+              return;
+            }
+
             const newPlayer: ConnectedPlayer = { id: conn.peer, name: msg.playerName };
             
             // Adiciona o jogador se já não estiver na lista
