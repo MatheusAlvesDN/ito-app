@@ -80,6 +80,7 @@ export default function RegisterScreenWhoAmI({ onBack, onNext }: Props) {
             <button 
               onClick={addPlayer} 
               disabled={!inputValue.trim()} 
+              aria-label="Adicionar jogador"
               className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-900 disabled:text-slate-600 text-white rounded-2xl p-3.5 shadow-md active:scale-95 disabled:scale-100 transition-all duration-150"
             >
               <Plus size={24} />
@@ -143,7 +144,7 @@ export default function RegisterScreenWhoAmI({ onBack, onNext }: Props) {
                   </div>
                   <span className="font-bold text-slate-200 text-base">{player}</span>
                 </div>
-                <button onClick={() => removePlayer(index)} className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-150">
+                <button onClick={() => removePlayer(index)} aria-label="Remover jogador" className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-150">
                   <Trash2 size={20} />
                 </button>
               </div>
