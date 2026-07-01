@@ -25,6 +25,8 @@ export default function RegisterScreenClassic({ onBack, onNext }: Props) {
     const v = inputValue.trim();
     if (!v) return;
     if (localPlayers.includes(v)) return; // Evita duplicar no jogo atual
+    // SECURE: Limite máximo de jogadores para evitar DoS loop
+    if (localPlayers.length >= 20) return;
     setLocalPlayers((prev) => [...prev, v]);
     setInputValue('');
   };
@@ -37,6 +39,8 @@ export default function RegisterScreenClassic({ onBack, onNext }: Props) {
     if (localPlayers.includes(player)) {
       setLocalPlayers((prev) => prev.filter((p) => p !== player));
     } else {
+      // SECURE: Limite máximo de jogadores para evitar DoS loop
+      if (localPlayers.length >= 20) return;
       setLocalPlayers((prev) => [...prev, player]);
     }
   };
