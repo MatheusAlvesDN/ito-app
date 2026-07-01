@@ -141,7 +141,13 @@ class SyncService {
             const newPlayer: ConnectedPlayer = { id: conn.peer, name: msg.playerName };
             
             // Adiciona o jogador se já não estiver na lista
+            // SECURE: Limite de 20 jogadores para prevenir DoS (infinite loop em GameScreen)
             if (!this.connectedPlayers.some(p => p.id === conn.peer)) {
+              if (this.connectedPlayers.length >= 20) {
+                console.warn('Limite de jogadores excedido. Conexão rejeitada.');
+                conn.close();
+                return;
+              }
               this.connectedPlayers.push(newPlayer);
               this.connections.set(conn.peer, conn);
             }
