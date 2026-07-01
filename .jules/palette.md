@@ -1,0 +1,3 @@
+## 2024-07-01 - Missing ARIA Labels in Duplicated Game Mode Components
+**Learning:** The application uses duplicated component structures (e.g., `RegisterScreen`) across its multiple game modes (`impostor`, `whoami`, `ito`). Accessibility fixes (like adding `aria-label` to icon-only buttons) applied to one mode (`ito`) were missing in the corresponding components of other modes.
+**Action:** When updating a UI component or fixing a bug in one mode, always verify if the corresponding components in the other game modes require the same update to maintain accessibility and UX consistency across the application.
