@@ -549,6 +549,7 @@ export default function TradutorCadeia({ onBack }: TranslatorScreenProps) {
             onClick={onBack}
             className="p-2 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
             title="Voltar ao início"
+            aria-label="Voltar"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>

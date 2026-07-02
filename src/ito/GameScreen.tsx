@@ -78,7 +78,7 @@ const SortablePlayerItem = ({ id, player, number, index, phase, isWrong, disable
     transition,
     zIndex: isDragging ? 50 : 'auto', // Traz o item para frente enquanto arrasta
     opacity: isDragging ? 0.8 : 1,
-    position: 'relative' as 'relative',
+    position: 'relative' as const,
     touchAction: 'none' // Importante para evitar scroll enquanto arrasta no mobile
   };
 
@@ -359,7 +359,7 @@ const GameScreen = ({
 
       {/* Header Fixo */}
       <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-        <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+        <button onClick={onBack} aria-label="Voltar" className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
           <ChevronLeft size={24} />
         </button>
         <div className="flex flex-col items-center">
