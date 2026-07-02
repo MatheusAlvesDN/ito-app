@@ -78,7 +78,7 @@ const SortablePlayerItem = ({ id, player, number, index, phase, isWrong, disable
     transition,
     zIndex: isDragging ? 50 : 'auto', // Traz o item para frente enquanto arrasta
     opacity: isDragging ? 0.8 : 1,
-    position: 'relative' as 'relative',
+    position: 'relative' as const,
     touchAction: 'none' // Importante para evitar scroll enquanto arrasta no mobile
   };
 
