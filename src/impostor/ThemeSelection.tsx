@@ -88,7 +88,7 @@ export default function ThemeSelectionImpostor({ onBack, onStart }: Props) {
       return;
     }
 
-    let finalScenarios = [...scenariosList];
+    const finalScenarios = [...scenariosList];
     if (honestText.trim() && impostorText.trim()) {
       const variations = impostorText
         .split('\n')
