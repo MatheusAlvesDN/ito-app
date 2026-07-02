@@ -88,7 +88,7 @@ export default function ThemeSelectionImpostor({ onBack, onStart }: Props) {
       return;
     }
 
-    let finalScenarios = [...scenariosList];
+    const finalScenarios = [...scenariosList];
     if (honestText.trim() && impostorText.trim()) {
       const variations = impostorText
         .split('\n')
@@ -141,7 +141,7 @@ export default function ThemeSelectionImpostor({ onBack, onStart }: Props) {
     <div className="flex-1 flex flex-col bg-slate-955 relative h-full overflow-hidden text-slate-100 font-sans">
       {/* Header Fixo */}
       <div className="p-4 flex items-center bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 shadow-sm pt-8 md:pt-4 safe-top shrink-0">
-        <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-purple-400 transition-colors">
+        <button onClick={onBack} aria-label="Voltar" className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-purple-400 transition-colors">
           <ChevronLeft size={24} />
         </button>
         <div className="ml-4">
