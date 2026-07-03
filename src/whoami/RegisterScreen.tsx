@@ -24,6 +24,8 @@ export default function RegisterScreenWhoAmI({ onBack, onNext }: Props) {
   const addPlayer = () => {
     const v = inputValue.trim();
     if (!v) return;
+    // SECURE: Prevent DoS via infinite loop in random number generation (max 20 players)
+    if (localPlayers.length >= 20) return;
     if (localPlayers.includes(v)) return; // Evita duplicar no jogo atual
     setLocalPlayers((prev) => [...prev, v]);
     setInputValue('');
@@ -37,6 +39,8 @@ export default function RegisterScreenWhoAmI({ onBack, onNext }: Props) {
     if (localPlayers.includes(player)) {
       setLocalPlayers((prev) => prev.filter((p) => p !== player));
     } else {
+      // SECURE: Prevent DoS via infinite loop in random number generation (max 20 players)
+      if (localPlayers.length >= 20) return;
       setLocalPlayers((prev) => [...prev, player]);
     }
   };

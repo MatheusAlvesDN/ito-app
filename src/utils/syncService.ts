@@ -142,6 +142,8 @@ class SyncService {
             
             // Adiciona o jogador se já não estiver na lista
             if (!this.connectedPlayers.some(p => p.id === conn.peer)) {
+              // SECURE: Prevent DoS via infinite loop in random number generation
+              if (this.connectedPlayers.length >= 20) return;
               this.connectedPlayers.push(newPlayer);
               this.connections.set(conn.peer, conn);
             }
