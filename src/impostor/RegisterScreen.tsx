@@ -22,6 +22,7 @@ export default function RegisterScreenImpostor({ onBack, onNext }: Props) {
   }, []);
 
   const addPlayer = () => {
+    if (localPlayers.length >= 20) return;
     const v = inputValue.trim();
     if (!v) return;
     if (localPlayers.includes(v)) return; // Evita duplicar no jogo atual
@@ -37,6 +38,7 @@ export default function RegisterScreenImpostor({ onBack, onNext }: Props) {
     if (localPlayers.includes(player)) {
       setLocalPlayers((prev) => prev.filter((p) => p !== player));
     } else {
+      if (localPlayers.length >= 20) return;
       setLocalPlayers((prev) => [...prev, player]);
     }
   };

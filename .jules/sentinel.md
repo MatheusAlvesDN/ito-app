@@ -1,0 +1,4 @@
+## 2024-07-04 - Denial of Service vulnerability in GameScreen.tsx
+**Vulnerability:** The random number assignment logic in `GameScreen.tsx` for ITO mode uses a `do...while` loop bounded by 100 choices. If there are more than 100 players, the application will enter an infinite loop trying to assign a unique random number between 1 and 100 to each player, causing a Denial of Service.
+**Learning:** This vulnerability existed because the application did not enforce a limit on the number of players that can be added in `RegisterScreen.tsx` or `syncService.ts` before reaching the `do...while` loop.
+**Prevention:** To prevent this, always enforce strict length limits on unbounded arrays (e.g., maximum 20 players) in user-facing registration components and connection handlers before iterating over them with unbounded `do...while` logic.
