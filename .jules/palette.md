@@ -1,0 +1,3 @@
+## 2024-07-04 - UX Improvements and Accessibility Check
+**Learning:** The application uses similar component structures across multiple game modes (like `ito`, `impostor`, `whoami`). I found that while one game mode (`ito`) had partial accessibility attributes (like `aria-label` for icon buttons), others did not. Furthermore, input fields were missing `id`/`htmlFor` linking across all modes.
+**Action:** When finding a missing UX/a11y feature in one component, always check sibling components in other game modes to fix the issue globally, ensuring a consistent user experience. Also, always link form elements correctly.
