@@ -142,6 +142,10 @@ class SyncService {
             
             // Adiciona o jogador se já não estiver na lista
             if (!this.connectedPlayers.some(p => p.id === conn.peer)) {
+              if (this.connectedPlayers.length >= 20) {
+                console.warn(`Conexão rejeitada: limite de 20 jogadores atingido.`);
+                return;
+              }
               this.connectedPlayers.push(newPlayer);
               this.connections.set(conn.peer, conn);
             }
