@@ -1,0 +1,1 @@
+## 2026-07-05 - Adding aria-labels to icon-only buttons\n**Learning:** Icon-only buttons without aria-labels are an accessibility barrier. Screen readers cannot interpret them, causing confusion for users navigating via keyboard or assistive technologies.\n**Action:** Always add descriptive `aria-label` attributes to icon-only buttons to ensure they are accessible.
