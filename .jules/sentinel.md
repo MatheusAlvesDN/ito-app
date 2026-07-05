@@ -1,0 +1,4 @@
+## 2025-02-28 - Add Max Players Limit for DoS Prevention
+**Vulnerability:** Game room arrays for players allowed unbounded length locally, and a subsequent unbounded while loop assigning numbers caused a DoS condition during `setupRound` because random choices were continuously generated without enough remaining pool entries.
+**Learning:** In arrays where players connect and have an algorithmic requirement like assignment to a bounded state array, the client connection flow in P2P requires a clear cut-off condition and error exit for bounds checking on array joins.
+**Prevention:** Apply input limitations for players to the local list component globally across `ito`, `whoami`, `impostor` game screens, as well as applying bounds check in `syncService.ts` before pushing to `connectedPlayers`.
