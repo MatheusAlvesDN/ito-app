@@ -25,6 +25,7 @@ export default function RegisterScreenWhoAmI({ onBack, onNext }: Props) {
     const v = inputValue.trim();
     if (!v) return;
     if (localPlayers.includes(v)) return; // Evita duplicar no jogo atual
+    if (localPlayers.length >= 20) return; // Limite para evitar DoS no sorteio
     setLocalPlayers((prev) => [...prev, v]);
     setInputValue('');
   };
@@ -37,6 +38,7 @@ export default function RegisterScreenWhoAmI({ onBack, onNext }: Props) {
     if (localPlayers.includes(player)) {
       setLocalPlayers((prev) => prev.filter((p) => p !== player));
     } else {
+      if (localPlayers.length >= 20) return; // Limite para evitar DoS
       setLocalPlayers((prev) => [...prev, player]);
     }
   };
