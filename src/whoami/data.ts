@@ -292,11 +292,6 @@ export const WHOAMI_THEMES: WhoAmITheme[] = [
       'Taylor Swift',
       'Tim Maia',
       'Tom Cruise',
-<<<<<<< HEAD
-=======
-      'Tommy Wiseau',
->>>>>>> 9c5bcce6d65e4073aaf31e7c9e6084623977aa8f
-      'Travis Scott',
       'Tupac Shakur',
       'Usain Bolt',
       'Vicent Prince',
