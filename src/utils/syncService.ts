@@ -138,6 +138,10 @@ class SyncService {
           const msg = typeof data === 'string' ? JSON.parse(data) : data;
           
           if (msg.type === 'JOIN') {
+            if (this.connectedPlayers.length >= 20 && !this.connectedPlayers.some(p => p.id === conn.peer)) {
+              console.warn('Max players limit (20) reached. Connection rejected to prevent DoS.');
+              return;
+            }
             const newPlayer: ConnectedPlayer = { id: conn.peer, name: msg.playerName };
             
             // Adiciona o jogador se já não estiver na lista
