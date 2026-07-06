@@ -58,7 +58,7 @@ export default function RegisterScreenWhoAmI({ onBack, onNext }: Props) {
     <div className="flex-1 flex flex-col bg-slate-955 relative h-full overflow-hidden text-slate-100 font-sans">
       {/* Header Fixo */}
       <div className="p-4 flex items-center bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-        <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-emerald-400 transition-colors">
+        <button aria-label="Voltar" onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-emerald-400 transition-colors">
           <ChevronLeft size={24} />
         </button>
         <span className="ml-4 font-black text-xl text-white font-outfit">Jogadores (Quem Sou Eu)</span>

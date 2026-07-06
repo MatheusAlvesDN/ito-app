@@ -248,7 +248,7 @@ export default function GameScreenImpostor({
       <div className="flex-1 flex flex-col bg-slate-955 text-slate-100 relative h-full overflow-hidden font-sans">
         {/* Header Fixo */}
         <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-          <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+          <button aria-label="Voltar" onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
             <ChevronLeft size={24} />
           </button>
           <div className="flex flex-col items-end">
@@ -364,7 +364,7 @@ export default function GameScreenImpostor({
       <div className="flex-1 flex flex-col bg-slate-955 text-white relative h-full overflow-hidden font-sans">
         {/* Header Fixo */}
         <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-          <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+          <button aria-label="Voltar" onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
             <ChevronLeft size={24} />
           </button>
           <span className="font-black text-xl text-white font-outfit">Discussão</span>
@@ -468,7 +468,7 @@ export default function GameScreenImpostor({
       <div className="flex-1 flex flex-col bg-slate-955 text-white relative overflow-hidden font-sans h-full">
         {/* Header Fixo */}
         <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-          <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+          <button aria-label="Voltar" onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
             <ChevronLeft size={24} />
           </button>
           <span className="font-black text-xl text-white font-outfit">Revelação</span>
