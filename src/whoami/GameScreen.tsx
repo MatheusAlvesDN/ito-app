@@ -287,7 +287,7 @@ export default function GameScreenWhoAmI({
       <div className="flex-1 flex flex-col bg-slate-955 text-white relative h-full overflow-hidden font-sans">
         {/* Header Fixo */}
         <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-          <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-slate-355 transition-colors">
+          <button onClick={onBack} aria-label="Voltar" className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-slate-355 transition-colors">
             <ChevronLeft size={24} />
           </button>
           <div className="flex flex-col items-center flex-1">
@@ -356,7 +356,7 @@ export default function GameScreenWhoAmI({
     <div className="flex-1 flex flex-col bg-slate-955 text-slate-100 relative h-full overflow-hidden font-sans">
       {/* Header Fixo */}
       <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-        <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-emerald-400 transition-colors">
+        <button onClick={onBack} aria-label="Voltar" className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-emerald-400 transition-colors">
           <ChevronLeft size={24} />
         </button>
         <span className="ml-4 font-black text-xl text-white font-outfit">Dicas & Personagens</span>
