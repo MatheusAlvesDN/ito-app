@@ -138,6 +138,11 @@ class SyncService {
           const msg = typeof data === 'string' ? JSON.parse(data) : data;
           
           if (msg.type === 'JOIN') {
+            if (this.connectedPlayers.length >= 20 && !this.connectedPlayers.some(p => p.id === conn.peer)) {
+              console.warn('Limite de jogadores atingido, conexão rejeitada');
+              return;
+            }
+
             const newPlayer: ConnectedPlayer = { id: conn.peer, name: msg.playerName };
             
             // Adiciona o jogador se já não estiver na lista
@@ -275,6 +280,7 @@ class SyncService {
         const msg = typeof data === 'string' ? JSON.parse(data) : data;
         
         if (msg.type === 'ROOM_JOINED') {
+          if (msg.players && msg.players.length > 20) return;
           this.connectedPlayers = msg.players;
           this.gameState = msg.gameState;
 
@@ -284,6 +290,7 @@ class SyncService {
         }
 
         if (msg.type === 'PLAYER_JOINED') {
+          if (msg.players && msg.players.length > 20) return;
           this.connectedPlayers = msg.players;
           if (this.callbacks.onPlayerJoined) {
             this.callbacks.onPlayerJoined(this.connectedPlayers);
