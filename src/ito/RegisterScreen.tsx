@@ -115,7 +115,6 @@ export default function RegisterScreenClassic({ onBack, onNext }: Props) {
                       className={`p-0.5 rounded-full transition-colors ${
                         isSelected ? 'hover:bg-yellow-500 text-slate-900' : 'hover:bg-slate-100 text-slate-400'
                       }`}
-                      title="Remover do histórico"
                     >
                       <X size={12} />
                     </button>
