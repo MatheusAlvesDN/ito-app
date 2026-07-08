@@ -142,8 +142,13 @@ class SyncService {
             
             // Adiciona o jogador se já não estiver na lista
             if (!this.connectedPlayers.some(p => p.id === conn.peer)) {
-              this.connectedPlayers.push(newPlayer);
-              this.connections.set(conn.peer, conn);
+              if (this.connectedPlayers.length >= 20) {
+                console.warn(`Tentativa de entrada P2P rejeitada (limite atingido): ${msg.playerName}`);
+                // Não adiciona à lista
+              } else {
+                this.connectedPlayers.push(newPlayer);
+                this.connections.set(conn.peer, conn);
+              }
             }
 
             console.log(`Jogador P2P ${msg.playerName} entrou na sala.`);
