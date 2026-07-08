@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Plus, Trash2, UserSearch, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 type Props = {
   onBack: () => void;
@@ -25,6 +26,10 @@ export default function RegisterScreenWhoAmI({ onBack, onNext }: Props) {
     const v = inputValue.trim();
     if (!v) return;
     if (localPlayers.includes(v)) return; // Evita duplicar no jogo atual
+    if (localPlayers.length >= 20) {
+      toast.error('Limite máximo de 20 jogadores atingido.');
+      return;
+    }
     setLocalPlayers((prev) => [...prev, v]);
     setInputValue('');
   };
@@ -37,6 +42,10 @@ export default function RegisterScreenWhoAmI({ onBack, onNext }: Props) {
     if (localPlayers.includes(player)) {
       setLocalPlayers((prev) => prev.filter((p) => p !== player));
     } else {
+      if (localPlayers.length >= 20) {
+        toast.error('Limite máximo de 20 jogadores atingido.');
+        return;
+      }
       setLocalPlayers((prev) => [...prev, player]);
     }
   };
