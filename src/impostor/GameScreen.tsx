@@ -8,9 +8,13 @@ import {
   MessageCircle,
   AlertTriangle,
   ArrowRight,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { type Theme, IMPOSTOR_SCENARIOS, type ImpostorScenario } from './data';
 import { syncService, triggerVibration } from '../utils/syncService';
+import { audioService } from '../utils/audioService';
+import { ReactionsOverlay, ReactionsTray } from '../components/ReactionsOverlay';
 
 type GameStep = 'distribution' | 'discussion' | 'reveal';
 
@@ -23,6 +27,8 @@ type Props = {
   syncGameState?: any;
   playerId?: string;
   connectedPlayers?: { id: string; name: string }[];
+  isMuted: boolean;
+  toggleMute: () => void;
 };
 
 export default function GameScreenImpostor({
@@ -34,6 +40,8 @@ export default function GameScreenImpostor({
   syncGameState = null,
   playerId = '',
   connectedPlayers = [],
+  isMuted,
+  toggleMute,
 }: Props) {
   // --- ESTADOS LOCAIS ---
   const [localStep, setLocalStep] = useState<GameStep>('distribution');
@@ -69,9 +77,13 @@ export default function GameScreenImpostor({
     const interval = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
+          audioService.playFail();
           triggerVibration([200, 100, 200, 100, 400]); // Alarme vibratório!
           clearInterval(interval);
           return 0;
+        }
+        if (prev <= 6) { // Para os segundos finais: 5, 4, 3, 2, 1
+          audioService.playTick();
         }
         return prev - 1;
       });
@@ -185,6 +197,7 @@ export default function GameScreenImpostor({
   // --- HANDLERS ---
 
   const handleNextPlayer = () => {
+    audioService.playFlip();
     setIsCardRevealed(false);
     if (currentPlayerIndex < players.length - 1) {
       setCurrentPlayerIndex((prev) => prev + 1);
@@ -194,6 +207,7 @@ export default function GameScreenImpostor({
   };
 
   const handleNewRound = () => {
+    audioService.playFlip();
     setRoundKey((k) => k + 1);
   };
 
@@ -225,6 +239,7 @@ export default function GameScreenImpostor({
     const questionToShow = isImpostor ? impostorQuestion : honestQuestion;
 
     const handleRevealCard = () => {
+      audioService.playFlip();
       setIsCardRevealed(true);
       
       // Haptic Feedback: batimento cardíaco duplo se for Impostor, vibração simples se for honesto
@@ -246,11 +261,20 @@ export default function GameScreenImpostor({
 
     return (
       <div className="flex-1 flex flex-col bg-slate-955 text-slate-100 relative h-full overflow-hidden font-sans">
+        <ReactionsOverlay />
         {/* Header Fixo */}
         <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-          <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
-            <ChevronLeft size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+              <ChevronLeft size={24} />
+            </button>
+            <button 
+              onClick={toggleMute}
+              className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-355 transition-colors"
+            >
+              {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
+          </div>
           <div className="flex flex-col items-end">
              <span className="text-purple-455 text-[10px] font-black uppercase tracking-widest font-outfit">Distribuição</span>
              <span className="text-white text-xs font-bold font-outfit">
@@ -354,6 +378,11 @@ export default function GameScreenImpostor({
              )}
           </div>
         )}
+        {isMultiplayer && !isCardRevealed && (
+          <div className="absolute bottom-28 left-0 right-0 flex justify-center z-45 pointer-events-none">
+            <ReactionsTray />
+          </div>
+        )}
       </div>
     );
   }
@@ -362,11 +391,20 @@ export default function GameScreenImpostor({
   if (step === 'discussion') {
     return (
       <div className="flex-1 flex flex-col bg-slate-955 text-white relative h-full overflow-hidden font-sans">
+        <ReactionsOverlay />
         {/* Header Fixo */}
         <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-          <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
-            <ChevronLeft size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+              <ChevronLeft size={24} />
+            </button>
+            <button 
+              onClick={toggleMute}
+              className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-355 transition-colors"
+            >
+              {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
+          </div>
           <span className="font-black text-xl text-white font-outfit">Discussão</span>
         </div>
 
@@ -442,7 +480,12 @@ export default function GameScreenImpostor({
                REVELAR IMPOSTOR
              </button>
            )}
-        </div>
+         </div>
+         {isMultiplayer && (
+           <div className="absolute bottom-28 left-0 right-0 flex justify-center z-45 pointer-events-none">
+             <ReactionsTray />
+           </div>
+         )}
       </div>
     );
   }
@@ -466,11 +509,20 @@ export default function GameScreenImpostor({
 
     return (
       <div className="flex-1 flex flex-col bg-slate-955 text-white relative overflow-hidden font-sans h-full">
+        <ReactionsOverlay />
         {/* Header Fixo */}
         <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-          <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
-            <ChevronLeft size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={onBack} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
+              <ChevronLeft size={24} />
+            </button>
+            <button 
+              onClick={toggleMute}
+              className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-355 transition-colors"
+            >
+              {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
+          </div>
           <span className="font-black text-xl text-white font-outfit">Revelação</span>
         </div>
 
@@ -525,7 +577,12 @@ export default function GameScreenImpostor({
            <button onClick={onBack} className="w-full bg-transparent text-slate-450 font-bold py-2 rounded-2xl hover:text-white transition-colors text-sm font-outfit">
              Sair para o Menu
            </button>
-        </div>
+         </div>
+         {isMultiplayer && (
+           <div className="absolute bottom-28 left-0 right-0 flex justify-center z-45 pointer-events-none">
+             <ReactionsTray />
+           </div>
+         )}
       </div>
     );
   }

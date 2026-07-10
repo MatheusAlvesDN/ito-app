@@ -17,7 +17,14 @@ export const LobbySetupScreen = ({
   handleConnect: (customIp: string, actionType: 'create' | 'join', joinCode?: string) => void;
   gameMode: GameMode;
 }) => {
-  const [roomToJoin, setRoomToJoin] = useState('');
+  const [roomToJoin, setRoomToJoin] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return (params.get('room') || '').toUpperCase().slice(0, 4);
+    } catch {
+      return '';
+    }
+  });
   const activeColorClass = gameMode === 'impostor' 
     ? 'from-purple-600 to-indigo-650 hover:from-purple-500 hover:to-indigo-600' 
     : gameMode === 'classic'

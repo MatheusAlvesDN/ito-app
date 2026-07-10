@@ -3,7 +3,13 @@ import { syncService } from '../utils/syncService';
 import { toast } from 'sonner';
 
 export function useMultiplayerSync(onScreenChange?: (screen: any) => void) {
-  const [connectionType, setConnectionType] = useState<'local' | 'multiplayer'>('local');
+  const [connectionType, setConnectionType] = useState<'local' | 'multiplayer'>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('room')) return 'multiplayer';
+    } catch {}
+    return 'local';
+  });
   const [roomCode, setRoomCode] = useState('');
   const [isHost, setIsHost] = useState(false);
   const [connectedPlayers, setConnectedPlayers] = useState<{ id: string; name: string }[]>([]);
@@ -69,6 +75,11 @@ export function useMultiplayerSync(onScreenChange?: (screen: any) => void) {
         onBecomeHost: () => {
           setIsHost(true);
           toast.success('Você agora é o líder da sala!');
+        },
+        onReactionReceived: (pId, pName, reaction) => {
+          window.dispatchEvent(new CustomEvent('ito-reaction', { 
+            detail: { playerId: pId, playerName: pName, reaction } 
+          }));
         },
         onError: (msg) => {
           setIsConnecting(false);

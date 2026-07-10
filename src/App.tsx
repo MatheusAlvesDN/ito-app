@@ -1,8 +1,9 @@
-import React, { Suspense, useEffect, useReducer } from 'react';
-import { Play, Cloud, ChevronLeft, Zap, Ghost, UserSearch, RefreshCw } from 'lucide-react';
+import React, { Suspense, useEffect, useReducer, useState } from 'react';
+import { Play, Cloud, ChevronLeft, Zap, Ghost, UserSearch, RefreshCw, Volume2, VolumeX } from 'lucide-react';
 import { THEMES } from './data';
 import { syncService } from './utils/syncService';
 import { Toaster } from 'sonner';
+import { audioService } from './utils/audioService';
 
 // --- IMPORTS DOS COMPONENTES ---
 import RegisterScreenClassic from './ito/RegisterScreen';
@@ -52,6 +53,7 @@ type State = {
   gameMode: GameMode;
   players: string[];
   themes: any[];
+  saboteurMode?: boolean;
 };
 
 type Action =
@@ -62,7 +64,7 @@ type Action =
   | { type: 'SELECT_MODE_IMPOSTOR' }
   | { type: 'SELECT_MODE_WHOAMI' }
   | { type: 'PLAYERS_CONFIRMED'; players: string[] }
-  | { type: 'THEMES_CONFIRMED'; themes: any[] }
+  | { type: 'THEMES_CONFIRMED'; themes: any[]; saboteurMode?: boolean }
   | { type: 'RESET' };
 
 const STORAGE_KEY = 'ito_app_state_v4';
@@ -72,6 +74,7 @@ type PersistedState = {
   gameMode: GameMode;
   players: string[];
   themeIds: string[];
+  saboteurMode?: boolean;
 };
 
 const initialState: State = {
@@ -79,6 +82,7 @@ const initialState: State = {
   gameMode: 'classic',
   players: [],
   themes: [],
+  saboteurMode: false,
 };
 
 // --- REDUCER ---
@@ -131,7 +135,7 @@ function reducer(state: State, action: Action): State {
       if (state.gameMode === 'whoami') {
         return { ...state, themes: action.themes, screen: 'game-whoami' };
       }
-      return { ...state, themes: action.themes, screen: 'game-classic' };
+      return { ...state, themes: action.themes, saboteurMode: action.saboteurMode, screen: 'game-classic' };
 
     case 'RESET':
       try { localStorage.removeItem(STORAGE_KEY); } catch {}
@@ -146,6 +150,29 @@ function reducer(state: State, action: Action): State {
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
+    // Verificar se há link de convite na URL (ex: ?room=ABCD&mode=impostor)
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const roomParam = params.get('room');
+      const modeParam = params.get('mode');
+      
+      if (roomParam && roomParam.length === 4) {
+        const mode = (modeParam === 'impostor' || modeParam === 'whoami' || modeParam === 'classic') 
+          ? modeParam as GameMode 
+          : 'classic';
+          
+        return {
+          screen: 'lobby-setup' as const,
+          gameMode: mode,
+          players: [],
+          themes: [],
+          saboteurMode: false,
+        };
+      }
+    } catch (e) {
+      console.error('Erro ao ler query params:', e);
+    }
+
     // Hidratação simples
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -153,11 +180,23 @@ export default function App() {
         const parsed: PersistedState = JSON.parse(saved);
         // Recria os objetos Theme a partir dos IDs
         const themes = THEMES.filter(t => parsed.themeIds.includes(t.id));
-        return { ...parsed, themes };
+        return {
+          screen: parsed.screen,
+          gameMode: parsed.gameMode,
+          players: parsed.players,
+          themes,
+          saboteurMode: parsed.saboteurMode || false,
+        };
       } catch {}
     }
     return initialState;
   });
+
+  const [isMuted, setIsMuted] = useState(audioService.isMuted());
+  const toggleMute = () => {
+    const nextVal = audioService.toggleMute();
+    setIsMuted(nextVal);
+  };
 
   const onScreenChange = (screen: any) => dispatch({ type: 'SET_SCREEN', screen });
 
@@ -296,17 +335,24 @@ export default function App() {
                 dispatch({ type: 'SELECT_MODE_CLASSIC' });
               }
             }}
-            onStart={(themes) => {
+            onStart={(themes, saboteurMode) => {
               if (connectionType === 'multiplayer') {
+                let saboteurId = '';
+                if (saboteurMode && connectedPlayers.length > 0) {
+                  const randomIndex = Math.floor(Math.random() * connectedPlayers.length);
+                  saboteurId = connectedPlayers[randomIndex].id;
+                }
                 syncService.syncState({
                   screen: 'game-classic',
                   themes: themes.map(t => ({ id: t.id, name: t.name })),
                   phase: 'init',
-                  roundKey: Date.now()
+                  roundKey: Date.now(),
+                  saboteurMode,
+                  saboteurId
                 });
-                dispatch({ type: 'THEMES_CONFIRMED', themes });
+                dispatch({ type: 'THEMES_CONFIRMED', themes, saboteurMode });
               } else {
-                dispatch({ type: 'THEMES_CONFIRMED', themes });
+                dispatch({ type: 'THEMES_CONFIRMED', themes, saboteurMode });
               }
             }}
           />
@@ -328,6 +374,9 @@ export default function App() {
               syncGameState={syncGameState}
               playerId={playerId}
               connectedPlayers={connectedPlayers}
+              isMuted={isMuted}
+              toggleMute={toggleMute}
+              saboteurMode={state.saboteurMode}
             />
           </Suspense>
         );
@@ -343,7 +392,7 @@ export default function App() {
       case 'theme-impostor':
         if (connectionType === 'multiplayer' && !isHost) {
           return (
-            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-950 text-center text-slate-100 font-sans relative overflow-hidden h-full">
+            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-955 text-center text-slate-100 font-sans relative overflow-hidden h-full">
               <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
               <div className="mb-6 relative">
                 <div className="absolute inset-0 bg-purple-500/10 blur-xl rounded-full" />
@@ -398,6 +447,8 @@ export default function App() {
               syncGameState={syncGameState}
               playerId={playerId}
               connectedPlayers={connectedPlayers}
+              isMuted={isMuted}
+              toggleMute={toggleMute}
             />
           </Suspense>
         );
@@ -468,6 +519,8 @@ export default function App() {
               syncGameState={syncGameState}
               playerId={playerId}
               connectedPlayers={connectedPlayers}
+              isMuted={isMuted}
+              toggleMute={toggleMute}
             />
           </Suspense>
         );
@@ -487,6 +540,14 @@ export default function App() {
   return (
     <div className="w-full h-full min-h-[100dvh] bg-slate-950 text-slate-100 font-sans overflow-hidden flex flex-col selection:bg-yellow-200 relative">
       <Toaster position="top-center" theme="dark" richColors />
+      {!state.screen.startsWith('game-') && (
+        <button
+          onClick={toggleMute}
+          className="absolute top-4 right-4 z-50 p-2.5 bg-slate-900/60 border border-white/5 hover:bg-slate-800/80 text-slate-200 rounded-full transition-colors backdrop-blur-md"
+        >
+          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+        </button>
+      )}
       {/* Container principal livre de barras de rolagem globais */}
       <div className="flex-1 flex flex-col w-full h-full overflow-hidden">
         {renderScreen()}

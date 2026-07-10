@@ -127,4 +127,26 @@ html, body {
 
 .animate-float-medium {
   animation: floatBubble 4.5s ease-in-out infinite;
+}
+
+@keyframes floatUpReaction {
+  0% {
+    opacity: 0;
+    transform: translateY(100%) scale(0.6) rotate(0deg);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(80%) scale(1.1) rotate(5deg);
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20vh) scale(0.8) rotate(-15deg);
+  }
+}
+
+.animate-reaction {
+  animation: floatUpReaction 3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }

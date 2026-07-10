@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Dices, Check, Unlock, Star, Cloud, RefreshCw, Lock, GripVertical, Heart } from 'lucide-react';
+import { ChevronLeft, Dices, Check, Unlock, Star, Cloud, RefreshCw, Lock, GripVertical, Heart, Volume2, VolumeX, Home, RotateCcw } from 'lucide-react';
+import { toast } from 'sonner';
 import { QUESTIONS_DB } from './data';
 import type { Theme } from '../data';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { syncService, triggerVibration } from '../utils/syncService';
+import { audioService } from '../utils/audioService';
+import { ReactionsOverlay, ReactionsTray } from '../components/ReactionsOverlay';
 
 // Importações do DND Kit para Drag and Drop
 import {
@@ -126,6 +129,9 @@ type Props = {
   syncGameState?: any;
   playerId?: string;
   connectedPlayers?: { id: string; name: string }[];
+  isMuted: boolean;
+  toggleMute: () => void;
+  saboteurMode?: boolean;
 };
 
 // --- Componente Principal ---
@@ -138,8 +144,11 @@ const GameScreen = ({
   syncGameState = null,
   playerId = '',
   connectedPlayers = [],
+  isMuted,
+  toggleMute,
+  saboteurMode = false,
 }: Props) => {
-  const [localPhase, setLocalPhase] = useState<'init' | 'rolling' | 'numbers' | 'ordering' | 'result'>('init');
+  const [localPhase, setLocalPhase] = useState<'init' | 'rolling' | 'numbers' | 'ordering' | 'result' | 'saboteur-voting' | 'saboteur-reveal'>('init');
   const [localPlayerNumbers, setLocalPlayerNumbers] = useState<Record<string, number>>({});
   const [localCurrentQuestion, setLocalCurrentQuestion] = useState<string>('');
   const [localCurrentThemeColor, setLocalCurrentThemeColor] = useState<string>('');
@@ -149,6 +158,10 @@ const GameScreen = ({
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
   const [localLives, setLocalLives] = useState(3);
+
+  // Estados específicos para o modo Sabotador
+  const [localSaboteurName, setLocalSaboteurName] = useState<string>('');
+  const [localSuspect, setLocalSuspect] = useState<string>('');
   
   // --- LOCAL MULTIPLAYER STATE ---
   const [revealedMyOwn, setRevealedMyOwn] = useState(false);
@@ -225,13 +238,25 @@ const GameScreen = ({
   const startRound = () => {
     if (isMultiplayer) {
       if (isHost) {
+        let saboteurId = '';
+        if (syncGameState?.saboteurMode && connectedPlayers.length > 0) {
+          const randomIndex = Math.floor(Math.random() * connectedPlayers.length);
+          saboteurId = connectedPlayers[randomIndex].id;
+        }
         syncService.syncState({
           phase: 'rolling',
           viewedPlayers: [],
-          orderedPlayers: connectedPlayers.map(p => p.name)
+          orderedPlayers: connectedPlayers.map(p => p.name),
+          saboteurId
         });
       }
     } else {
+      if (saboteurMode && players.length > 0) {
+        const randomIndex = Math.floor(Math.random() * players.length);
+        setLocalSaboteurName(players[randomIndex]);
+      } else {
+        setLocalSaboteurName('');
+      }
       setLocalPhase('rolling');
       setCurrentPlayerIndex(0);
       setIsRevealed(false);
@@ -289,6 +314,7 @@ const GameScreen = ({
     const { active, over } = event;
     
     if (over && active.id !== over.id) {
+      audioService.playTick();
       const oldIndex = orderedPlayers.indexOf(active.id as string);
       const newIndex = orderedPlayers.indexOf(over.id as string);
       const nextOrdered = arrayMove(orderedPlayers, oldIndex, newIndex);
@@ -312,24 +338,85 @@ const GameScreen = ({
       }
     }
     
-    // Háptico: vibração rápida de comemoração ou erro
+    // Áudio e Háptico: comemoração ou erro
+    if (correct) {
+      audioService.playSuccess();
+    } else {
+      audioService.playFail();
+    }
     triggerVibration(correct ? [100, 50, 100] : [300, 100, 300]);
+
+    const isSabMode = isMultiplayer ? (syncGameState?.saboteurMode || false) : saboteurMode;
 
     if (isMultiplayer) {
       if (isHost) {
         const nextLives = correct ? lives : Math.max(0, lives - 1);
-        syncService.syncState({
-          phase: 'result',
-          isVictory: correct,
-          lives: nextLives
-        });
+        if (isSabMode && !correct) {
+          syncService.syncState({
+            phase: 'saboteur-voting',
+            saboteurVotes: {},
+            lives: nextLives
+          });
+        } else {
+          syncService.syncState({
+            phase: 'result',
+            isVictory: correct,
+            lives: nextLives
+          });
+        }
       }
     } else {
       if (!correct) {
         setLocalLives(prev => Math.max(0, prev - 1));
       }
-      setLocalIsVictory(correct);
-      setLocalPhase('result');
+      if (isSabMode && !correct) {
+        setLocalPhase('saboteur-voting');
+      } else {
+        setLocalIsVictory(correct);
+        setLocalPhase('result');
+      }
+    }
+  };
+
+  const handleCastVote = (targetPlayerName: string) => {
+    triggerVibration(50);
+    audioService.playTick();
+    if (isMultiplayer) {
+      const currentVotes = { ...(syncGameState?.saboteurVotes || {}) };
+      const myName = connectedPlayers.find(p => p.id === playerId)?.name || '';
+      currentVotes[myName] = targetPlayerName;
+      syncService.syncState({ saboteurVotes: currentVotes });
+    }
+  };
+
+  const handleRevealSaboteur = () => {
+    if (isMultiplayer && isHost) {
+      audioService.playSuccess();
+      const votes = syncGameState?.saboteurVotes || {};
+      const voteCounts: Record<string, number> = {};
+      (Object.values(votes) as string[]).forEach((v: string) => {
+        voteCounts[v] = (voteCounts[v] || 0) + 1;
+      });
+      
+      let mostVotedPlayer = '';
+      let maxVotes = -1;
+      Object.entries(voteCounts).forEach(([name, count]) => {
+        if (count > maxVotes) {
+          maxVotes = count;
+          mostVotedPlayer = name;
+        }
+      });
+
+      const actualSaboteurId = syncGameState?.saboteurId || '';
+      const actualSaboteurName = connectedPlayers.find(p => p.id === actualSaboteurId)?.name || '';
+      const groupWon = mostVotedPlayer === actualSaboteurName;
+
+      syncService.syncState({
+        phase: 'saboteur-reveal',
+        mostVotedPlayer,
+        actualSaboteurName,
+        saboteurGroupWon: groupWon
+      });
     }
   };
 
@@ -354,8 +441,9 @@ const GameScreen = ({
   const mainThemeColor = themes.length === 1 ? themes[0].buttonColor : 'bg-yellow-400 hover:bg-yellow-350';
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-950 text-white relative h-full overflow-hidden font-sans">
+    <div className="flex-1 flex flex-col bg-slate-955 text-white relative h-full overflow-hidden font-sans">
       {phase === 'result' && isVictory && <Confetti />}
+      <ReactionsOverlay />
 
       {/* Header Fixo */}
       <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
@@ -368,14 +456,22 @@ const GameScreen = ({
             {themes.length === 1 ? themes[0].name : 'Mix de Temas'}
           </div>
         </div>
-        <div className="flex items-center gap-1 bg-slate-900/80 px-3 py-1.5 rounded-full border border-white/5 shadow-inner">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Heart 
-              key={i} 
-              size={14} 
-              className={`transition-all duration-300 ${i < lives ? 'text-red-500 fill-red-500 animate-pulse' : 'text-slate-700'}`} 
-            />
-          ))}
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={toggleMute}
+            className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-350 transition-colors"
+          >
+            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          </button>
+          <div className="flex items-center gap-1 bg-slate-900/80 px-3 py-1.5 rounded-full border border-white/5 shadow-inner">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Heart 
+                key={i} 
+                size={14} 
+                className={`transition-all duration-300 ${i < lives ? 'text-red-500 fill-red-500 animate-pulse' : 'text-slate-700'}`} 
+              />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -425,15 +521,24 @@ const GameScreen = ({
                         </div>
                         <h3 className="text-xl font-black text-white mb-2 font-outfit">Toque para ver</h3>
                         <p className="text-xs text-slate-450 leading-relaxed font-medium">Garanta que ninguém está espiando.</p>
-                        <button onClick={() => { setRevealedMyOwn(true); triggerVibration(100); const currentViewed = syncGameState?.viewedPlayers || []; if (!currentViewed.includes(playerId)) { syncService.syncState({ viewedPlayers: [...currentViewed, playerId] }); } }} className="absolute inset-0 w-full h-full z-10" />
+                        <button onClick={() => { audioService.playFlip(); setRevealedMyOwn(true); triggerVibration(100); const currentViewed = syncGameState?.viewedPlayers || []; if (!currentViewed.includes(playerId)) { syncService.syncState({ viewedPlayers: [...currentViewed, playerId] }); } }} className="absolute inset-0 w-full h-full z-10" />
                       </div>
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-slate-900 rounded-3xl overflow-hidden">
                         <span className="text-slate-455 font-bold mb-3 uppercase tracking-widest text-[10px] font-outfit">Seu número secreto é</span>
-                        <span className="text-8xl font-black text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)] font-outfit select-none">
+                        <span className="text-8xl font-black text-yellow-450 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)] font-outfit select-none animate-fade-in-scale">
                           {playerNumbers[connectedPlayers.find(p => p.id === playerId)?.name || ''] || 0}
                         </span>
-                        <button onClick={() => setRevealedMyOwn(false)} className="absolute bottom-5 left-5 right-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-350 font-bold rounded-2xl transition-all text-xs font-outfit uppercase">
+                        {syncGameState?.saboteurMode && (
+                          <div className="mt-4 px-3 py-1.5 rounded-full border text-[10px] font-black font-outfit tracking-wider uppercase animate-pulse">
+                            {playerId === syncGameState?.saboteurId ? (
+                              <span className="text-red-400 border-red-500/20 bg-red-950/20">😈 SABOTADOR</span>
+                            ) : (
+                              <span className="text-emerald-400 border-emerald-500/20 bg-emerald-950/20">😇 GRUPO</span>
+                            )}
+                          </div>
+                        )}
+                        <button onClick={() => { audioService.playFlip(); setRevealedMyOwn(false); }} className="absolute bottom-5 left-5 right-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-350 font-bold rounded-2xl transition-all text-xs font-outfit uppercase">
                           Esconder
                         </button>
                       </div>
@@ -475,14 +580,26 @@ const GameScreen = ({
                           <Lock size={48} className="text-slate-400" />
                         </div>
                         <h3 className="text-xl font-black text-white mb-2 font-outfit">Toque para ver</h3>
-                        <p className="text-xs text-slate-455 leading-relaxed font-medium">Nenhum outro jogador pode olhar.</p>
-                        <button onClick={() => { setIsRevealed(true); triggerVibration(100); }} className="absolute inset-0 w-full h-full z-10" />
+                        <p className="text-xs text-slate-450 leading-relaxed font-medium">Garanta que ninguém está espiando.</p>
+                        <button onClick={() => { audioService.playFlip(); setIsRevealed(true); triggerVibration(100); }} className="absolute inset-0 w-full h-full z-10" />
                       </div>
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in bg-slate-900 rounded-3xl overflow-hidden">
                         <span className="text-slate-455 font-bold mb-3 uppercase tracking-widest text-[10px] font-outfit">Seu número secreto é</span>
-                        <span className="text-8xl font-black text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)] font-outfit select-none">{playerNumbers[players[currentPlayerIndex]]}</span>
+                        <span className="text-8xl font-black text-yellow-450 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)] font-outfit select-none animate-fade-in-scale">
+                          {playerNumbers[players[currentPlayerIndex]]}
+                        </span>
+                        {saboteurMode && (
+                          <div className="mt-4 px-3 py-1.5 rounded-full border text-[10px] font-black font-outfit tracking-wider uppercase animate-pulse">
+                            {players[currentPlayerIndex] === localSaboteurName ? (
+                              <span className="text-red-400 border-red-500/20 bg-red-950/20">😈 SABOTADOR</span>
+                            ) : (
+                              <span className="text-emerald-400 border-emerald-500/20 bg-emerald-950/20">😇 GRUPO</span>
+                            )}
+                          </div>
+                        )}
                         <button onClick={() => {
+                            audioService.playFlip();
                             setIsRevealed(false);
                             if (currentPlayerIndex < players.length - 1) {
                               setCurrentPlayerIndex(prev => prev + 1);
@@ -505,6 +622,188 @@ const GameScreen = ({
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {phase === 'saboteur-voting' && (
+          <div className="flex-1 flex flex-col items-center justify-center space-y-6 animate-fade-in py-4 text-center">
+            <div className="relative">
+              <div className="absolute inset-0 bg-red-500/10 blur-2xl rounded-full" />
+              <div className="w-20 h-20 rounded-full bg-slate-900 border-2 border-red-500/20 flex items-center justify-center shadow-xl relative z-10">
+                <span className="text-4xl animate-bounce">😈</span>
+              </div>
+            </div>
+            
+            <div className="space-y-1.5">
+              <h2 className="text-2xl font-black text-white font-outfit">Quem é o Sabotador?</h2>
+              <p className="text-xs text-slate-400 font-medium max-w-xs mx-auto">
+                A ordenação de cartas falhou! Alguém sabotou o grupo. Discutam e votem no seu suspeito principal.
+              </p>
+            </div>
+
+            {isMultiplayer ? (
+              <div className="w-full max-w-sm space-y-2 mt-4">
+                {connectedPlayers.map((p) => {
+                  const isMe = p.id === playerId;
+                  const myName = connectedPlayers.find(pl => pl.id === playerId)?.name || '';
+                  const votes = syncGameState?.saboteurVotes || {};
+                  const playerVote = votes[myName];
+                  const hasVoted = !!playerVote;
+                  const totalVotesOnP = Object.values(votes).filter(v => v === p.name).length;
+
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => !isMe && handleCastVote(p.name)}
+                      disabled={isMe || hasVoted}
+                      className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
+                        playerVote === p.name
+                          ? 'bg-red-500/10 border-red-500 text-red-300 font-bold'
+                          : isMe
+                          ? 'bg-slate-955/40 border-white/5 opacity-60 text-slate-400'
+                          : 'bg-slate-900/50 border-white/5 text-white hover:border-red-500/30'
+                      }`}
+                    >
+                      <span className="font-bold text-sm">{p.name} {isMe && '(Você)'}</span>
+                      {hasVoted && totalVotesOnP > 0 && (
+                        <span className="bg-red-500/25 text-red-400 border border-red-500/35 text-[10px] px-2.5 py-0.5 rounded-full font-bold font-outfit">
+                          {totalVotesOnP} {totalVotesOnP === 1 ? 'voto' : 'votos'}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+
+                {isHost && (
+                  <button
+                    onClick={handleRevealSaboteur}
+                    className="w-full mt-6 py-4.5 bg-red-650 hover:bg-red-600 text-white font-black rounded-2xl shadow-lg transition-all active:scale-[0.98] font-outfit uppercase tracking-wider"
+                  >
+                    Revelar Votos do Grupo
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="w-full max-w-sm space-y-2 mt-4">
+                {players.map((playerName) => {
+                  return (
+                    <button
+                      key={playerName}
+                      onClick={() => { triggerVibration(50); audioService.playTick(); setLocalSuspect(playerName); }}
+                      className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
+                        localSuspect === playerName
+                          ? 'bg-red-500/10 border-red-500 text-red-300 font-bold'
+                          : 'bg-slate-900/50 border-white/5 text-white hover:border-red-500/30 animate-fade-in'
+                      }`}
+                    >
+                      <span className="font-bold text-sm">{playerName}</span>
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => {
+                    if (!localSuspect) {
+                      toast.error('Escolha um suspeito antes de avançar!');
+                      return;
+                    }
+                    audioService.playSuccess();
+                    setLocalPhase('saboteur-reveal');
+                  }}
+                  className="w-full mt-6 py-4.5 bg-red-650 hover:bg-red-600 text-white font-black rounded-2xl shadow-lg transition-all active:scale-[0.98] font-outfit uppercase tracking-wider"
+                >
+                  Confirmar Suspeito
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {phase === 'saboteur-reveal' && (
+          <div className="flex-1 flex flex-col items-center justify-center space-y-8 animate-fade-in py-4 text-center">
+            {(() => {
+              const actualSaboteurName = isMultiplayer 
+                ? (syncGameState?.actualSaboteurName || '')
+                : localSaboteurName;
+              const suspectName = isMultiplayer
+                ? (syncGameState?.mostVotedPlayer || '')
+                : localSuspect;
+              const groupWon = isMultiplayer
+                ? (syncGameState?.saboteurGroupWon || false)
+                : (localSuspect === localSaboteurName);
+
+              return (
+                <>
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-purple-500/10 blur-3xl rounded-full animate-pulse" />
+                    <div className="w-24 h-24 rounded-full bg-slate-900 border-4 border-slate-800 flex items-center justify-center shadow-2xl relative z-10 animate-bounce">
+                      <span className="text-5xl">{groupWon ? '🎉' : '😈'}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 animate-fade-in">
+                    <h2 className="text-3xl font-black text-white font-outfit uppercase tracking-wide">
+                      {groupWon ? 'O GRUPO VENCEU!' : 'O SABOTADOR VENCEU!'}
+                    </h2>
+                    <p className="text-slate-400 text-xs sm:text-sm max-w-xs mx-auto font-medium leading-relaxed font-sans px-4">
+                      {groupWon 
+                        ? `Vocês encontraram o Sabotador! ${actualSaboteurName} foi desmascarado(a) com sucesso.`
+                        : `O Sabotador passou despercebido! ${actualSaboteurName} enganou o grupo completamente.`}
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-900/40 border border-white/5 rounded-3xl p-6 w-full max-w-xs space-y-4 shadow-xl animate-fade-in-scale">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-400 font-bold">O Sabotador era:</span>
+                      <span className="text-red-400 font-black uppercase tracking-wider font-outfit">{actualSaboteurName}</span>
+                    </div>
+                    <div className="h-px bg-white/5 w-full" />
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-400 font-bold">Acusado pelo grupo:</span>
+                      <span className="text-yellow-400 font-black uppercase tracking-wider font-outfit">{suspectName}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 w-full max-w-xs pt-4 shrink-0">
+                    {(!isMultiplayer || isHost) ? (
+                      <button
+                        onClick={() => {
+                          if (isMultiplayer) {
+                            syncService.syncState({
+                              phase: 'init',
+                              lives: 3,
+                              round: 1,
+                              viewedPlayers: [],
+                              playerNumbers: {}
+                            });
+                          } else {
+                            setLocalLives(3);
+                            setLocalRound(1);
+                            setLocalPhase('init');
+                            setLocalSaboteurName('');
+                            setLocalSuspect('');
+                          }
+                        }}
+                        className="w-full bg-yellow-450 hover:bg-yellow-400 text-black font-black text-lg py-4 rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2 font-outfit"
+                      >
+                        <RotateCcw size={20} /> JOGAR NOVAMENTE
+                      </button>
+                    ) : (
+                      <div className="w-full bg-slate-900/50 p-4 rounded-2xl border border-white/5 text-center flex items-center justify-center gap-3 animate-pulse">
+                        <span className="w-2 h-2 rounded-full bg-yellow-400 animate-ping" />
+                        <span className="text-xs text-slate-400 font-black uppercase tracking-wider font-outfit">Aguardando líder reiniciar...</span>
+                      </div>
+                    )}
+                    <button
+                      onClick={onBack}
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-slate-350 font-bold text-base py-3.5 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 border border-white/5 font-outfit"
+                    >
+                      <Home size={18} /> Voltar ao Início
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
 
@@ -598,7 +897,8 @@ const GameScreen = ({
       </div>
 
       {/* Rodapé Fixo Flex (Nunca posicionado de forma absoluta) */}
-      <div className="p-6 bg-slate-900 border-t border-white/5 z-40 shrink-0 safe-bottom shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
+      {(phase === 'init' || phase === 'ordering' || phase === 'result') && (
+        <div className="p-6 bg-slate-900 border-t border-white/5 z-40 shrink-0 safe-bottom shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
         {phase === 'init' && (
           (!isMultiplayer || isHost) ? (
             <button onClick={startRound} className={`w-full ${mainThemeColor} text-black font-black text-lg py-4 rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 font-outfit`} style={{ animationDelay: '0.1s' }}>
@@ -677,6 +977,12 @@ const GameScreen = ({
           </div>
         )}
       </div>
+      )}
+      {isMultiplayer && (phase === 'numbers' || phase === 'ordering' || phase === 'result') && (
+        <div className="absolute bottom-28 left-0 right-0 flex justify-center z-45 pointer-events-none">
+          <ReactionsTray />
+        </div>
+      )}
     </div>
   );
 };

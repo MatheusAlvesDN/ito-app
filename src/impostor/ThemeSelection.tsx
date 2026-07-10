@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Check, Ghost, Plus, Trash2, X } from 'lucide-react';
+import { ChevronLeft, Check, Ghost, Plus, Trash2, X, Sparkles, Key } from 'lucide-react';
 import { THEMES, type Theme, type ImpostorScenario } from './data';
 import { triggerVibration } from '../utils/syncService';
+import { generateImpostorTheme } from '../utils/geminiService';
+import { toast } from 'sonner';
 
 type Props = {
   onBack: () => void;
@@ -22,6 +24,59 @@ export default function ThemeSelectionImpostor({ onBack, onStart }: Props) {
   const [impostorText, setImpostorText] = useState('');
   const [scenariosList, setScenariosList] = useState<ImpostorScenario[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // AI Generation States
+  const [activeTab, setActiveTab] = useState<'manual' | 'ai'>('manual');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('ito_gemini_api_key') || '');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showApiKeyInput, setShowApiKeyInput] = useState(() => !localStorage.getItem('ito_gemini_api_key'));
+
+  const handleGenerateWithAI = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+
+    if (!apiKey.trim()) {
+      setErrorMsg('Insira uma chave de API do Gemini para prosseguir.');
+      return;
+    }
+
+    if (!aiPrompt.trim()) {
+      setErrorMsg('Descreva sobre o que você deseja que o tema seja.');
+      return;
+    }
+
+    setIsGenerating(true);
+    triggerVibration(100);
+    
+    // Salva a chave localmente
+    localStorage.setItem('ito_gemini_api_key', apiKey.trim());
+    setShowApiKeyInput(false);
+
+    try {
+      const generated = await generateImpostorTheme(aiPrompt.trim(), apiKey.trim());
+      
+      if (generated.name) setThemeName(generated.name);
+      if (generated.description) setThemeDescription(generated.description);
+      if (generated.scenarios && Array.isArray(generated.scenarios)) {
+        setScenariosList(
+          generated.scenarios.map((s: any) => ({
+            honest: s.honest || '',
+            impostorVariations: [s.impostor || '']
+          }))
+        );
+      }
+      
+      toast.success('Tema gerado com sucesso! Revise os cenários e clique em Salvar.');
+      setActiveTab('manual'); // Volta para o manual para revisão
+      setAiPrompt('');
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Ocorreu um erro ao gerar o tema com a Inteligência Artificial.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   // Carrega do localStorage
   useEffect(() => {
@@ -234,7 +289,6 @@ export default function ThemeSelectionImpostor({ onBack, onStart }: Props) {
             >
               <X size={20} />
             </button>
-            
             <div className="mb-4">
               <h3 className="text-xl font-black text-white font-outfit">Novo Tema (Impostor)</h3>
               <p className="text-slate-450 text-xs mt-0.5 font-medium">Adicione cenários divertidos com palavras parecidas.</p>
@@ -246,81 +300,174 @@ export default function ThemeSelectionImpostor({ onBack, onStart }: Props) {
               </div>
             )}
 
-            <form onSubmit={handleCreateTheme} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 font-outfit">Nome do Tema</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Nossas Viagens, Segredos"
-                  value={themeName}
-                  onChange={(e) => setThemeName(e.target.value.slice(0, 24))}
-                  className="w-full bg-slate-950 border border-white/10 px-4 py-3 rounded-xl text-white font-bold placeholder:text-slate-700 outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-900/10 transition-all text-sm"
-                />
-              </div>
+            {/* Abas */}
+            <div className="flex bg-slate-950 p-1 rounded-xl mb-4 border border-white/5">
+              <button
+                type="button"
+                onClick={() => { setActiveTab('manual'); setErrorMsg(''); }}
+                className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all uppercase tracking-wider font-outfit ${activeTab === 'manual' ? 'bg-purple-650 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                disabled={isGenerating}
+              >
+                ✍️ Manual
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveTab('ai'); setErrorMsg(''); }}
+                className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all uppercase tracking-wider font-outfit flex items-center justify-center gap-1 ${activeTab === 'ai' ? 'bg-purple-650 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                disabled={isGenerating}
+              >
+                <Sparkles size={12} /> Gerar com IA
+              </button>
+            </div>
 
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 font-outfit">Descrição (Opcional)</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Perguntas sobre nossas histórias internas..."
-                  value={themeDescription}
-                  onChange={(e) => setThemeDescription(e.target.value.slice(0, 60))}
-                  className="w-full bg-slate-950 border border-white/10 px-4 py-3 rounded-xl text-white font-bold placeholder:text-slate-700 outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-900/10 transition-all text-sm"
-                />
-              </div>
+            {activeTab === 'ai' ? (
+              <form onSubmit={handleGenerateWithAI} className="space-y-4">
+                <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-outfit flex items-center gap-1">
+                    <Key size={10} /> Chave do Gemini
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+                    className="text-[9px] font-bold text-purple-400 hover:text-purple-300 font-outfit uppercase"
+                  >
+                    {showApiKeyInput ? 'Ocultar' : 'Alterar'}
+                  </button>
+                </div>
 
-              <div className="bg-slate-950/60 p-4 rounded-2xl border border-white/5 space-y-3">
-                <span className="block text-[9px] font-black text-purple-400 uppercase tracking-widest font-outfit">
-                  Adicionar Pergunta ({scenariosList.length} adicionadas)
-                </span>
-                
+                {showApiKeyInput && (
+                  <div className="bg-slate-955/50 p-3 rounded-2xl border border-white/5">
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-450 mb-1 font-outfit">Sua Gemini API Key</label>
+                    <input
+                      type="password"
+                      placeholder="Cole sua API Key aqui (começa com AIza)"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="w-full bg-slate-950 border border-white/10 px-4 py-3 rounded-xl text-white font-mono placeholder:text-slate-700 outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-900/10 transition-all text-xs"
+                    />
+                    <p className="text-[9px] text-slate-455 mt-1 font-medium leading-relaxed">
+                      Sua chave fica salva apenas no seu navegador (localStorage) e é enviada diretamente ao Google.
+                    </p>
+                  </div>
+                )}
+
                 <div>
-                  <label className="block text-[9px] font-bold text-slate-450 mb-1 font-outfit">Palavra do Grupo Honesto</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-450 mb-1 font-outfit">O que você quer que o tema seja?</label>
+                  <textarea
+                    placeholder="Ex: Palavras relacionadas a cinema vs teatro, marcas de tecnologia, heróis da Marvel vs DC..."
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    rows={4}
+                    className="w-full bg-slate-955 border border-white/10 px-4 py-3 rounded-xl text-white font-bold placeholder:text-slate-700 outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-900/10 transition-all text-sm resize-none font-sans"
+                    disabled={isGenerating}
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="flex-1 py-3.5 bg-slate-950 border border-white/10 hover:bg-slate-850 text-slate-350 font-bold rounded-xl text-sm transition-all"
+                    disabled={isGenerating}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isGenerating}
+                    className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-550 disabled:bg-slate-800 disabled:text-slate-600 text-white font-black rounded-xl text-sm transition-all shadow-md font-outfit flex items-center justify-center gap-1.5"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                        <span>Gerando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={16} />
+                        <span>Gerar Tema</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleCreateTheme} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 font-outfit">Nome do Tema</label>
                   <input
                     type="text"
-                    placeholder="Ex: Cachorro"
-                    value={honestText}
-                    onChange={(e) => setHonestText(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 px-3 py-2 rounded-lg text-white text-xs font-bold"
+                    placeholder="Ex: Nossas Viagens, Segredos"
+                    value={themeName}
+                    onChange={(e) => setThemeName(e.target.value.slice(0, 24))}
+                    className="w-full bg-slate-950 border border-white/10 px-4 py-3 rounded-xl text-white font-bold placeholder:text-slate-700 outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-900/10 transition-all text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[9px] font-bold text-slate-450 mb-1 font-outfit">Variações do Impostor (Uma por linha)</label>
-                  <textarea
-                    placeholder="Ex:&#10;Lobo&#10;Gato&#10;Leão"
-                    value={impostorText}
-                    onChange={(e) => setImpostorText(e.target.value)}
-                    rows={3}
-                    className="w-full bg-slate-950 border border-white/10 px-3 py-2 rounded-lg text-white text-xs font-bold resize-none font-sans"
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1 font-outfit">Descrição (Opcional)</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Perguntas sobre nossas histórias internas..."
+                    value={themeDescription}
+                    onChange={(e) => setThemeDescription(e.target.value.slice(0, 60))}
+                    className="w-full bg-slate-955 border border-white/10 px-4 py-3 rounded-xl text-white font-bold placeholder:text-slate-700 outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-900/10 transition-all text-sm"
                   />
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleAddScenario}
-                  className="w-full py-2 bg-purple-600/20 border border-purple-500/30 hover:bg-purple-650 text-purple-200 font-bold rounded-lg text-xs font-outfit uppercase"
-                >
-                  + Adicionar Pergunta
-                </button>
-              </div>
+                <div className="bg-slate-955/60 p-4 rounded-2xl border border-white/5 space-y-3">
+                  <span className="block text-[9px] font-black text-purple-400 uppercase tracking-widest font-outfit">
+                    Adicionar Pergunta ({scenariosList.length} adicionadas)
+                  </span>
+                  
+                  <div>
+                    <label className="block text-[9px] font-bold text-slate-450 mb-1 font-outfit">Palavra do Grupo Honesto</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Cachorro"
+                      value={honestText}
+                      onChange={(e) => setHonestText(e.target.value)}
+                      className="w-full bg-slate-955 border border-white/10 px-3 py-2 rounded-lg text-white text-xs font-bold"
+                    />
+                  </div>
 
-              <div className="pt-2 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 py-3.5 bg-slate-950 border border-white/10 hover:bg-slate-855 text-slate-350 font-bold rounded-xl text-sm transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-550 text-white font-black rounded-xl text-sm transition-all shadow-md font-outfit"
-                >
-                  Salvar Tema
-                </button>
-              </div>
-            </form>
+                  <div>
+                    <label className="block text-[9px] font-bold text-slate-450 mb-1 font-outfit">Variações do Impostor (Uma por linha)</label>
+                    <textarea
+                      placeholder="Ex:&#10;Lobo&#10;Gato&#10;Leão"
+                      value={impostorText}
+                      onChange={(e) => setImpostorText(e.target.value)}
+                      rows={3}
+                      className="w-full bg-slate-955 border border-white/10 px-3 py-2 rounded-lg text-white text-xs font-bold resize-none font-sans"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAddScenario}
+                    className="w-full py-2 bg-purple-650 hover:bg-purple-600 border border-purple-500/30 text-white font-bold rounded-lg text-xs font-outfit uppercase"
+                  >
+                    + Adicionar Pergunta
+                  </button>
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="flex-1 py-3.5 bg-slate-955 border border-white/10 hover:bg-slate-855 text-slate-355 font-bold rounded-xl text-sm transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-550 text-white font-black rounded-xl text-sm transition-all shadow-md font-outfit"
+                  >
+                    Salvar Tema
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

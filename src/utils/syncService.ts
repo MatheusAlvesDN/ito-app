@@ -25,6 +25,7 @@ type SyncCallbackMap = {
   onStateUpdated?: (gameState: any) => void;
   onBecomeHost?: () => void;
   onError?: (message: string) => void;
+  onReactionReceived?: (playerId: string, playerName: string, reactionType: string) => void;
 };
 
 class SyncService {
@@ -182,6 +183,20 @@ class SyncService {
               gameState: this.gameState
             });
           }
+
+          if (msg.type === 'REACTION') {
+            // Repassa a reação para todos
+            this.broadcast({
+              type: 'REACTION',
+              playerId: conn.peer,
+              playerName: msg.playerName,
+              reactionType: msg.reactionType
+            });
+            // Aciona o callback do Host localmente
+            if (this.callbacks.onReactionReceived) {
+              this.callbacks.onReactionReceived(conn.peer, msg.playerName, msg.reactionType);
+            }
+          }
         } catch (err) {
           console.error('Erro ao ler dados recebidos via P2P:', err);
         }
@@ -301,6 +316,12 @@ class SyncService {
           this.gameState = msg.gameState;
           if (this.callbacks.onStateUpdated) {
             this.callbacks.onStateUpdated(msg.gameState);
+          }
+        }
+
+        if (msg.type === 'REACTION') {
+          if (this.callbacks.onReactionReceived) {
+            this.callbacks.onReactionReceived(msg.playerId, msg.playerName, msg.reactionType);
           }
         }
       } catch (err) {
@@ -438,6 +459,32 @@ class SyncService {
         this.sendJson(this.hostConn, {
           type: 'CLIENT_STATE_UPDATE',
           gameState: this.gameState
+        });
+      }
+    }
+  }
+
+  // Envia uma reação (emoji) para todos os jogadores via P2P
+  public sendReaction(reactionType: string) {
+    if (this.isHost) {
+      // Se for o Host, faz broadcast direto para todos os clientes
+      this.broadcast({
+        type: 'REACTION',
+        playerId: this.currentPlayerId || '',
+        playerName: this.playerName || '',
+        reactionType
+      });
+      // Executa localmente
+      if (this.callbacks.onReactionReceived) {
+        this.callbacks.onReactionReceived(this.currentPlayerId || '', this.playerName || '', reactionType);
+      }
+    } else {
+      // Se for cliente, envia para o Host para ele repassar
+      if (this.hostConn && this.hostConn.open) {
+        this.sendJson(this.hostConn, {
+          type: 'REACTION',
+          playerName: this.playerName || '',
+          reactionType
         });
       }
     }

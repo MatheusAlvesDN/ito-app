@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ChevronLeft, Copy, Users, Crown, ArrowRight } from 'lucide-react';
+import { ChevronLeft, Copy, Users, Crown, ArrowRight, Share2 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { GameMode } from '../../App';
 
 export const MultiplayerLobbyScreen = ({
@@ -22,7 +23,22 @@ export const MultiplayerLobbyScreen = ({
   const copyToClipboard = () => {
     navigator.clipboard.writeText(roomCode);
     setCopied(true);
+    toast.success('Código copiado!');
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const shareRoomLink = () => {
+    const link = `${window.location.origin}${window.location.pathname}?room=${roomCode}&mode=${gameMode}`;
+    if (navigator.share) {
+      navigator.share({
+        title: 'Junte-se à minha partida no Party Games!',
+        text: `Entre na sala ${roomCode} para jogar comigo!`,
+        url: link,
+      }).catch(err => console.log('Share failed', err));
+    } else {
+      navigator.clipboard.writeText(link);
+      toast.success('Link de convite copiado para área de transferência!');
+    }
   };
 
   const getThemeColorClass = () => {
@@ -61,7 +77,7 @@ export const MultiplayerLobbyScreen = ({
         <div className="bg-slate-900/60 p-6 rounded-3xl border border-white/5 text-center shadow-xl relative overflow-hidden backdrop-blur-sm">
           <p className="text-[10px] font-black text-slate-450 uppercase tracking-[0.2em] mb-1 font-outfit">Código da Sala</p>
           <div className="flex items-center justify-center gap-3">
-            <h1 className="text-5xl font-black text-yellow-450 font-outfit tracking-wider select-all">{roomCode}</h1>
+            <h1 className="text-5xl font-black text-yellow-455 font-outfit tracking-wider select-all">{roomCode}</h1>
             <button
               onClick={copyToClipboard}
               className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all active:scale-90"
@@ -75,6 +91,12 @@ export const MultiplayerLobbyScreen = ({
             </button>
           </div>
           <p className="text-[11px] text-slate-450 mt-2 font-medium">Compartilhe esse código com os seus amigos na mesma rede local.</p>
+          <button
+            onClick={shareRoomLink}
+            className="mt-3.5 w-full py-3 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-white/5 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition-all font-outfit uppercase tracking-wider"
+          >
+            <Share2 size={14} /> Convidar Amigos (Link)
+          </button>
         </div>
 
         {/* Jogadores Conectados */}

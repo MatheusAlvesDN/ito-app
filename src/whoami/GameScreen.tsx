@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, CheckCircle2, Circle, Eye, EyeOff, RotateCcw, Trophy, Home, UserSearch, ArrowRight } from 'lucide-react';
+import { ChevronLeft, CheckCircle2, Circle, Eye, EyeOff, RotateCcw, Trophy, Home, UserSearch, ArrowRight, Volume2, VolumeX } from 'lucide-react';
 import { type WhoAmITheme } from './data';
 import { syncService, triggerVibration } from '../utils/syncService';
+import { audioService } from '../utils/audioService';
+import { ReactionsOverlay, ReactionsTray } from '../components/ReactionsOverlay';
 
 type Props = {
   onBack: () => void;
@@ -12,6 +14,8 @@ type Props = {
   syncGameState?: any;
   playerId?: string;
   connectedPlayers?: { id: string; name: string }[];
+  isMuted: boolean;
+  toggleMute: () => void;
 };
 
 type PlayerData = {
@@ -30,6 +34,8 @@ export default function GameScreenWhoAmI({
   syncGameState = null,
   playerId = '',
   connectedPlayers = [],
+  isMuted,
+  toggleMute,
 }: Props) {
   // --- LOCAL STATES ---
   const [localPlayerData, setLocalPlayerData] = useState<PlayerData[]>([]);
@@ -60,9 +66,13 @@ export default function GameScreenWhoAmI({
     const interval = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
+          audioService.playFail();
           triggerVibration([200, 100, 200, 100, 400]); // Alarme vibratório!
           clearInterval(interval);
           return 0;
+        }
+        if (prev <= 6) { // Para os segundos finais: 5, 4, 3, 2, 1
+          audioService.playTick();
         }
         return prev - 1;
       });
@@ -158,11 +168,13 @@ export default function GameScreenWhoAmI({
   }, [isHost, isMultiplayer, syncGameState?.phase, syncGameState?.roundKey]);
 
   const handleReveal = () => {
+    audioService.playFlip();
     setRevealStep('showing');
     triggerVibration(100);
   };
 
   const handleNextReveal = () => {
+    audioService.playFlip();
     if (currentIndex < players.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setRevealStep('hidden');
@@ -172,6 +184,7 @@ export default function GameScreenWhoAmI({
   };
 
   const toggleGuess = (index: number) => {
+    audioService.playTick();
     triggerVibration(60);
     if (isMultiplayer) {
       const copy = [...playerData];
@@ -287,9 +300,17 @@ export default function GameScreenWhoAmI({
       <div className="flex-1 flex flex-col bg-slate-955 text-white relative h-full overflow-hidden font-sans">
         {/* Header Fixo */}
         <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-          <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-slate-355 transition-colors">
-            <ChevronLeft size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-slate-355 transition-colors">
+              <ChevronLeft size={24} />
+            </button>
+            <button 
+              onClick={toggleMute}
+              className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-355 transition-colors"
+            >
+              {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
+          </div>
           <div className="flex flex-col items-center flex-1">
             <span className="font-black text-lg tracking-wide uppercase font-outfit text-white">REVELANDO</span>
           </div>
@@ -354,12 +375,21 @@ export default function GameScreenWhoAmI({
   // ------------------------------------------------------------------
   return (
     <div className="flex-1 flex flex-col bg-slate-955 text-slate-100 relative h-full overflow-hidden font-sans">
+      <ReactionsOverlay />
       {/* Header Fixo */}
       <div className="p-4 flex items-center justify-between bg-slate-900/60 border-b border-white/5 backdrop-blur-md sticky top-0 z-20 pt-8 md:pt-4 safe-top shrink-0">
-        <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-emerald-400 transition-colors">
-          <ChevronLeft size={24} />
-        </button>
-        <span className="ml-4 font-black text-xl text-white font-outfit">Dicas & Personagens</span>
+        <div className="flex items-center gap-2">
+          <button onClick={onBack} className="p-2 bg-white/5 rounded-full hover:bg-white/10 text-emerald-400 transition-colors">
+            <ChevronLeft size={24} />
+          </button>
+          <button 
+            onClick={toggleMute}
+            className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-355 transition-colors"
+          >
+            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          </button>
+        </div>
+        <span className="font-black text-xl text-white font-outfit">Dicas & Personagens</span>
       </div>
 
       <div className="p-4 bg-emerald-500/10 border-b border-emerald-500/20 text-center shrink-0">
@@ -421,7 +451,7 @@ export default function GameScreenWhoAmI({
               <div className="flex items-center gap-2 self-end sm:self-auto">
                 {isMe && !revealedMyOwn && (
                   <button
-                    onClick={() => { setRevealedMyOwn(true); triggerVibration(100); }}
+                    onClick={() => { audioService.playFlip(); setRevealedMyOwn(true); triggerVibration(100); }}
                     className="px-3.5 py-2 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 font-bold text-xs hover:bg-red-500/20 transition-all font-outfit uppercase tracking-wider"
                   >
                     Olhar
@@ -461,6 +491,11 @@ export default function GameScreenWhoAmI({
           </div>
         )}
       </div>
+      {isMultiplayer && (
+        <div className="absolute bottom-28 left-0 right-0 flex justify-center z-45 pointer-events-none">
+          <ReactionsTray />
+        </div>
+      )}
     </div>
   );
 }

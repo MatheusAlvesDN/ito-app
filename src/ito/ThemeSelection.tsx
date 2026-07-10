@@ -1,23 +1,74 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Check, Play, Plus, Trash2, X, Star } from 'lucide-react';
+import { ChevronLeft, Check, Play, Plus, Trash2, X, Star, Sparkles, Key } from 'lucide-react';
 import { THEMES, type Theme } from './data';
 import { triggerVibration } from '../utils/syncService';
+import { generateItoTheme } from '../utils/geminiService';
+import { toast } from 'sonner';
 
 type Props = {
   onBack: () => void;
-  onStart: (themes: Theme[]) => void;
+  onStart: (themes: Theme[], saboteurMode: boolean) => void;
 };
 
 export default function ThemeSelectionClassic({ onBack, onStart }: Props) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [customThemes, setCustomThemes] = useState<Theme[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [saboteurMode, setSaboteurMode] = useState(false);
 
   // Form States
   const [themeName, setThemeName] = useState('');
   const [themeDescription, setThemeDescription] = useState('');
   const [questionsText, setQuestionsText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  // AI Generation States
+  const [activeTab, setActiveTab] = useState<'manual' | 'ai'>('manual');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('ito_gemini_api_key') || '');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showApiKeyInput, setShowApiKeyInput] = useState(() => !localStorage.getItem('ito_gemini_api_key'));
+
+  const handleGenerateWithAI = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+
+    if (!apiKey.trim()) {
+      setErrorMsg('Insira uma chave de API do Gemini para prosseguir.');
+      return;
+    }
+
+    if (!aiPrompt.trim()) {
+      setErrorMsg('Descreva sobre o que você deseja que o tema seja.');
+      return;
+    }
+
+    setIsGenerating(true);
+    triggerVibration(100);
+    
+    // Salva a chave localmente
+    localStorage.setItem('ito_gemini_api_key', apiKey.trim());
+    setShowApiKeyInput(false);
+
+    try {
+      const generated = await generateItoTheme(aiPrompt.trim(), apiKey.trim());
+      
+      if (generated.name) setThemeName(generated.name);
+      if (generated.description) setThemeDescription(generated.description);
+      if (generated.questions && Array.isArray(generated.questions)) {
+        setQuestionsText(generated.questions.join('\n'));
+      }
+      
+      toast.success('Tema gerado com sucesso! Revise os campos e clique em Salvar.');
+      setActiveTab('manual'); // Volta para o manual para revisão
+      setAiPrompt('');
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Ocorreu um erro ao gerar o tema com a Inteligência Artificial.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   // Carrega do localStorage
   useEffect(() => {
@@ -171,6 +222,24 @@ export default function ThemeSelectionClassic({ onBack, onStart }: Props) {
           );
         })}
 
+        {/* Card do Modo Sabotador */}
+        <div className="p-5 rounded-3xl bg-slate-900/60 border border-white/5 shadow-xl flex items-center justify-between gap-4 mt-2">
+          <div className="flex-1">
+            <h4 className="font-black text-base text-white font-outfit flex items-center gap-1.5">
+              😈 Modo Sabotador
+            </h4>
+            <p className="text-slate-450 text-[11px] font-medium leading-relaxed mt-0.5">
+              Um jogador é secretamente escolhido para sabotar o grupo sem ser descoberto. Ao final, tentem adivinhar quem é!
+            </p>
+          </div>
+          <button
+            onClick={() => { setSaboteurMode(!saboteurMode); triggerVibration(60); }}
+            className={`w-12 h-6 rounded-full p-1 transition-all duration-200 shrink-0 ${saboteurMode ? 'bg-yellow-450' : 'bg-slate-800'}`}
+          >
+            <div className={`w-4 h-4 rounded-full bg-slate-950 transition-all duration-200 ${saboteurMode ? 'translate-x-6' : 'translate-x-0'}`} />
+          </button>
+        </div>
+
         {/* Botão de Novo Tema */}
         <button
           onClick={() => { setShowModal(true); triggerVibration(50); }}
@@ -184,7 +253,7 @@ export default function ThemeSelectionClassic({ onBack, onStart }: Props) {
       {/* Rodapé Fixo Flex */}
       <div className="p-6 bg-slate-955 border-t border-white/5 shrink-0 safe-bottom shadow-[0_-8px_24px_rgba(0,0,0,0.2)]">
         <button
-          onClick={() => onStart(selectedThemes)}
+          onClick={() => onStart(selectedThemes, saboteurMode)}
           disabled={selectedIds.length === 0}
           className="w-full bg-yellow-400 hover:bg-yellow-350 disabled:bg-slate-900 disabled:text-slate-655 text-black font-black text-lg py-4 rounded-2xl shadow-md hover:shadow-lg disabled:shadow-none transition-all duration-150 active:scale-95 disabled:active:scale-100 flex items-center justify-center gap-2 font-outfit"
         >
@@ -214,56 +283,149 @@ export default function ThemeSelectionClassic({ onBack, onStart }: Props) {
               </div>
             )}
 
-            <form onSubmit={handleCreateTheme} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-450 mb-1 font-outfit">Nome do Tema</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Colegas de Trabalho, Filosofia"
-                  value={themeName}
-                  onChange={(e) => setThemeName(e.target.value.slice(0, 24))}
-                  className="w-full bg-slate-955 border border-white/10 px-4 py-3 rounded-xl text-white font-bold placeholder:text-slate-700 outline-none focus:border-yellow-500 focus:ring-4 focus:ring-yellow-900/10 transition-all text-sm"
-                />
-              </div>
+            {/* Abas */}
+            <div className="flex bg-slate-955 p-1 rounded-xl mb-4 border border-white/5">
+              <button
+                type="button"
+                onClick={() => { setActiveTab('manual'); setErrorMsg(''); }}
+                className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all uppercase tracking-wider font-outfit ${activeTab === 'manual' ? 'bg-yellow-450 text-black shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                disabled={isGenerating}
+              >
+                ✍️ Manual
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveTab('ai'); setErrorMsg(''); }}
+                className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all uppercase tracking-wider font-outfit flex items-center justify-center gap-1 ${activeTab === 'ai' ? 'bg-yellow-450 text-black shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                disabled={isGenerating}
+              >
+                <Sparkles size={12} /> Gerar com IA
+              </button>
+            </div>
 
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-450 mb-1 font-outfit">Descrição (Opcional)</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Debates internos e piadas do escritório..."
-                  value={themeDescription}
-                  onChange={(e) => setThemeDescription(e.target.value.slice(0, 60))}
-                  className="w-full bg-slate-955 border border-white/10 px-4 py-3 rounded-xl text-white font-bold placeholder:text-slate-700 outline-none focus:border-yellow-500 focus:ring-4 focus:ring-yellow-900/10 transition-all text-sm"
-                />
-              </div>
+            {activeTab === 'ai' ? (
+              <form onSubmit={handleGenerateWithAI} className="space-y-4">
+                <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-outfit flex items-center gap-1">
+                    <Key size={10} /> Chave do Gemini
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+                    className="text-[9px] font-bold text-yellow-500 hover:text-yellow-400 font-outfit uppercase"
+                  >
+                    {showApiKeyInput ? 'Ocultar' : 'Alterar'}
+                  </button>
+                </div>
 
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-450 mb-1 font-outfit">Perguntas/Desafios (Um por linha)</label>
-                <textarea
-                  placeholder="Ex:&#10;O quão legal é essa piada?&#10;Quem do grupo come mais pizza?&#10;Nível de perigo de esquecer o aniversário da namorada"
-                  value={questionsText}
-                  onChange={(e) => setQuestionsText(e.target.value)}
-                  rows={5}
-                  className="w-full bg-slate-955 border border-white/10 px-4 py-3 rounded-xl text-white font-bold placeholder:text-slate-700 outline-none focus:border-yellow-500 focus:ring-4 focus:ring-yellow-900/10 transition-all text-sm resize-none font-sans"
-                />
-              </div>
+                {showApiKeyInput && (
+                  <div className="bg-slate-955/50 p-3 rounded-2xl border border-white/5">
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-450 mb-1 font-outfit">Sua Gemini API Key</label>
+                    <input
+                      type="password"
+                      placeholder="Cole sua API Key aqui (começa com AIza)"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="w-full bg-slate-955 border border-white/10 px-4 py-3 rounded-xl text-white font-mono placeholder:text-slate-700 outline-none focus:border-yellow-500 focus:ring-4 focus:ring-yellow-900/10 transition-all text-xs"
+                    />
+                    <p className="text-[9px] text-slate-455 mt-1 font-medium leading-relaxed">
+                      Sua chave fica salva apenas no seu navegador (localStorage) e é enviada diretamente ao Google.
+                    </p>
+                  </div>
+                )}
 
-              <div className="pt-2 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 py-3.5 bg-slate-955 border border-white/10 hover:bg-slate-855 text-slate-350 font-bold rounded-xl text-sm transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-3.5 bg-yellow-450 hover:bg-yellow-400 text-black font-black rounded-xl text-sm transition-all shadow-md font-outfit"
-                >
-                  Salvar Tema
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-450 mb-1 font-outfit">O que você quer que o tema seja?</label>
+                  <textarea
+                    placeholder="Ex: Viagem no tempo, memes da internet, programação em javascript, coisas engraçadas de escritório..."
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    rows={4}
+                    className="w-full bg-slate-955 border border-white/10 px-4 py-3 rounded-xl text-white font-bold placeholder:text-slate-700 outline-none focus:border-yellow-500 focus:ring-4 focus:ring-yellow-900/10 transition-all text-sm resize-none font-sans"
+                    disabled={isGenerating}
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="flex-1 py-3.5 bg-slate-955 border border-white/10 hover:bg-slate-855 text-slate-350 font-bold rounded-xl text-sm transition-all"
+                    disabled={isGenerating}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isGenerating}
+                    className="flex-1 py-3.5 bg-yellow-450 hover:bg-yellow-400 disabled:bg-slate-800 disabled:text-slate-600 text-black font-black rounded-xl text-sm transition-all shadow-md font-outfit flex items-center justify-center gap-1.5"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                        <span>Gerando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={16} />
+                        <span>Gerar Tema</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleCreateTheme} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-450 mb-1 font-outfit">Nome do Tema</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Colegas de Trabalho, Filosofia"
+                    value={themeName}
+                    onChange={(e) => setThemeName(e.target.value.slice(0, 24))}
+                    className="w-full bg-slate-955 border border-white/10 px-4 py-3 rounded-xl text-white font-bold placeholder:text-slate-700 outline-none focus:border-yellow-500 focus:ring-4 focus:ring-yellow-900/10 transition-all text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-450 mb-1 font-outfit">Descrição (Opcional)</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Debates internos e piadas do escritório..."
+                    value={themeDescription}
+                    onChange={(e) => setThemeDescription(e.target.value.slice(0, 60))}
+                    className="w-full bg-slate-955 border border-white/10 px-4 py-3 rounded-xl text-white font-bold placeholder:text-slate-700 outline-none focus:border-yellow-500 focus:ring-4 focus:ring-yellow-900/10 transition-all text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-450 mb-1 font-outfit">Perguntas/Desafios (Um por linha)</label>
+                  <textarea
+                    placeholder="Ex:&#10;O quão legal é essa piada?&#10;Quem do grupo come mais pizza?&#10;Nível de perigo de esquecer o aniversário da namorada"
+                    value={questionsText}
+                    onChange={(e) => setQuestionsText(e.target.value)}
+                    rows={5}
+                    className="w-full bg-slate-955 border border-white/10 px-4 py-3 rounded-xl text-white font-bold placeholder:text-slate-700 outline-none focus:border-yellow-500 focus:ring-4 focus:ring-yellow-900/10 transition-all text-sm resize-none font-sans"
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="flex-1 py-3.5 bg-slate-955 border border-white/10 hover:bg-slate-855 text-slate-350 font-bold rounded-xl text-sm transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3.5 bg-yellow-450 hover:bg-yellow-400 text-black font-black rounded-xl text-sm transition-all shadow-md font-outfit"
+                  >
+                    Salvar Tema
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
