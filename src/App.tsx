@@ -12,12 +12,15 @@ import RegisterScreenImpostor from './impostor/RegisterScreen';
 import ThemeSelectionImpostor from './impostor/ThemeSelection';
 import RegisterScreenWhoAmI from './whoami/RegisterScreen';
 import ThemeSelectionWhoAmI from './whoami/ThemeSelection';
+import RegisterScreenWhatDoYouKnow from './whatdoyouknow/RegisterScreen';
+import ThemeSelectionWhatDoYouKnow from './whatdoyouknow/ThemeSelection';
 import TranslatorScreen from './translator/TranslatorScreen';
 
 // Lazy load para as telas de jogos
 const GameScreenIto = React.lazy(() => import('./ito/GameScreen'));
 const GameScreenImpostor = React.lazy(() => import('./impostor/GameScreen'));
 const GameScreenWhoAmI = React.lazy(() => import('./whoami/GameScreen'));
+const GameScreenWhatDoYouKnow = React.lazy(() => import('./whatdoyouknow/GameScreen'));
 
 // --- LOBBY COMPONENTS ---
 import { ConnectionSelectionScreen } from './components/lobby/ConnectionSelectionScreen';
@@ -28,12 +31,12 @@ import { MultiplayerLobbyScreen } from './components/lobby/MultiplayerLobbyScree
 import { useMultiplayerSync } from './hooks/useMultiplayerSync';
 
 // --- TIPOS ---
-export type GameMode = 'classic' | 'impostor' | 'whoami';
+export type GameMode = 'classic' | 'impostor' | 'whoami' | 'whatdoyouknow';
 
 // Define todas as telas possíveis
-type Screen = 
-  | 'home' 
-  | 'mode-selection' 
+type Screen =
+  | 'home'
+  | 'mode-selection'
   | 'connection-selection'
   | 'lobby-setup'
   | 'multiplayer-lobby'
@@ -46,6 +49,9 @@ type Screen =
   | 'register-whoami'
   | 'theme-whoami'
   | 'game-whoami'
+  | 'register-whatdoyouknow'
+  | 'theme-whatdoyouknow'
+  | 'game-whatdoyouknow'
   | 'translator-chain';
 
 type State = {
@@ -63,6 +69,7 @@ type Action =
   | { type: 'SELECT_MODE_CLASSIC' }
   | { type: 'SELECT_MODE_IMPOSTOR' }
   | { type: 'SELECT_MODE_WHOAMI' }
+  | { type: 'SELECT_MODE_WHATDOYOUKNOW' }
   | { type: 'PLAYERS_CONFIRMED'; players: string[] }
   | { type: 'THEMES_CONFIRMED'; themes: any[]; saboteurMode?: boolean }
   | { type: 'RESET' };
@@ -99,23 +106,30 @@ function reducer(state: State, action: Action): State {
       return { ...state, screen: action.screen };
 
     case 'SELECT_MODE_CLASSIC':
-      return { 
-        ...state, 
-        gameMode: 'classic', 
-        screen: 'connection-selection' 
+      return {
+        ...state,
+        gameMode: 'classic',
+        screen: 'connection-selection'
       };
 
     case 'SELECT_MODE_IMPOSTOR':
-      return { 
-        ...state, 
-        gameMode: 'impostor', 
+      return {
+        ...state,
+        gameMode: 'impostor',
         screen: 'connection-selection'
       };
 
     case 'SELECT_MODE_WHOAMI':
-      return { 
-        ...state, 
-        gameMode: 'whoami', 
+      return {
+        ...state,
+        gameMode: 'whoami',
+        screen: 'connection-selection'
+      };
+
+    case 'SELECT_MODE_WHATDOYOUKNOW':
+      return {
+        ...state,
+        gameMode: 'whatdoyouknow',
         screen: 'connection-selection'
       };
 
@@ -126,6 +140,9 @@ function reducer(state: State, action: Action): State {
       if (state.gameMode === 'whoami') {
         return { ...state, players: action.players, screen: 'theme-whoami' };
       }
+      if (state.gameMode === 'whatdoyouknow') {
+        return { ...state, players: action.players, screen: 'theme-whatdoyouknow' };
+      }
       return { ...state, players: action.players, screen: 'theme-classic' };
 
     case 'THEMES_CONFIRMED':
@@ -135,10 +152,13 @@ function reducer(state: State, action: Action): State {
       if (state.gameMode === 'whoami') {
         return { ...state, themes: action.themes, screen: 'game-whoami' };
       }
+      if (state.gameMode === 'whatdoyouknow') {
+        return { ...state, themes: action.themes, screen: 'game-whatdoyouknow' };
+      }
       return { ...state, themes: action.themes, saboteurMode: action.saboteurMode, screen: 'game-classic' };
 
     case 'RESET':
-      try { localStorage.removeItem(STORAGE_KEY); } catch {}
+      try { localStorage.removeItem(STORAGE_KEY); } catch { }
       return initialState;
 
     default:
@@ -155,12 +175,12 @@ export default function App() {
       const params = new URLSearchParams(window.location.search);
       const roomParam = params.get('room');
       const modeParam = params.get('mode');
-      
+
       if (roomParam && roomParam.length === 4) {
-        const mode = (modeParam === 'impostor' || modeParam === 'whoami' || modeParam === 'classic') 
-          ? modeParam as GameMode 
+        const mode = (modeParam === 'impostor' || modeParam === 'whoami' || modeParam === 'classic' || modeParam === 'whatdoyouknow')
+          ? modeParam as GameMode
           : 'classic';
-          
+
         return {
           screen: 'lobby-setup' as const,
           gameMode: mode,
@@ -187,7 +207,7 @@ export default function App() {
           themes,
           saboteurMode: parsed.saboteurMode || false,
         };
-      } catch {}
+      } catch { }
     }
     return initialState;
   });
@@ -230,7 +250,7 @@ export default function App() {
     switch (state.screen) {
       case 'home':
         return <HomeScreen onPlay={() => dispatch({ type: 'GO_MODE_SELECTION' })} />;
-      
+
       case 'mode-selection':
         return (
           <ModeSelectionScreen
@@ -238,6 +258,7 @@ export default function App() {
             onSelectClassic={() => dispatch({ type: 'SELECT_MODE_CLASSIC' })}
             onSelectImpostor={() => dispatch({ type: 'SELECT_MODE_IMPOSTOR' })}
             onSelectWhoAmI={() => dispatch({ type: 'SELECT_MODE_WHOAMI' })}
+            onSelectWhatDoYouKnow={() => dispatch({ type: 'SELECT_MODE_WHATDOYOUKNOW' })}
             onSelectTranslator={() => dispatch({ type: 'SET_SCREEN', screen: 'translator-chain' })}
           />
         );
@@ -252,6 +273,8 @@ export default function App() {
                 dispatch({ type: 'SET_SCREEN', screen: 'register-impostor' });
               } else if (state.gameMode === 'whoami') {
                 dispatch({ type: 'SET_SCREEN', screen: 'register-whoami' });
+              } else if (state.gameMode === 'whatdoyouknow') {
+                dispatch({ type: 'SET_SCREEN', screen: 'register-whatdoyouknow' });
               } else {
                 dispatch({ type: 'SET_SCREEN', screen: 'register-classic' });
               }
@@ -291,6 +314,8 @@ export default function App() {
                 dispatch({ type: 'SET_SCREEN', screen: 'theme-impostor' });
               } else if (state.gameMode === 'classic') {
                 dispatch({ type: 'SET_SCREEN', screen: 'theme-classic' });
+              } else if (state.gameMode === 'whatdoyouknow') {
+                dispatch({ type: 'SET_SCREEN', screen: 'theme-whatdoyouknow' });
               } else {
                 dispatch({ type: 'SET_SCREEN', screen: 'theme-whoami' });
               }
@@ -525,6 +550,78 @@ export default function App() {
           </Suspense>
         );
 
+      // --- FLUXO O QUE VOCÊ SABE ---
+      case 'register-whatdoyouknow':
+        return (
+          <RegisterScreenWhatDoYouKnow
+            onBack={() => dispatch({ type: 'SET_SCREEN', screen: 'connection-selection' })}
+            onNext={(players) => dispatch({ type: 'PLAYERS_CONFIRMED', players })}
+          />
+        );
+      case 'theme-whatdoyouknow':
+        if (connectionType === 'multiplayer' && !isHost) {
+          return (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-955 text-center text-slate-100 font-sans relative overflow-hidden h-full">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-rose-600/10 rounded-full blur-[120px] pointer-events-none" />
+              <div className="mb-6 relative">
+                <div className="absolute inset-0 bg-rose-500/10 blur-xl rounded-full" />
+                <div className="bg-slate-900 border border-white/5 p-6 rounded-full shadow-2xl relative z-10 animate-spin" style={{ animationDuration: '3s' }}>
+                  <RefreshCw size={48} className="text-rose-400" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-black text-white mb-2 font-outfit">Sincronizando Temas...</h2>
+              <p className="text-slate-400 max-w-xs text-sm font-medium leading-relaxed animate-pulse">
+                O líder da sala está escolhendo os temas do jogo. Prepare-se!
+              </p>
+            </div>
+          );
+        }
+        return (
+          <ThemeSelectionWhatDoYouKnow
+            onBack={() => {
+              if (connectionType === 'multiplayer') {
+                handleDisconnect();
+                dispatch({ type: 'GO_MODE_SELECTION' });
+              } else {
+                dispatch({ type: 'SET_SCREEN', screen: 'register-whatdoyouknow' });
+              }
+            }}
+            onStart={(themes) => {
+              if (connectionType === 'multiplayer') {
+                syncService.syncState({
+                  screen: 'game-whatdoyouknow',
+                  themes: themes.map(t => ({ id: t.id, name: t.name })),
+                  phase: 'setup',
+                  roundKey: Date.now()
+                });
+                dispatch({ type: 'THEMES_CONFIRMED', themes });
+              } else {
+                dispatch({ type: 'THEMES_CONFIRMED', themes });
+              }
+            }}
+          />
+        );
+      case 'game-whatdoyouknow':
+        return (
+          <Suspense fallback={<LoadingFallback mode="whatdoyouknow" />}>
+            <GameScreenWhatDoYouKnow
+              onBack={() => {
+                handleDisconnect();
+                dispatch({ type: 'GO_HOME' });
+              }}
+              players={connectionType === 'multiplayer' ? connectedPlayers.map(p => p.name) : state.players}
+              themes={connectionType === 'multiplayer' ? (syncGameState?.themes || []) : state.themes}
+              isMultiplayer={connectionType === 'multiplayer'}
+              isHost={isHost}
+              syncGameState={syncGameState}
+              playerId={playerId}
+              connectedPlayers={connectedPlayers}
+              isMuted={isMuted}
+              toggleMute={toggleMute}
+            />
+          </Suspense>
+        );
+
       case 'translator-chain':
         return (
           <TranslatorScreen
@@ -562,6 +659,7 @@ const LoadingFallback = ({ mode }: { mode: GameMode }) => {
   const getColors = () => {
     if (mode === 'impostor') return 'text-purple-400 bg-purple-500/10';
     if (mode === 'classic') return 'text-yellow-400 bg-yellow-500/10';
+    if (mode === 'whatdoyouknow') return 'text-rose-400 bg-rose-500/10';
     return 'text-emerald-400 bg-emerald-500/10';
   };
   return (
@@ -596,9 +694,9 @@ const HomeScreen = ({ onPlay }: { onPlay: () => void }) => {
             Party Games Experience
           </p>
         </div>
-        
+
         <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-100 to-slate-400 drop-shadow-2xl select-none text-center leading-none font-outfit">
-          PARTY<br/><span className="text-yellow-400">GAMES</span>
+          PARTY<br /><span className="text-yellow-400">GAMES</span>
         </h1>
         <p className="text-slate-400 mt-4 text-center max-w-xs font-medium text-sm">
           A melhor experiência de jogos de tabuleiro em grupo na tela do seu celular!
@@ -623,12 +721,14 @@ const ModeSelectionScreen = ({
   onSelectClassic,
   onSelectImpostor,
   onSelectWhoAmI,
+  onSelectWhatDoYouKnow,
   onSelectTranslator,
 }: {
   onBack: () => void;
   onSelectClassic: () => void;
   onSelectImpostor: () => void;
   onSelectWhoAmI: () => void;
+  onSelectWhatDoYouKnow: () => void;
   onSelectTranslator: () => void;
 }) => {
   return (
@@ -648,19 +748,19 @@ const ModeSelectionScreen = ({
           onClick={onSelectClassic}
           className="group relative w-full bg-slate-900/40 p-8 rounded-3xl shadow-xl border-2 border-yellow-500/20 hover:border-yellow-400/80 hover:bg-yellow-500/[0.02] transition-all duration-300 transform hover:scale-[1.02] active:scale-95 text-left overflow-hidden animate-fade-in"
         >
-           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Zap size={120} className="text-yellow-400 fill-yellow-400" />
-           </div>
-           <div className="relative z-10 flex flex-col gap-2">
-             <div className="w-12 h-12 bg-yellow-400/10 border border-yellow-400/20 rounded-2xl flex items-center justify-center text-yellow-400 mb-2">
-                <Zap size={24} />
-             </div>
-             <div className="flex items-center justify-between">
-               <h3 className="text-2xl font-black text-white font-outfit">ITO Clássico</h3>
-               <span className="bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 font-bold px-2.5 py-0.5 rounded-full text-xs font-outfit">Coop</span>
-             </div>
-             <p className="text-slate-400 font-medium text-sm leading-relaxed">Cooperação total. Ordene os números da sua equipe de forma crescente sem falar o valor direto!</p>
-           </div>
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Zap size={120} className="text-yellow-400 fill-yellow-400" />
+          </div>
+          <div className="relative z-10 flex flex-col gap-2">
+            <div className="w-12 h-12 bg-yellow-400/10 border border-yellow-400/20 rounded-2xl flex items-center justify-center text-yellow-400 mb-2">
+              <Zap size={24} />
+            </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-black text-white font-outfit">ITO Clássico</h3>
+              <span className="bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 font-bold px-2.5 py-0.5 rounded-full text-xs font-outfit">Coop</span>
+            </div>
+            <p className="text-slate-400 font-medium text-sm leading-relaxed">Cooperação total. Ordene os números da sua equipe de forma crescente sem falar o valor direto!</p>
+          </div>
         </button>
 
         {/* Impostor */}
@@ -669,22 +769,22 @@ const ModeSelectionScreen = ({
           className="group relative w-full bg-slate-900/40 p-8 rounded-3xl shadow-xl border-2 border-purple-500/20 hover:border-purple-400/80 hover:bg-purple-500/[0.02] transition-all duration-300 transform hover:scale-[1.02] active:scale-95 text-left overflow-hidden animate-fade-in"
           style={{ animationDelay: '0.1s' }}
         >
-           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Ghost size={120} className="text-purple-400 fill-purple-400" />
-           </div>
-           <div className="relative z-10 flex flex-col gap-2">
-             <div className="w-12 h-12 bg-purple-400/10 border border-purple-400/20 rounded-2xl flex items-center justify-center text-purple-400 mb-2">
-                <Ghost size={24} />
-             </div>
-             <div className="flex items-center justify-between">
-               <h3 className="text-2xl font-black text-white font-outfit">IMPOSTOR</h3>
-               <span className="bg-purple-400/10 border border-purple-400/30 text-purple-300 font-bold px-2.5 py-0.5 rounded-full text-xs font-outfit">Bluff</span>
-             </div>
-             <p className="text-slate-400 font-medium text-sm leading-relaxed">Um traidor entre nós. Todos recebem a mesma pergunta, exceto o Impostor. Quem será que está blefando?</p>
-             <div className="inline-block w-fit bg-purple-950/40 border border-purple-500/20 px-3 py-1 rounded-xl text-[11px] text-purple-200 mt-2 font-bold font-outfit">
-               Mínimo 3 Jogadores
-             </div>
-           </div>
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Ghost size={120} className="text-purple-400 fill-purple-400" />
+          </div>
+          <div className="relative z-10 flex flex-col gap-2">
+            <div className="w-12 h-12 bg-purple-400/10 border border-purple-400/20 rounded-2xl flex items-center justify-center text-purple-400 mb-2">
+              <Ghost size={24} />
+            </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-black text-white font-outfit">IMPOSTOR</h3>
+              <span className="bg-purple-400/10 border border-purple-400/30 text-purple-300 font-bold px-2.5 py-0.5 rounded-full text-xs font-outfit">Bluff</span>
+            </div>
+            <p className="text-slate-400 font-medium text-sm leading-relaxed">Um traidor entre nós. Todos recebem a mesma pergunta, exceto o Impostor. Quem será que está blefando?</p>
+            <div className="inline-block w-fit bg-purple-950/40 border border-purple-500/20 px-3 py-1 rounded-xl text-[11px] text-purple-200 mt-2 font-bold font-outfit">
+              Mínimo 3 Jogadores
+            </div>
+          </div>
         </button>
 
         {/* Quem Sou Eu */}
@@ -693,22 +793,47 @@ const ModeSelectionScreen = ({
           className="group relative w-full bg-slate-900/40 p-8 rounded-3xl shadow-xl border-2 border-emerald-500/20 hover:border-emerald-400/80 hover:bg-emerald-500/[0.02] transition-all duration-300 transform hover:scale-[1.02] active:scale-95 text-left overflow-hidden animate-fade-in"
           style={{ animationDelay: '0.2s' }}
         >
-           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <UserSearch size={120} className="text-emerald-400 fill-emerald-400" />
-           </div>
-           <div className="relative z-10 flex flex-col gap-2">
-             <div className="w-12 h-12 bg-emerald-400/10 border border-emerald-400/20 rounded-2xl flex items-center justify-center text-emerald-400 mb-2">
-                <UserSearch size={24} />
-             </div>
-             <div className="flex items-center justify-between">
-               <h3 className="text-2xl font-black text-white font-outfit">QUEM SOU EU?</h3>
-               <span className="bg-emerald-400/10 border border-emerald-400/30 text-emerald-300 font-bold px-2.5 py-0.5 rounded-full text-xs font-outfit">Casual</span>
-             </div>
-             <p className="text-slate-400 font-medium text-sm leading-relaxed">Coloque o celular na testa! Você é o único jogador do grupo que não sabe quem é seu próprio personagem.</p>
-             <div className="inline-block w-fit bg-emerald-950/40 border border-emerald-500/20 px-3 py-1 rounded-xl text-[11px] text-emerald-200 mt-2 font-bold font-outfit">
-               Mínimo 2 Jogadores
-             </div>
-           </div>
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <UserSearch size={120} className="text-emerald-400 fill-emerald-400" />
+          </div>
+          <div className="relative z-10 flex flex-col gap-2">
+            <div className="w-12 h-12 bg-emerald-400/10 border border-emerald-400/20 rounded-2xl flex items-center justify-center text-emerald-400 mb-2">
+              <UserSearch size={24} />
+            </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-black text-white font-outfit">QUEM SOU EU?</h3>
+              <span className="bg-emerald-400/10 border border-emerald-400/30 text-emerald-300 font-bold px-2.5 py-0.5 rounded-full text-xs font-outfit">Casual</span>
+
+            </div>
+            <p className="text-slate-400 font-medium text-sm leading-relaxed">Coloque o celular na testa! Você é o único jogador do grupo que não sabe quem é seu próprio personagem.</p>
+            <div className="inline-block w-fit bg-emerald-950/40 border border-emerald-500/20 px-3 py-1 rounded-xl text-[11px] text-emerald-200 mt-2 font-bold font-outfit">
+              Mínimo 2 Jogadores
+            </div>
+          </div>
+        </button>
+
+        {/* O Que Você Sabe? */}
+        <button
+          onClick={onSelectWhatDoYouKnow}
+          className="group relative w-full bg-slate-900/40 p-8 rounded-3xl shadow-xl border-2 border-rose-500/20 hover:border-rose-400/80 hover:bg-rose-500/[0.02] transition-all duration-300 transform hover:scale-[1.02] active:scale-95 text-left overflow-hidden animate-fade-in"
+          style={{ animationDelay: '0.25s' }}
+        >
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <UserSearch size={120} className="text-rose-400 fill-rose-400" />
+          </div>
+          <div className="relative z-10 flex flex-col gap-2">
+            <div className="w-12 h-12 bg-rose-400/10 border border-rose-400/20 rounded-2xl flex items-center justify-center text-rose-400 mb-2">
+              <UserSearch size={24} />
+            </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-black text-white font-outfit">O QUE VOCÊ SABE?</h3>
+              <span className="bg-rose-400/10 border border-rose-400/30 text-rose-300 font-bold px-2.5 py-0.5 rounded-full text-xs font-outfit">Party</span>
+            </div>
+            <p className="text-slate-400 font-medium text-sm leading-relaxed">Mostre que você conhece seus amigos! Alguém responde uma pergunta e os outros tentam adivinhar qual foi a resposta.</p>
+            <div className="inline-block w-fit bg-rose-950/40 border border-rose-500/20 px-3 py-1 rounded-xl text-[11px] text-rose-200 mt-2 font-bold font-outfit">
+              Mínimo 3 Jogadores
+            </div>
+          </div>
         </button>
 
         {/* Tradutor em Cadeia */}
@@ -717,19 +842,19 @@ const ModeSelectionScreen = ({
           className="group relative w-full bg-slate-900/40 p-8 rounded-3xl shadow-xl border-2 border-indigo-500/20 hover:border-indigo-400/80 hover:bg-indigo-500/[0.02] transition-all duration-300 transform hover:scale-[1.02] active:scale-95 text-left overflow-hidden animate-fade-in"
           style={{ animationDelay: '0.3s' }}
         >
-           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <RefreshCw size={120} className="text-indigo-400 fill-indigo-400/10" />
-           </div>
-           <div className="relative z-10 flex flex-col gap-2">
-             <div className="w-12 h-12 bg-indigo-400/10 border border-indigo-400/20 rounded-2xl flex items-center justify-center text-indigo-400 mb-2">
-                <RefreshCw size={24} />
-             </div>
-             <div className="flex items-center justify-between">
-               <h3 className="text-2xl font-black text-white font-outfit">Lab de Tradução</h3>
-               <span className="bg-indigo-400/10 border border-indigo-400/30 text-indigo-300 font-bold px-2.5 py-0.5 rounded-full text-xs font-outfit">Lab</span>
-             </div>
-             <p className="text-slate-400 font-medium text-sm leading-relaxed">Experimento de telefone sem fio linguístico. Traduza um texto em inglês por vários idiomas e veja o resultado final em português!</p>
-           </div>
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <RefreshCw size={120} className="text-indigo-400 fill-indigo-400/10" />
+          </div>
+          <div className="relative z-10 flex flex-col gap-2">
+            <div className="w-12 h-12 bg-indigo-400/10 border border-indigo-400/20 rounded-2xl flex items-center justify-center text-indigo-400 mb-2">
+              <RefreshCw size={24} />
+            </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-black text-white font-outfit">Lab de Tradução</h3>
+              <span className="bg-indigo-400/10 border border-indigo-400/30 text-indigo-300 font-bold px-2.5 py-0.5 rounded-full text-xs font-outfit">Lab</span>
+            </div>
+            <p className="text-slate-400 font-medium text-sm leading-relaxed">Experimento de telefone sem fio linguístico. Traduza um texto em inglês por vários idiomas e veja o resultado final em português!</p>
+          </div>
         </button>
       </div>
     </div>
