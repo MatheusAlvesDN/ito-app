@@ -26,16 +26,28 @@ O clássico jogo da "carta na testa" adaptado digitalmente.
 - **O Desafio:** O jogador da vez faz perguntas de Sim/Não ou recebe dicas subjetivas do grupo para tentar descobrir sua própria identidade secreta.
 - **Diferencial Técnico:** Telas de aviso anti-olhada ("Atenção: Não olhe para a tela!"), cards de personagem flutuantes com gradientes imersivos e controle tátil de acertos/pontuação fluida.
 
+### 4. 💬 O QUE VOCÊ SABE? (Perguntas e Convivência)
+Um jogo para quebrar o gelo, testar afinidades e descobrir curiosidades sobre os amigos.
+- **Como funciona:** Perguntas provocativas ou engraçadas são apresentadas para o grupo ou para um jogador da vez (ex: *"Qual é o meu maior medo irracional?"*, *"O que eu faria primeiro se ganhasse na loteria?"*).
+- **O Desafio:** Os amigos debatem e tentam adivinhar a resposta real ou comparar percepções sobre a personalidade de cada um.
+- **Diferencial Técnico:** Suporte a geração ilimitada de temas via IA (Google Gemini), temas visuais dedicados em tons Rose/Pink e interface responsiva de cards de conversa.
+
+### 5. 📞 TELEFONE SEM FIO / TRADUTOR (Cadeia de Idiomas)
+O clássico telefone sem fio, mas potencializado pela inteligência artificial e tradução em cadeia.
+- **Como funciona:** Uma frase inicial (poesia, ditado popular ou citação) passa por uma sequência automática de traduções entre diversos idiomas ao redor do mundo (ex: Português → Alemão → Japonês → Árabe → Português).
+- **O Desafio:** Ver como o significado original é completamente distorcido e transformado em algo hilário ao retornar para o idioma de origem.
+- **Diferencial Técnico:** Geração inteligente de frases com IA, visualização animada de bandeiras e idiomas intermediários, além de presets de rotas globais.
+
 ---
 
 ## 🎨 Design System e Estética Premium
 
 O aplicativo foi completamente reformulado para proporcionar uma experiência **Premium e Moderna**:
-- **Harmonia Visual:** Interface de alto contraste projetada em Slate-950 (fundo escuro profundo) com destaques e neon adaptativos para cada modo de jogo (Amarelo/Ouro para Clássico, Roxo/Violeta para Impostor e Esmeralda/Teal para Quem Sou Eu).
+- **Harmonia Visual:** Interface de alto contraste projetada em Slate-950 (fundo escuro profundo) com destaques e neon adaptativos para cada modo de jogo (Amarelo/Ouro para Clássico, Roxo/Violeta para Impostor, Esmeralda/Teal para Quem Sou Eu, Rose/Pink para O Que Você Sabe? e Azul/Blue para Telefone Sem Fio).
 - **Tipografia Moderna:** Integração refinada do Google Fonts, utilizando as famílias **Outfit** (títulos marcantes e arrojados) e **Plus Jakarta Sans** (texto de leitura e botões com excelente ergonomia visual).
 - **Efeito Glassmorphism:** Cabeçalhos, alertas e menus flutuantes implementados com desfoque de fundo inteligente (`backdrop-blur-md`) e bordas translúcidas finas, dando profundidade tridimensional.
 - **Layout Responsivo Flex (`shrink-0`):** Nova arquitetura que bloqueia rolagens concorrentes indesejadas (`100dvh` / `overflow-hidden` global) e posiciona os botões principais de rodapé em layout flexível nativo. Isso assegura que **nenhum botão ou elemento seja cortado em smartphones menores** e as listas internas rolem de forma independente e leve.
-- **Animações Fluidas:** Efeitos de flip de cartas 3D simuladas por CSS e movimentos suaves de entrada (`animate-fade-in` e `animate-float`) para feedbacks táteis naturais.
+- **Animações Fluidas & Áudio Sintético:** Efeitos de flip de cartas 3D simuladas por CSS, sons de vitória, suspense e clique via Web Audio API (`audioService.ts`), além de movimentos suaves de entrada (`animate-fade-in` e `animate-float`) para feedbacks táteis naturais.
 
 ---
 
@@ -45,9 +57,11 @@ O projeto foi construído usando tecnologias modernas focadas em performance e p
 1. **Core:** React 19 + TypeScript (tipagem estrita de estados de jogos e telas).
 2. **Estilização:** Tailwind CSS v3 (layouts flexbox e grid avançados, efeitos de transição) + Vanilla CSS utilitário para animações e perspective 3D.
 3. **Drag & Drop:** `@dnd-kit/core` e `@dnd-kit/sortable` para movimentação de jogadores com suporte a toque tátil e amortecimento de arrasto.
-4. **Ícones:** `lucide-react` (ícones vetoriais modernos e dinâmicos).
-5. **Vite:** Rolldown-Vite para build instantâneo e bundling de alta eficiência para web e mobile.
-6. **Mobile Wrapper (Capacitor v8):** Conversão nativa simples para Android e iOS, aproveitando o código web diretamente com webview nativa otimizada de alta velocidade.
+4. **Haptics & Wake Lock Nativos:** Vibração tátil responsiva (`hapticsService.ts` utilizando Web Vibration API / Capacitor) e prevenção anti-bloqueio de tela (`wakeLockService.ts` utilizando Screen Wake Lock API).
+5. **Multiplayer & QR Code:** Sincronização WebRTC em tempo real (PeerJS) com sala de espera interativa, convite por link direto e modal de leitura por QR Code.
+6. **Vite:** Rolldown-Vite para build instantâneo e bundling de alta eficiência para web e mobile.
+7. **Mobile Wrapper (Capacitor v8):** Conversão nativa simples para Android e iOS, aproveitando o código web diretamente com webview nativa otimizada de alta velocidade.
+
 
 ---
 

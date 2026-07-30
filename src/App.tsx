@@ -31,7 +31,7 @@ import { MultiplayerLobbyScreen } from './components/lobby/MultiplayerLobbyScree
 import { useMultiplayerSync } from './hooks/useMultiplayerSync';
 
 // --- TIPOS ---
-export type GameMode = 'classic' | 'impostor' | 'whoami' | 'whatdoyouknow';
+export type GameMode = 'classic' | 'impostor' | 'whoami' | 'whatdoyouknow' | 'translator';
 
 // Define todas as telas possíveis
 type Screen =
@@ -660,6 +660,7 @@ const LoadingFallback = ({ mode }: { mode: GameMode }) => {
     if (mode === 'impostor') return 'text-purple-400 bg-purple-500/10';
     if (mode === 'classic') return 'text-yellow-400 bg-yellow-500/10';
     if (mode === 'whatdoyouknow') return 'text-rose-400 bg-rose-500/10';
+    if (mode === 'translator') return 'text-blue-400 bg-blue-500/10';
     return 'text-emerald-400 bg-emerald-500/10';
   };
   return (

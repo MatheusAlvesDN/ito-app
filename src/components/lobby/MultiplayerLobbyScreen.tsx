@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, Copy, Users, Crown, ArrowRight, Share2 } from 'lucide-react';
+import { ChevronLeft, Copy, Users, Crown, ArrowRight, Share2, QrCode, X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { GameMode } from '../../App';
 
@@ -19,6 +19,7 @@ export const MultiplayerLobbyScreen = ({
   gameMode: GameMode;
 }) => {
   const [copied, setCopied] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(roomCode);
@@ -44,12 +45,24 @@ export const MultiplayerLobbyScreen = ({
   const getThemeColorClass = () => {
     if (gameMode === 'impostor') return 'text-purple-400 bg-purple-500/10 border-purple-500/20';
     if (gameMode === 'classic') return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
+    if (gameMode === 'whatdoyouknow') return 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+    if (gameMode === 'translator') return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
     return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+  };
+
+  const getModeLabel = () => {
+    if (gameMode === 'impostor') return 'Impostor';
+    if (gameMode === 'classic') return 'ITO Clássico';
+    if (gameMode === 'whatdoyouknow') return 'O Que Você Sabe?';
+    if (gameMode === 'translator') return 'Telefone Sem Fio';
+    return 'Quem Sou Eu?';
   };
 
   const getStartButtonClass = () => {
     if (gameMode === 'impostor') return 'bg-purple-600 hover:bg-purple-550';
     if (gameMode === 'classic') return 'bg-yellow-400 hover:bg-yellow-350 text-black';
+    if (gameMode === 'whatdoyouknow') return 'bg-rose-500 hover:bg-rose-450';
+    if (gameMode === 'translator') return 'bg-blue-500 hover:bg-blue-450';
     return 'bg-emerald-500 hover:bg-emerald-450';
   };
 
@@ -67,7 +80,7 @@ export const MultiplayerLobbyScreen = ({
         </button>
         <span className="font-black text-xl text-white font-outfit">Lobby Multiplayer</span>
         <div className={`text-xs font-black px-3 py-1.5 rounded-full font-outfit uppercase tracking-wider ${getThemeColorClass()}`}>
-          {gameMode === 'impostor' ? 'Impostor' : gameMode === 'classic' ? 'ITO Clássico' : 'Quem Sou Eu'}
+          {getModeLabel()}
         </div>
       </div>
 
@@ -90,13 +103,21 @@ export const MultiplayerLobbyScreen = ({
               )}
             </button>
           </div>
-          <p className="text-[11px] text-slate-450 mt-2 font-medium">Compartilhe esse código com os seus amigos na mesma rede local.</p>
-          <button
-            onClick={shareRoomLink}
-            className="mt-3.5 w-full py-3 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-white/5 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition-all font-outfit uppercase tracking-wider"
-          >
-            <Share2 size={14} /> Convidar Amigos (Link)
-          </button>
+          <p className="text-[11px] text-slate-450 mt-2 font-medium">Compartilhe esse código ou o QR Code com seus amigos.</p>
+          <div className="grid grid-cols-2 gap-2 mt-3.5">
+            <button
+              onClick={shareRoomLink}
+              className="py-3 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-white/5 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition-all font-outfit uppercase tracking-wider"
+            >
+              <Share2 size={14} /> Link
+            </button>
+            <button
+              onClick={() => setShowQrModal(true)}
+              className="py-3 bg-slate-800 hover:bg-slate-750 text-yellow-400 border border-yellow-500/20 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition-all font-outfit uppercase tracking-wider"
+            >
+              <QrCode size={14} /> QR Code
+            </button>
+          </div>
         </div>
 
         {/* Jogadores Conectados */}
@@ -160,6 +181,42 @@ export const MultiplayerLobbyScreen = ({
           )}
         </div>
       </div>
+
+      {/* Modal QR Code */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-slate-900 border border-white/10 rounded-3xl p-6 max-w-sm w-full text-center relative shadow-2xl">
+            <button
+              onClick={() => setShowQrModal(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full bg-slate-800 transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <p className="text-xs font-black uppercase text-yellow-400 tracking-widest font-outfit mb-1">Entrar na Sala</p>
+            <h3 className="text-xl font-bold text-white mb-4">Aponte a câmera para entrar</h3>
+            <div className="bg-white p-4 rounded-2xl inline-block shadow-lg mx-auto mb-4">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                  `${window.location.origin}${window.location.pathname}?room=${roomCode}&mode=${gameMode}`
+                )}`}
+                alt="QR Code da Sala"
+                className="w-48 h-48 mx-auto"
+              />
+            </div>
+            <p className="text-xs text-slate-400 mb-4">Ou digite o código <span className="text-yellow-400 font-black">{roomCode}</span> no aplicativo.</p>
+            <button
+              onClick={() => {
+                shareRoomLink();
+                setShowQrModal(false);
+              }}
+              className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl uppercase font-outfit"
+            >
+              Copiar Link Direto
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

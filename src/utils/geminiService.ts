@@ -89,3 +89,34 @@ Retorne OBRIGATORIAMENTE um objeto JSON com o formato exato:
 Gere entre 8 e 12 cenários que sejam sutilmente parecidos, mas diferentes o suficiente para gerar suspeita durante a rodada.`;
   return callGeminiAPI(prompt, apiKey);
 }
+
+export async function generateWhatDoYouKnowTheme(promptInput: string, apiKey: string) {
+  const prompt = `Você é um gerador de temas para o jogo party game "O Que Você Sabe?" (What Do You Know).
+Neste jogo, um jogador da vez responde a perguntas instigantes ou engraçadas sobre si mesmo ou sobre a amizade/convivência do grupo.
+Gere um tema baseado no seguinte conceito fornecido pelo usuário: "${promptInput}".
+Retorne OBRIGATORIAMENTE um objeto JSON com o formato exato:
+{
+  "name": "Nome curto do tema (máx 24 caracteres)",
+  "description": "Breve descrição (máx 60 caracteres)",
+  "questions": [
+    "Lista de 10 a 15 perguntas pessoais, engraçadas ou hipotéticas que gerem boas conversas entre amigos (ex: 'O que eu faria se...', 'Qual o meu maior...', 'Quem daqui...')"
+  ]
+}`;
+  return callGeminiAPI(prompt, apiKey);
+}
+
+export async function generateTranslatorTheme(promptInput: string, apiKey: string) {
+  const prompt = `Você é um gerador de frases e desafios para o jogo "Telefone Sem Fio / Tradutor" (Translator Chain).
+Neste jogo, uma frase inicial passa por uma cadeia de traduções em vários idiomas e volta distorcida e engraçada.
+Gere um conjunto de frases baseado no seguinte conceito fornecido pelo usuário: "${promptInput}".
+Retorne OBRIGATORIAMENTE um objeto JSON com o formato exato:
+{
+  "name": "Nome curto da coleção de frases (máx 24 caracteres)",
+  "description": "Breve descrição (máx 60 caracteres)",
+  "phrases": [
+    "Lista de 8 a 12 frases criativas, ditados populares, citações ou expressões com duplos sentidos que fiquem muito engraçadas ao serem traduzidas várias vezes."
+  ]
+}`;
+  return callGeminiAPI(prompt, apiKey);
+}
+

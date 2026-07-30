@@ -167,6 +167,58 @@ class AudioService {
     osc.start();
     osc.stop(ctx.currentTime + 0.03);
   }
+
+  /**
+   * Som de suspense / revelação misteriosa (ex: revelar papel no Impostor)
+   */
+  public playSuspense() {
+    if (this.muted) return;
+    const ctx = this.initContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(110, ctx.currentTime); // A2
+    osc.frequency.linearRampToValueAtTime(82.41, ctx.currentTime + 0.6); // E2
+
+    gain.gain.setValueAtTime(0.01, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.7);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.7);
+  }
+
+  /**
+   * Som rápido de clique / pop (interação de UI suave)
+   */
+  public playPop() {
+    if (this.muted) return;
+    const ctx = this.initContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(500, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.05);
+
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.05);
+  }
 }
 
 export const audioService = new AudioService();
+
