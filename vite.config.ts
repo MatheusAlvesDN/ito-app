@@ -11,5 +11,6 @@ export default defineConfig({
     emptyOutDir: true, // Garante que a pasta antiga seja apagada antes de criar a nova
     // IMPORTANTE: Garante compatibilidade com WebViews de Androids um pouco mais antigos
     target: 'es2015',
+    chunkSizeWarningLimit: 1000,
   },
 })
