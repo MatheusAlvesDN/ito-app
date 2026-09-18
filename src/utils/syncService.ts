@@ -123,7 +123,7 @@ class SyncService {
       this.connectedPlayers = [{ id, name: hostName }];
 
       if (this.callbacks.onRoomCreated) {
-        this.callbacks.onRoomCreated(roomCode, id, this.connectedPlayers);
+        this.callbacks.onRoomCreated(roomCode, id, [...this.connectedPlayers]);
       }
     });
 
@@ -140,32 +140,37 @@ class SyncService {
           
           if (msg.type === 'JOIN') {
             const newPlayer: ConnectedPlayer = { id: conn.peer, name: msg.playerName };
+            this.connections.set(conn.peer, conn);
             
-            // Adiciona o jogador se já não estiver na lista
-            if (!this.connectedPlayers.some(p => p.id === conn.peer)) {
-              this.connectedPlayers.push(newPlayer);
-              this.connections.set(conn.peer, conn);
+            // Adiciona o jogador se já não estiver na lista ou atualiza o nome
+            const existingIndex = this.connectedPlayers.findIndex(p => p.id === conn.peer);
+            if (existingIndex >= 0) {
+              const updated = [...this.connectedPlayers];
+              updated[existingIndex] = newPlayer;
+              this.connectedPlayers = updated;
+            } else {
+              this.connectedPlayers = [...this.connectedPlayers, newPlayer];
             }
 
-            console.log(`Jogador P2P ${msg.playerName} entrou na sala.`);
+            console.log(`Jogador P2P ${msg.playerName} entrou na sala. Total: ${this.connectedPlayers.length}`);
 
-            // Notifica o Host localmente
+            // Notifica o Host localmente com nova referência
             if (this.callbacks.onPlayerJoined) {
-              this.callbacks.onPlayerJoined(this.connectedPlayers);
+              this.callbacks.onPlayerJoined([...this.connectedPlayers]);
             }
 
             // Confirma a entrada do jogador enviando a lista atualizada e o estado atual do jogo
             this.sendJson(conn, {
               type: 'ROOM_JOINED',
               roomCode,
-              players: this.connectedPlayers,
+              players: [...this.connectedPlayers],
               gameState: this.gameState || { phase: 'lobby' }
             });
 
             // Envia a nova lista de jogadores para todos os outros participantes da sala
             this.broadcast({
               type: 'PLAYER_JOINED',
-              players: this.connectedPlayers
+              players: [...this.connectedPlayers]
             }, conn.peer);
           }
 
@@ -230,12 +235,12 @@ class SyncService {
     this.connectedPlayers = this.connectedPlayers.filter(p => p.id !== peerId);
 
     if (this.callbacks.onPlayerLeft) {
-      this.callbacks.onPlayerLeft(this.connectedPlayers);
+      this.callbacks.onPlayerLeft([...this.connectedPlayers]);
     }
 
     this.broadcast({
       type: 'PLAYER_LEFT',
-      players: this.connectedPlayers
+      players: [...this.connectedPlayers]
     });
   }
 
@@ -290,25 +295,25 @@ class SyncService {
         const msg = typeof data === 'string' ? JSON.parse(data) : data;
         
         if (msg.type === 'ROOM_JOINED') {
-          this.connectedPlayers = msg.players;
+          this.connectedPlayers = Array.isArray(msg.players) ? [...msg.players] : [];
           this.gameState = msg.gameState;
 
           if (this.callbacks.onRoomJoined) {
-            this.callbacks.onRoomJoined(this.currentRoomCode!, this.currentPlayerId || '', msg.players, msg.gameState);
+            this.callbacks.onRoomJoined(this.currentRoomCode!, this.currentPlayerId || '', [...this.connectedPlayers], msg.gameState);
           }
         }
 
         if (msg.type === 'PLAYER_JOINED') {
-          this.connectedPlayers = msg.players;
+          this.connectedPlayers = Array.isArray(msg.players) ? [...msg.players] : [];
           if (this.callbacks.onPlayerJoined) {
-            this.callbacks.onPlayerJoined(this.connectedPlayers);
+            this.callbacks.onPlayerJoined([...this.connectedPlayers]);
           }
         }
 
         if (msg.type === 'PLAYER_LEFT') {
-          this.connectedPlayers = msg.players;
+          this.connectedPlayers = Array.isArray(msg.players) ? [...msg.players] : [];
           if (this.callbacks.onPlayerLeft) {
-            this.callbacks.onPlayerLeft(this.connectedPlayers);
+            this.callbacks.onPlayerLeft([...this.connectedPlayers]);
           }
         }
 

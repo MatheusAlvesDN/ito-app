@@ -66,6 +66,7 @@ type Action =
   | { type: 'GO_HOME' }
   | { type: 'GO_MODE_SELECTION' }
   | { type: 'SET_SCREEN'; screen: Screen }
+  | { type: 'SET_GAME_MODE'; gameMode: GameMode }
   | { type: 'SELECT_MODE_CLASSIC' }
   | { type: 'SELECT_MODE_IMPOSTOR' }
   | { type: 'SELECT_MODE_WHOAMI' }
@@ -105,32 +106,35 @@ function reducer(state: State, action: Action): State {
     case 'SET_SCREEN':
       return { ...state, screen: action.screen };
 
+    case 'SET_GAME_MODE':
+      return { ...state, gameMode: action.gameMode };
+
     case 'SELECT_MODE_CLASSIC':
       return {
         ...state,
         gameMode: 'classic',
-        screen: 'connection-selection'
+        screen: 'register-classic'
       };
 
     case 'SELECT_MODE_IMPOSTOR':
       return {
         ...state,
         gameMode: 'impostor',
-        screen: 'connection-selection'
+        screen: 'register-impostor'
       };
 
     case 'SELECT_MODE_WHOAMI':
       return {
         ...state,
         gameMode: 'whoami',
-        screen: 'connection-selection'
+        screen: 'register-whoami'
       };
 
     case 'SELECT_MODE_WHATDOYOUKNOW':
       return {
         ...state,
         gameMode: 'whatdoyouknow',
-        screen: 'connection-selection'
+        screen: 'register-whatdoyouknow'
       };
 
     case 'PLAYERS_CONFIRMED':
@@ -219,6 +223,7 @@ export default function App() {
   };
 
   const onScreenChange = (screen: any) => dispatch({ type: 'SET_SCREEN', screen });
+  const onGameModeChange = (gameMode: GameMode) => dispatch({ type: 'SET_GAME_MODE', gameMode });
 
   const {
     connectionType,
@@ -233,7 +238,7 @@ export default function App() {
     isConnecting,
     handleConnect,
     handleDisconnect,
-  } = useMultiplayerSync(onScreenChange);
+  } = useMultiplayerSync(onScreenChange, onGameModeChange);
 
   // Persistência
   useEffect(() => {
@@ -249,41 +254,33 @@ export default function App() {
   const renderScreen = () => {
     switch (state.screen) {
       case 'home':
-        return <HomeScreen onPlay={() => dispatch({ type: 'GO_MODE_SELECTION' })} />;
-
-      case 'mode-selection':
-        return (
-          <ModeSelectionScreen
-            onBack={() => dispatch({ type: 'GO_HOME' })}
-            onSelectClassic={() => dispatch({ type: 'SELECT_MODE_CLASSIC' })}
-            onSelectImpostor={() => dispatch({ type: 'SELECT_MODE_IMPOSTOR' })}
-            onSelectWhoAmI={() => dispatch({ type: 'SELECT_MODE_WHOAMI' })}
-            onSelectWhatDoYouKnow={() => dispatch({ type: 'SELECT_MODE_WHATDOYOUKNOW' })}
-            onSelectTranslator={() => dispatch({ type: 'SET_SCREEN', screen: 'translator-chain' })}
-          />
-        );
+        return <HomeScreen onPlay={() => dispatch({ type: 'SET_SCREEN', screen: 'connection-selection' })} />;
 
       case 'connection-selection':
         return (
           <ConnectionSelectionScreen
-            onBack={() => dispatch({ type: 'GO_MODE_SELECTION' })}
+            onBack={() => dispatch({ type: 'GO_HOME' })}
             onSelectLocal={() => {
               setConnectionType('local');
-              if (state.gameMode === 'impostor') {
-                dispatch({ type: 'SET_SCREEN', screen: 'register-impostor' });
-              } else if (state.gameMode === 'whoami') {
-                dispatch({ type: 'SET_SCREEN', screen: 'register-whoami' });
-              } else if (state.gameMode === 'whatdoyouknow') {
-                dispatch({ type: 'SET_SCREEN', screen: 'register-whatdoyouknow' });
-              } else {
-                dispatch({ type: 'SET_SCREEN', screen: 'register-classic' });
-              }
+              dispatch({ type: 'SET_SCREEN', screen: 'mode-selection' });
             }}
             onSelectMultiplayer={() => {
               setConnectionType('multiplayer');
               dispatch({ type: 'SET_SCREEN', screen: 'lobby-setup' });
             }}
             gameMode={state.gameMode}
+          />
+        );
+
+      case 'mode-selection':
+        return (
+          <ModeSelectionScreen
+            onBack={() => dispatch({ type: 'SET_SCREEN', screen: 'connection-selection' })}
+            onSelectClassic={() => dispatch({ type: 'SELECT_MODE_CLASSIC' })}
+            onSelectImpostor={() => dispatch({ type: 'SELECT_MODE_IMPOSTOR' })}
+            onSelectWhoAmI={() => dispatch({ type: 'SELECT_MODE_WHOAMI' })}
+            onSelectWhatDoYouKnow={() => dispatch({ type: 'SELECT_MODE_WHATDOYOUKNOW' })}
+            onSelectTranslator={() => dispatch({ type: 'SET_SCREEN', screen: 'translator-chain' })}
           />
         );
 
@@ -309,16 +306,23 @@ export default function App() {
             roomCode={roomCode}
             isHost={isHost}
             connectedPlayers={connectedPlayers}
-            onStartGame={() => {
-              if (state.gameMode === 'impostor') {
-                dispatch({ type: 'SET_SCREEN', screen: 'theme-impostor' });
-              } else if (state.gameMode === 'classic') {
-                dispatch({ type: 'SET_SCREEN', screen: 'theme-classic' });
-              } else if (state.gameMode === 'whatdoyouknow') {
-                dispatch({ type: 'SET_SCREEN', screen: 'theme-whatdoyouknow' });
-              } else {
-                dispatch({ type: 'SET_SCREEN', screen: 'theme-whoami' });
+            onSelectGameMode={(mode) => {
+              dispatch({ type: 'SET_GAME_MODE', gameMode: mode });
+              if (connectionType === 'multiplayer' && isHost) {
+                syncService.syncState({ gameMode: mode });
               }
+            }}
+            onStartGame={() => {
+              const targetScreen =
+                state.gameMode === 'impostor' ? 'theme-impostor' :
+                state.gameMode === 'classic' ? 'theme-classic' :
+                state.gameMode === 'whatdoyouknow' ? 'theme-whatdoyouknow' :
+                'theme-whoami';
+
+              if (connectionType === 'multiplayer' && isHost) {
+                syncService.syncState({ screen: targetScreen, gameMode: state.gameMode });
+              }
+              dispatch({ type: 'SET_SCREEN', screen: targetScreen });
             }}
             gameMode={state.gameMode}
           />
@@ -328,7 +332,7 @@ export default function App() {
       case 'register-classic':
         return (
           <RegisterScreenClassic
-            onBack={() => dispatch({ type: 'SET_SCREEN', screen: 'connection-selection' })}
+            onBack={() => dispatch({ type: 'SET_SCREEN', screen: 'mode-selection' })}
             onNext={(players) => dispatch({ type: 'PLAYERS_CONFIRMED', players })}
           />
         );
@@ -354,10 +358,10 @@ export default function App() {
           <ThemeSelectionClassic
             onBack={() => {
               if (connectionType === 'multiplayer') {
-                handleDisconnect();
-                dispatch({ type: 'GO_MODE_SELECTION' });
+                syncService.syncState({ screen: 'multiplayer-lobby' });
+                dispatch({ type: 'SET_SCREEN', screen: 'multiplayer-lobby' });
               } else {
-                dispatch({ type: 'SELECT_MODE_CLASSIC' });
+                dispatch({ type: 'SET_SCREEN', screen: 'register-classic' });
               }
             }}
             onStart={(themes, saboteurMode) => {
@@ -410,7 +414,7 @@ export default function App() {
       case 'register-impostor':
         return (
           <RegisterScreenImpostor
-            onBack={() => dispatch({ type: 'SET_SCREEN', screen: 'connection-selection' })}
+            onBack={() => dispatch({ type: 'SET_SCREEN', screen: 'mode-selection' })}
             onNext={(players) => dispatch({ type: 'PLAYERS_CONFIRMED', players })}
           />
         );
@@ -436,8 +440,8 @@ export default function App() {
           <ThemeSelectionImpostor
             onBack={() => {
               if (connectionType === 'multiplayer') {
-                handleDisconnect();
-                dispatch({ type: 'GO_MODE_SELECTION' });
+                syncService.syncState({ screen: 'multiplayer-lobby' });
+                dispatch({ type: 'SET_SCREEN', screen: 'multiplayer-lobby' });
               } else {
                 dispatch({ type: 'SET_SCREEN', screen: 'register-impostor' });
               }
@@ -482,7 +486,7 @@ export default function App() {
       case 'register-whoami':
         return (
           <RegisterScreenWhoAmI
-            onBack={() => dispatch({ type: 'SET_SCREEN', screen: 'connection-selection' })}
+            onBack={() => dispatch({ type: 'SET_SCREEN', screen: 'mode-selection' })}
             onNext={(players) => dispatch({ type: 'PLAYERS_CONFIRMED', players })}
           />
         );
@@ -508,8 +512,8 @@ export default function App() {
           <ThemeSelectionWhoAmI
             onBack={() => {
               if (connectionType === 'multiplayer') {
-                handleDisconnect();
-                dispatch({ type: 'GO_MODE_SELECTION' });
+                syncService.syncState({ screen: 'multiplayer-lobby' });
+                dispatch({ type: 'SET_SCREEN', screen: 'multiplayer-lobby' });
               } else {
                 dispatch({ type: 'SET_SCREEN', screen: 'register-whoami' });
               }
@@ -554,7 +558,7 @@ export default function App() {
       case 'register-whatdoyouknow':
         return (
           <RegisterScreenWhatDoYouKnow
-            onBack={() => dispatch({ type: 'SET_SCREEN', screen: 'connection-selection' })}
+            onBack={() => dispatch({ type: 'SET_SCREEN', screen: 'mode-selection' })}
             onNext={(players) => dispatch({ type: 'PLAYERS_CONFIRMED', players })}
           />
         );
@@ -580,8 +584,8 @@ export default function App() {
           <ThemeSelectionWhatDoYouKnow
             onBack={() => {
               if (connectionType === 'multiplayer') {
-                handleDisconnect();
-                dispatch({ type: 'GO_MODE_SELECTION' });
+                syncService.syncState({ screen: 'multiplayer-lobby' });
+                dispatch({ type: 'SET_SCREEN', screen: 'multiplayer-lobby' });
               } else {
                 dispatch({ type: 'SET_SCREEN', screen: 'register-whatdoyouknow' });
               }

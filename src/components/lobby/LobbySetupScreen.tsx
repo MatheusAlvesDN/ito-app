@@ -15,7 +15,7 @@ export const LobbySetupScreen = ({
   setPlayerName: (val: string) => void;
   isConnecting: boolean;
   handleConnect: (customIp: string, actionType: 'create' | 'join', joinCode?: string) => void;
-  gameMode: GameMode;
+  gameMode?: GameMode;
 }) => {
   const [roomToJoin, setRoomToJoin] = useState(() => {
     try {
@@ -29,12 +29,16 @@ export const LobbySetupScreen = ({
     ? 'from-purple-600 to-indigo-650 hover:from-purple-500 hover:to-indigo-600' 
     : gameMode === 'classic'
       ? 'from-yellow-400 to-amber-500 hover:from-yellow-350 hover:to-amber-450 text-black font-black'
-      : 'from-emerald-500 to-teal-650 hover:from-emerald-450 hover:to-teal-600';
+      : gameMode === 'whoami'
+        ? 'from-emerald-500 to-teal-650 hover:from-emerald-450 hover:to-teal-600'
+        : 'from-indigo-600 via-purple-600 to-amber-500 hover:from-indigo-500 hover:to-amber-400 text-white font-black';
   const ringColorClass = gameMode === 'impostor' 
     ? 'focus:border-purple-550 focus:ring-purple-900/30' 
     : gameMode === 'classic'
       ? 'focus:border-yellow-550 focus:ring-yellow-900/30'
-      : 'focus:border-emerald-550 focus:ring-emerald-900/30';
+      : gameMode === 'whoami'
+        ? 'focus:border-emerald-550 focus:ring-emerald-900/30'
+        : 'focus:border-indigo-500 focus:ring-indigo-900/30';
 
   return (
     <div className="flex-1 flex flex-col bg-slate-950 relative h-full overflow-hidden text-slate-100">

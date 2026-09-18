@@ -10,12 +10,13 @@ export const ConnectionSelectionScreen = ({
   onBack: () => void;
   onSelectLocal: () => void;
   onSelectMultiplayer: () => void;
-  gameMode: GameMode;
+  gameMode?: GameMode;
 }) => {
   const getThemeColor = () => {
     if (gameMode === 'impostor') return 'text-purple-400 border-purple-500/20 hover:border-purple-400/85 hover:bg-purple-500/[0.02]';
     if (gameMode === 'classic') return 'text-yellow-450 border-yellow-500/20 hover:border-yellow-400/85 hover:bg-yellow-500/[0.02]';
-    return 'text-emerald-400 border-emerald-500/20 hover:border-emerald-400/85 hover:bg-emerald-500/[0.02]';
+    if (gameMode === 'whoami') return 'text-emerald-400 border-emerald-500/20 hover:border-emerald-400/85 hover:bg-emerald-500/[0.02]';
+    return 'text-indigo-400 border-indigo-500/30 hover:border-indigo-400/80 hover:bg-indigo-500/[0.03]';
   };
 
   return (

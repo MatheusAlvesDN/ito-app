@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { syncService } from '../utils/syncService';
 import { toast } from 'sonner';
 
-export function useMultiplayerSync(onScreenChange?: (screen: any) => void) {
+export function useMultiplayerSync(
+  onScreenChange?: (screen: any) => void,
+  onGameModeChange?: (mode: any) => void
+) {
   const [connectionType, setConnectionType] = useState<'local' | 'multiplayer'>(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -42,7 +45,7 @@ export function useMultiplayerSync(onScreenChange?: (screen: any) => void) {
           setRoomCode(code);
           setPlayerId(pId);
           setIsHost(true);
-          setConnectedPlayers(playersList);
+          setConnectedPlayers([...playersList]);
           setIsConnecting(false);
           toast.success('Sala criada com sucesso!');
           if (onSuccess) onSuccess();
@@ -51,23 +54,34 @@ export function useMultiplayerSync(onScreenChange?: (screen: any) => void) {
           setRoomCode(code);
           setPlayerId(pId);
           setIsHost(false);
-          setConnectedPlayers(playersList);
+          setConnectedPlayers([...playersList]);
           setSyncGameState(initialGameState);
+          if (initialGameState?.gameMode && onGameModeChange) {
+            onGameModeChange(initialGameState.gameMode);
+          }
+          if (initialGameState?.screen && onScreenChange) {
+            onScreenChange(initialGameState.screen);
+          }
           setIsConnecting(false);
           toast.success('Entrou na sala!');
           if (onSuccess) onSuccess();
         },
         onPlayerJoined: (playersList) => {
-          setConnectedPlayers(playersList);
+          setConnectedPlayers([...playersList]);
           const newPlayer = playersList[playersList.length - 1];
-          toast.info(`${newPlayer.name} entrou na sala`);
+          if (newPlayer) {
+            toast.info(`${newPlayer.name} entrou na sala`);
+          }
         },
         onPlayerLeft: (playersList) => {
-          setConnectedPlayers(playersList);
+          setConnectedPlayers([...playersList]);
           toast.info('Um jogador saiu da sala');
         },
         onStateUpdated: (newGameState) => {
           setSyncGameState(newGameState);
+          if (newGameState.gameMode && onGameModeChange) {
+            onGameModeChange(newGameState.gameMode);
+          }
           if (newGameState.screen && onScreenChange) {
             onScreenChange(newGameState.screen);
           }
