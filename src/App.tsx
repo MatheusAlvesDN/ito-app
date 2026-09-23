@@ -33,7 +33,7 @@ import { useMultiplayerSync } from './hooks/useMultiplayerSync';
 // --- TIPOS ---
 export type GameMode = 'classic' | 'impostor' | 'whoami' | 'whatdoyouknow' | 'translator';
 
-// Define todas as telas possíveis
+// Telas
 type Screen =
   | 'home'
   | 'mode-selection'
@@ -174,7 +174,6 @@ function reducer(state: State, action: Action): State {
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState, () => {
-    // Verificar se há link de convite na URL (ex: ?room=ABCD&mode=impostor)
     try {
       const params = new URLSearchParams(window.location.search);
       const roomParam = params.get('room');
@@ -315,9 +314,9 @@ export default function App() {
             onStartGame={() => {
               const targetScreen =
                 state.gameMode === 'impostor' ? 'theme-impostor' :
-                state.gameMode === 'classic' ? 'theme-classic' :
-                state.gameMode === 'whatdoyouknow' ? 'theme-whatdoyouknow' :
-                'theme-whoami';
+                  state.gameMode === 'classic' ? 'theme-classic' :
+                    state.gameMode === 'whatdoyouknow' ? 'theme-whatdoyouknow' :
+                      'theme-whoami';
 
               if (connectionType === 'multiplayer' && isHost) {
                 syncService.syncState({ screen: targetScreen, gameMode: state.gameMode });

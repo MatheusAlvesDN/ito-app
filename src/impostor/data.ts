@@ -14,13 +14,11 @@ export type Theme = {
   textColor: string;
 };
 
-// Novo Tipo para o Impostor
 export type ImpostorScenario = {
   honest: string; // Pergunta que a maioria recebe
-  impostorVariations: string[]; // Opções para o impostor
+  impostorVariations: string[]; // Dica para o impostor
 };
 
-// --- DADOS DO MODO CLÁSSICO (ITO) ---
 
 export const THEMES: Theme[] = [
   {
@@ -52,7 +50,7 @@ export const THEMES: Theme[] = [
 // --- DADOS DO MODO IMPOSTOR ---
 
 export const IMPOSTOR_SCENARIOS: Record<string, ImpostorScenario[]> = {
-  // Cenários padrão (carregados se o tema 'free' for escolhido ou como fallback)
+  // Cenários padrão 
   default: [
     {
       honest: 'Animais de Estimação',
@@ -71,22 +69,18 @@ export const IMPOSTOR_SCENARIOS: Record<string, ImpostorScenario[]> = {
       impostorVariations: ['Vilões de Filmes', 'Deuses Gregos', 'Personagens de Desenho Animado'],
     },
   ],
-  
-    pesado: [
+
+  pesado: [
     {
       honest: 'Se você pudesse escolher uma pessoa para ser amarrada em uma cadeira e ser torturada por 24 horas, quem seria?',
       impostorVariations: ['quem é o cantor pop mais subestimado da atualidade?', 'Qual ator você acha que é o mais superestimado?', 'Qual personagem de desenho animado você acha mais irritante?'],
     },
-    /*{
-      honest: 'Se você tivesse que escolher uma pessoa que está nesse jogo para ser violentada por 23 jumentos, quem seria?',
-      impostorVariations: ['quem é o jogador mais irritante ?'],
-    },*/
     {
       honest: 'Se você fosse um ditador malvado e tivesse que escolher uma pessoa para ser jogada em um vulcão, quem seria?',
       impostorVariations: ['Escolha um dos jogadores presentes'],
     },
   ],
-  
+
 
 
   geek: [
