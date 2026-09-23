@@ -18,7 +18,7 @@ import {
   ChevronRight,
   Crown
 } from 'lucide-react';
-import { type WhoAmITheme } from './data';
+import { type WhoAmITheme, WHOAMI_THEMES } from './data';
 import { syncService, triggerVibration } from '../utils/syncService';
 import { audioService } from '../utils/audioService';
 import { ReactionsOverlay, ReactionsTray } from '../components/ReactionsOverlay';
@@ -117,8 +117,12 @@ export default function GameScreenWhoAmI({
           clearInterval(interval);
           return 0;
         }
-        if (prev <= 6) { // Para os segundos finais: 5, 4, 3, 2, 1
+        if (prev <= 10 && prev > 5) {
+          audioService.playHeartbeat();
+          triggerVibration(40);
+        } else if (prev <= 5) {
           audioService.playTick();
+          triggerVibration(60);
         }
         return prev - 1;
       });
@@ -133,15 +137,19 @@ export default function GameScreenWhoAmI({
   };
 
   const getThemePersonalities = (t: WhoAmITheme) => {
+    if (t.personalities && Array.isArray(t.personalities) && t.personalities.length > 0) {
+      return t.personalities;
+    }
     if (t.id.startsWith('custom_theme_')) {
       try {
         const saved = localStorage.getItem('whoami_custom_personalities_' + t.id);
-        return saved ? JSON.parse(saved) : (t.personalities || []);
+        if (saved) return JSON.parse(saved);
       } catch {
-        return t.personalities || [];
+        // fallback
       }
     }
-    return t.personalities || [];
+    const defaultTheme = WHOAMI_THEMES.find(item => item.id === t.id);
+    return defaultTheme ? defaultTheme.personalities : [];
   };
 
   // Initialize game fresh

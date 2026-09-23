@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { type WhatDoYouKnowTheme } from './data';
+import { type WhatDoYouKnowTheme, WHATDOYOUKNOW_THEMES } from './data';
 import { syncService, triggerVibration } from '../utils/syncService';
 import { audioService } from '../utils/audioService';
 
@@ -62,8 +62,26 @@ export default function GameScreenWhatDoYouKnow({
   const getAllQuestions = () => {
     let pool: string[] = [];
     themes.forEach((t) => {
-      if (t.questions && Array.isArray(t.questions)) {
+      if (t.questions && Array.isArray(t.questions) && t.questions.length > 0) {
         pool = [...pool, ...t.questions];
+      } else if (t.id.startsWith('custom_theme_')) {
+        try {
+          const saved = localStorage.getItem('whatdoyouknow_custom_themes');
+          if (saved) {
+            const list: WhatDoYouKnowTheme[] = JSON.parse(saved);
+            const found = list.find(item => item.id === t.id);
+            if (found?.questions) {
+              pool = [...pool, ...found.questions];
+            }
+          }
+        } catch {
+          // fallback
+        }
+      } else {
+        const defaultTheme = WHATDOYOUKNOW_THEMES.find(item => item.id === t.id);
+        if (defaultTheme?.questions) {
+          pool = [...pool, ...defaultTheme.questions];
+        }
       }
     });
     return pool;

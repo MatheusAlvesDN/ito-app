@@ -50,6 +50,7 @@ export default function GameScreenImpostor({
   const [localImpostorIndex, setLocalImpostorIndex] = useState<number>(-1);
   const [localHonestQuestion, setLocalHonestQuestion] = useState<string>('');
   const [localImpostorQuestion, setLocalImpostorQuestion] = useState<string>('');
+  const [localRedemptionStatus, setLocalRedemptionStatus] = useState<'pending' | 'impostor_won' | 'group_won'>('pending');
   
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [isCardRevealed, setIsCardRevealed] = useState(false);
@@ -60,6 +61,7 @@ export default function GameScreenImpostor({
   const impostorQuestion = isMultiplayer ? (syncGameState?.impostorQuestion || '') : localImpostorQuestion;
   const impostorPlayerId = isMultiplayer ? (syncGameState?.impostorPlayerId || '') : '';
   const viewedPlayers = isMultiplayer ? (syncGameState?.viewedPlayers || []) : [];
+  const redemptionStatus = isMultiplayer ? (syncGameState?.redemptionStatus || 'pending') : localRedemptionStatus;
 
   // --- TIMER STATE & EFFECTS ---
   const [timeLeft, setTimeLeft] = useState(120);
@@ -82,8 +84,12 @@ export default function GameScreenImpostor({
           clearInterval(interval);
           return 0;
         }
-        if (prev <= 6) { // Para os segundos finais: 5, 4, 3, 2, 1
+        if (prev <= 10 && prev > 5) {
+          audioService.playHeartbeat();
+          triggerVibration(40);
+        } else if (prev <= 5) {
           audioService.playTick();
+          triggerVibration(60);
         }
         return prev - 1;
       });
@@ -149,6 +155,7 @@ export default function GameScreenImpostor({
     setLocalStep('distribution');
     setCurrentPlayerIndex(0);
     setIsCardRevealed(false);
+    setLocalRedemptionStatus('pending');
   };
 
   const setupMultiplayerRound = () => {
@@ -178,7 +185,8 @@ export default function GameScreenImpostor({
       impostorPlayerId: impostorId,
       honestQuestion: honestQ,
       impostorQuestion: impostorQ,
-      viewedPlayers: []
+      viewedPlayers: [],
+      redemptionStatus: 'pending'
     });
   };
 
@@ -496,6 +504,24 @@ export default function GameScreenImpostor({
       ? (connectedPlayers.find(p => p.id === impostorPlayerId)?.name || 'Desconhecido')
       : players[localImpostorIndex];
 
+    const handleRedemptionChoice = (status: 'impostor_won' | 'group_won') => {
+      if (status === 'impostor_won') {
+        audioService.playSuspense();
+        triggerVibration([100, 50, 200]);
+      } else {
+        audioService.playSuccess();
+        triggerVibration([100, 100, 100]);
+      }
+
+      if (isMultiplayer) {
+        if (isHost) {
+          syncService.syncState({ redemptionStatus: status });
+        }
+      } else {
+        setLocalRedemptionStatus(status);
+      }
+    };
+
     const handlePlayAgain = () => {
       if (isMultiplayer) {
         syncService.syncState({
@@ -534,31 +560,75 @@ export default function GameScreenImpostor({
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center z-10 overflow-y-auto">
           <p className="text-slate-450 font-black uppercase tracking-[0.3em] text-[10px] mb-4 font-outfit">O Impostor Infiltrado era</p>
           
-          <div className="relative mb-8 select-none">
+          <div className="relative mb-6 select-none">
             <div className="absolute inset-0 bg-purple-550/30 blur-3xl rounded-full" />
-            <div className="w-28 h-28 bg-gradient-to-br from-purple-500 to-indigo-700 rounded-full flex items-center justify-center shadow-2xl relative z-10 border-4 border-slate-900">
-               <span className="text-5xl font-black text-white font-outfit">{impostorName.charAt(0).toUpperCase()}</span>
+            <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-indigo-700 rounded-full flex items-center justify-center shadow-2xl relative z-10 border-4 border-slate-900">
+               <span className="text-4xl font-black text-white font-outfit">{impostorName.charAt(0).toUpperCase()}</span>
             </div>
-            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-slate-900 border border-purple-500 px-4 py-1.5 rounded-full whitespace-nowrap z-20 shadow-md">
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-slate-900 border border-purple-500 px-4 py-1 rounded-full whitespace-nowrap z-20 shadow-md">
                <span className="font-black text-xs text-purple-300 font-outfit tracking-wide uppercase">{impostorName}</span>
             </div>
           </div>
 
           <div className="w-full max-w-sm space-y-4">
-             <div className="bg-slate-900/40 p-5 rounded-3xl border-l-4 border-yellow-400 text-left shadow-lg">
-                <div className="flex items-center gap-2 mb-1 opacity-70">
-                   <Users size={14} className="text-yellow-400" />
-                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-outfit">Tema do Grupo</span>
-                </div>
-                <p className="text-lg font-black text-white font-outfit leading-snug">{honestQuestion}</p>
-             </div>
-             <div className="bg-slate-900/40 p-5 rounded-3xl border-l-4 border-purple-500 text-left shadow-lg">
-                <div className="flex items-center gap-2 mb-1 opacity-70">
-                   <Ghost size={14} className="text-purple-400" />
-                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-outfit">Tema do Impostor</span>
-                </div>
-                <p className="text-lg font-black text-white font-outfit leading-snug">{impostorQuestion}</p>
-             </div>
+             {/* Chute de Redenção do Impostor */}
+             {redemptionStatus === 'pending' ? (
+               <div className="bg-slate-900/60 p-5 rounded-3xl border border-purple-500/30 text-center shadow-xl space-y-3 animate-fade-in">
+                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-black font-outfit uppercase">
+                   🎯 Chute de Redenção
+                 </div>
+                 <p className="text-white font-bold text-sm leading-relaxed">
+                   O Impostor tem 1 chance para adivinhar a palavra do Grupo Honesto e roubar a vitória!
+                 </p>
+                 {(!isMultiplayer || isHost) ? (
+                   <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                     <button
+                       onClick={() => handleRedemptionChoice('impostor_won')}
+                       className="flex-1 py-3 px-3 rounded-xl bg-purple-650 hover:bg-purple-600 text-white font-black text-xs active:scale-95 transition-all shadow-md font-outfit"
+                     >
+                       👑 Acertou o Chute!
+                     </button>
+                     <button
+                       onClick={() => handleRedemptionChoice('group_won')}
+                       className="flex-1 py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs active:scale-95 transition-all shadow-md font-outfit"
+                     >
+                       🛡️ Errou! Grupo Venceu
+                     </button>
+                   </div>
+                 ) : (
+                   <p className="text-xs text-slate-450 font-medium animate-pulse">
+                     O líder está registrando se o impostor acertou a palavra...
+                   </p>
+                 )}
+               </div>
+             ) : (
+               <div className="space-y-4 animate-fade-in">
+                 {redemptionStatus === 'impostor_won' ? (
+                   <div className="p-4 bg-purple-950/80 border border-purple-500/50 rounded-2xl text-purple-200 font-black font-outfit text-center shadow-lg">
+                     👑 O IMPOSTOR ACERTOU E ROUBOU A VITÓRIA!
+                   </div>
+                 ) : (
+                   <div className="p-4 bg-emerald-950/80 border border-emerald-500/50 rounded-2xl text-emerald-200 font-black font-outfit text-center shadow-lg">
+                     🛡️ O GRUPO HONESTO VENCEU A RODADA!
+                   </div>
+                 )}
+
+                 <div className="bg-slate-900/40 p-5 rounded-3xl border-l-4 border-yellow-400 text-left shadow-lg">
+                    <div className="flex items-center gap-2 mb-1 opacity-70">
+                       <Users size={14} className="text-yellow-400" />
+                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-outfit">Tema do Grupo</span>
+                    </div>
+                    <p className="text-lg font-black text-white font-outfit leading-snug">{honestQuestion}</p>
+                 </div>
+                 <div className="bg-slate-900/40 p-5 rounded-3xl border-l-4 border-purple-500 text-left shadow-lg">
+                    <div className="flex items-center gap-2 mb-1 opacity-70">
+                       <Ghost size={14} className="text-purple-400" />
+                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-outfit">Tema do Impostor</span>
+                    </div>
+                    <p className="text-lg font-black text-white font-outfit leading-snug">{impostorQuestion}</p>
+                 </div>
+               </div>
+             )}
           </div>
         </div>
 

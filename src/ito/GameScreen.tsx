@@ -927,8 +927,20 @@ const GameScreen = ({
           <div className="flex flex-col gap-3 w-full">
             {lives === 0 ? (
               <div className="flex flex-col gap-3 w-full animate-fade-in">
-                <div className="bg-red-650 text-white font-black text-lg py-4 rounded-2xl text-center animate-pulse font-outfit">
-                  FIM DE JOGO (SEM VIDAS!)
+                <div className="bg-slate-900 border border-red-500/30 p-4 rounded-2xl text-center space-y-2 shadow-xl">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-black font-outfit uppercase">
+                    💀 Fim de Jogo (Sem Vidas)
+                  </div>
+                  <div className="text-2xl font-black text-white font-outfit">
+                    Rodada {round} Alcançada!
+                  </div>
+                  <p className="text-xs text-slate-400 font-medium">
+                    {round >= 5
+                      ? '🔮 Sintonia Telepática Lendária! O grupo está incrivelmente conectado!'
+                      : round >= 3
+                      ? '🤝 Excelente Trabalho em Equipe! Quase bateram o recorde do grupo!'
+                      : '😅 Faltou um pouco de calibragem... Que tal tentar mais uma vez?'}
+                  </p>
                 </div>
                 {(!isMultiplayer || isHost) ? (
                   <button 
@@ -947,9 +959,9 @@ const GameScreen = ({
                         setLocalPhase('init');
                       }
                     }} 
-                    className="w-full bg-yellow-400 hover:bg-yellow-350 text-black font-black text-lg py-4 rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2 font-outfit"
+                    className="w-full bg-yellow-400 hover:bg-yellow-350 text-slate-950 font-black text-lg py-4 rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2 font-outfit"
                   >
-                    <RefreshCw size={20} /> <span>RECOMEÇAR</span>
+                    <RefreshCw size={20} /> <span>RECOMEÇAR PARTIDA</span>
                   </button>
                 ) : (
                   <div className="w-full bg-slate-955/50 p-4 rounded-2xl border border-white/5 text-center flex items-center justify-center gap-3 animate-pulse">

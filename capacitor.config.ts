@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.example.app',
-  appName: 'ito-app',
+  appId: 'com.partygames.app',
+  appName: 'Party Games',
   webDir: 'dist'
 };
 

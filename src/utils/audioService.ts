@@ -218,6 +218,40 @@ class AudioService {
     osc.start();
     osc.stop(ctx.currentTime + 0.05);
   }
+
+  /**
+   * Som de pulso / batimento cardíaco tenso (para contagens regressivas e momentos de revelação)
+   */
+  public playHeartbeat() {
+    if (this.muted) return;
+    const ctx = this.initContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+
+    const playThump = (freq: number, time: number, duration: number, gainLevel: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, time);
+      osc.frequency.exponentialRampToValueAtTime(30, time + duration);
+
+      gain.gain.setValueAtTime(0.01, time);
+      gain.gain.linearRampToValueAtTime(gainLevel, time + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+      osc.start(time);
+      osc.stop(time + duration);
+    };
+
+    // "Lub-dub" (dois batimentos próximos)
+    playThump(85, now, 0.12, 0.35);
+    playThump(65, now + 0.14, 0.15, 0.25);
+  }
 }
 
 export const audioService = new AudioService();
